@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { User, Mail, Lock, Phone, MapPin } from 'lucide-react';
+import { User, MapPin, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { NavigationHeader } from '@/components/ui/navigation';
 
 interface LoginCompleteProps {
@@ -13,7 +13,27 @@ interface LoginCompleteProps {
 }
 
 const LoginComplete: React.FC<LoginCompleteProps> = ({ onBack, onLoginSuccess }) => {
-  const [activeTab, setActiveTab] = useState('login');
+  const [formData, setFormData] = useState({
+    fullName: '',
+    userProfile: '',
+    zipCode: ''
+  });
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSubmit = () => {
+    // Basic validation - all fields required
+    if (formData.fullName && formData.userProfile && formData.zipCode) {
+      onLoginSuccess();
+    }
+  };
+
+  const isFormValid = formData.fullName && formData.userProfile && formData.zipCode;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -27,142 +47,105 @@ const LoginComplete: React.FC<LoginCompleteProps> = ({ onBack, onLoginSuccess })
         <div className="max-w-md mx-auto space-y-6">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 mx-auto bg-gradient-primary rounded-xl shadow-ios-lg flex items-center justify-center mb-4">
-              <MapPin className="h-8 w-8 text-primary-foreground" />
+            <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+              <img 
+                src="/lovable-uploads/8b99d25a-b36a-446f-830c-1a25c42c87c3.png" 
+                alt="FlowAgro Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
-            <h2 className="text-2xl font-semibold text-foreground">
-              Acesse sua conta
+            <h2 className="text-2xl font-semibold text-foreground mb-2">
+              Bem-vindo ao FlowAgro
             </h2>
-            <p className="text-muted-foreground mt-2">
-              Entre ou registre-se para continuar
+            <p className="text-muted-foreground">
+              Preencha seus dados para acessar a plataforma
             </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Entrar</TabsTrigger>
-              <TabsTrigger value="register">Registrar</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="login" className="space-y-4">
-              <Card className="p-6 shadow-ios-md">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">E-mail</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        className="pl-10 h-12"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Senha</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Digite sua senha"
-                        className="pl-10 h-12"
-                      />
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={onLoginSuccess}
-                    className="w-full h-12 bg-gradient-primary shadow-ios-button"
-                    size="lg"
-                  >
-                    Entrar
-                  </Button>
-
-                  <div className="text-center">
-                    <button className="text-sm text-primary hover:underline">
-                      Esqueceu sua senha?
-                    </button>
-                  </div>
+          <Card className="p-6 shadow-ios-md">
+            <div className="space-y-6">
+              {/* Full Name */}
+              <div className="space-y-2">
+                <Label htmlFor="fullName" className="text-sm font-medium text-foreground">
+                  Nome completo *
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Digite seu nome completo"
+                    value={formData.fullName}
+                    onChange={(e) => handleInputChange('fullName', e.target.value)}
+                    className="pl-11 h-12 text-base border-border focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
                 </div>
-              </Card>
-            </TabsContent>
+              </div>
 
-            <TabsContent value="register" className="space-y-4">
-              <Card className="p-6 shadow-ios-md">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome completo</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="name"
-                        type="text"
-                        placeholder="Seu nome completo"
-                        className="pl-10 h-12"
-                      />
+              {/* User Profile Dropdown */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">
+                  Perfil do usuário *
+                </Label>
+                <Select value={formData.userProfile} onValueChange={(value) => handleInputChange('userProfile', value)}>
+                  <SelectTrigger className="h-12 text-base border-border focus:ring-2 focus:ring-primary">
+                    <div className="flex items-center">
+                      <User className="h-5 w-5 text-muted-foreground mr-3" />
+                      <SelectValue placeholder="Selecione seu perfil" />
                     </div>
-                  </div>
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border shadow-ios-lg z-50">
+                    <SelectItem value="consultant" className="text-base py-3 hover:bg-accent focus:bg-accent">
+                      Consultor
+                    </SelectItem>
+                    <SelectItem value="producer" className="text-base py-3 hover:bg-accent focus:bg-accent">
+                      Produtor
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email">E-mail</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="register-email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        className="pl-10 h-12"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="(11) 99999-9999"
-                        className="pl-10 h-12"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Senha</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="register-password"
-                        type="password"
-                        placeholder="Crie uma senha segura"
-                        className="pl-10 h-12"
-                      />
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={onLoginSuccess}
-                    className="w-full h-12 bg-gradient-secondary shadow-ios-button"
-                    size="lg"
-                  >
-                    Criar conta
-                  </Button>
-
-                  <p className="text-xs text-muted-foreground text-center">
-                    Ao criar uma conta, você concorda com nossos{' '}
-                    <button className="text-primary underline">
-                      Termos de Uso
-                    </button>
-                  </p>
+              {/* ZIP Code */}
+              <div className="space-y-2">
+                <Label htmlFor="zipCode" className="text-sm font-medium text-foreground">
+                  CEP *
+                </Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="zipCode"
+                    type="text"
+                    placeholder="00000-000"
+                    value={formData.zipCode}
+                    onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                    className="pl-11 h-12 text-base border-border focus:ring-2 focus:ring-primary focus:border-transparent"
+                    maxLength={9}
+                  />
                 </div>
-              </Card>
-            </TabsContent>
-          </Tabs>
+              </div>
+            </div>
+          </Card>
+
+          {/* Submit Button */}
+          <div className="pt-4">
+            <Button
+              onClick={handleSubmit}
+              disabled={!isFormValid}
+              className={`w-full h-12 text-base font-semibold shadow-ios-button transition-all ${
+                isFormValid 
+                  ? 'bg-success hover:bg-success/90 text-white' 
+                  : 'bg-muted text-muted-foreground cursor-not-allowed'
+              }`}
+              size="lg"
+            >
+              Acessar FlowAgro
+            </Button>
+          </div>
+
+          {/* Required fields notice */}
+          <p className="text-xs text-muted-foreground text-center">
+            * Campos obrigatórios
+          </p>
         </div>
       </div>
     </div>
