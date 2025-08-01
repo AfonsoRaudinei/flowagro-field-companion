@@ -1,26 +1,19 @@
 import React, { useState } from 'react';
 import { 
-  User, 
-  Bell, 
-  Shield, 
-  HelpCircle, 
-  LogOut, 
-  ChevronRight,
-  MapPin,
-  MessageSquare,
-  Settings as SettingsIcon,
+  ArrowLeft,
+  Map,
+  Camera,
+  Navigation,
+  DollarSign,
   Moon,
-  Globe,
-  Smartphone,
-  Download,
-  Trash2
+  LogOut,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
-import { NavigationHeader } from '@/components/ui/navigation';
-import { BottomTabs } from '@/components/ui/navigation';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface SettingsGeneralProps {
   onBack: () => void;
@@ -35,225 +28,202 @@ const SettingsGeneral: React.FC<SettingsGeneralProps> = ({
   onNavigateToChat,
   onLogout 
 }) => {
-  const [activeTab, setActiveTab] = useState('settings');
-  const [notifications, setNotifications] = useState(true);
-  const [locationAccess, setLocationAccess] = useState(true);
-  const [autoSync, setAutoSync] = useState(true);
+  // Map Preferences
+  const [defaultMapLayer, setDefaultMapLayer] = useState('satellite');
+  
+  // Permissions
+  const [gpsEnabled, setGpsEnabled] = useState(true);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
+  
+  // Units & Format
+  const [defaultUnit, setDefaultUnit] = useState('brl');
+  
+  // Appearance
+  const [darkMode, setDarkMode] = useState(false);
 
-  const tabs = [
-    { id: 'map', label: 'Mapa', icon: MapPin },
-    { id: 'chat', label: 'Chat', icon: MessageSquare },
-    { id: 'settings', label: 'Config', icon: SettingsIcon }
+  const mapLayers = [
+    { id: 'satellite', name: 'Satélite' },
+    { id: 'hybrid', name: 'Híbrido' },
+    { id: 'terrain', name: 'Terreno' },
+    { id: 'ndvi-sentinel', name: 'NDVI Sentinel' },
+    { id: 'ndvi-planet', name: 'NDVI Planet' }
   ];
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (tab === 'map') {
-      onNavigateToMap();
-    } else if (tab === 'chat') {
-      onNavigateToChat();
-    }
-  };
-
-  const settingsItems = [
-    {
-      section: 'Conta',
-      items: [
-        {
-          icon: User,
-          title: 'Perfil do usuário',
-          subtitle: 'Editar informações pessoais',
-          action: () => console.log('Profile')
-        },
-        {
-          icon: Bell,
-          title: 'Notificações',
-          subtitle: 'Configurar alertas e avisos',
-          action: () => console.log('Notifications'),
-          toggle: true,
-          value: notifications,
-          onChange: setNotifications
-        }
-      ]
-    },
-    {
-      section: 'Aplicativo',
-      items: [
-        {
-          icon: Globe,
-          title: 'Acesso à localização',
-          subtitle: 'Permitir GPS para mapeamento',
-          toggle: true,
-          value: locationAccess,
-          onChange: setLocationAccess
-        },
-        {
-          icon: Download,
-          title: 'Sincronização automática',
-          subtitle: 'Sync dados quando conectado',
-          toggle: true,
-          value: autoSync,
-          onChange: setAutoSync
-        },
-        {
-          icon: Smartphone,
-          title: 'Configurações do dispositivo',
-          subtitle: 'Preferências de hardware',
-          action: () => console.log('Device settings')
-        }
-      ]
-    },
-    {
-      section: 'Suporte',
-      items: [
-        {
-          icon: HelpCircle,
-          title: 'Central de ajuda',
-          subtitle: 'FAQ e tutoriais',
-          action: () => console.log('Help')
-        },
-        {
-          icon: Shield,
-          title: 'Privacidade e segurança',
-          subtitle: 'Termos de uso e políticas',
-          action: () => console.log('Privacy')
-        }
-      ]
-    },
-    {
-      section: 'Dados',
-      items: [
-        {
-          icon: Trash2,
-          title: 'Limpar cache',
-          subtitle: 'Liberar espaço de armazenamento',
-          action: () => console.log('Clear cache'),
-          destructive: true
-        }
-      ]
-    }
+  const unitSystems = [
+    { id: 'brl', name: 'R$ (Real Brasileiro)' },
+    { id: 'sack', name: 'Saca' },
+    { id: 'ton', name: 'Tonelada' }
   ];
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <NavigationHeader
-        title="Configurações"
-        onBack={onBack}
-        showBackButton={true}
-      />
-
-      <div className="flex-1 pb-20">
-        {/* User Profile Section */}
-        <div className="p-6 bg-card border-b border-border">
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src="" alt="User" />
-              <AvatarFallback className="bg-primary text-primary-foreground text-lg">
-                <User className="h-8 w-8" />
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold text-foreground">João Silva</h2>
-              <p className="text-muted-foreground">Produtor Rural</p>
-              <p className="text-sm text-muted-foreground">joao.silva@flowagro.com</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Settings Sections */}
-        <div className="p-4 space-y-6">
-          {settingsItems.map((section, sectionIndex) => (
-            <div key={sectionIndex}>
-              <h3 className="text-lg font-semibold text-foreground mb-3 px-2">
-                {section.section}
-              </h3>
-              <Card className="shadow-ios-sm">
-                <div className="divide-y divide-border">
-                  {section.items.map((item, itemIndex) => {
-                    const Icon = item.icon;
-                    return (
-                      <div
-                        key={itemIndex}
-                        className={`p-4 flex items-center justify-between hover:bg-accent/50 transition-colors ${
-                          item.action && !item.toggle ? 'cursor-pointer' : ''
-                        }`}
-                        onClick={item.action && !item.toggle ? item.action : undefined}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className={`p-2 rounded-lg ${
-                            item.destructive 
-                              ? 'bg-destructive/10'
-                              : 'bg-primary/10'
-                          }`}>
-                            <Icon className={`h-5 w-5 ${
-                              item.destructive 
-                                ? 'text-destructive'
-                                : 'text-primary'
-                            }`} />
-                          </div>
-                          <div>
-                            <p className={`font-medium ${
-                              item.destructive 
-                                ? 'text-destructive'
-                                : 'text-foreground'
-                            }`}>
-                              {item.title}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {item.subtitle}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {item.toggle ? (
-                          <Switch
-                            checked={item.value}
-                            onCheckedChange={item.onChange}
-                          />
-                        ) : (
-                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </Card>
-            </div>
-          ))}
-
-          {/* App Info */}
-          <Card className="p-4 shadow-ios-sm">
-            <div className="text-center space-y-2">
-              <div className="w-12 h-12 mx-auto bg-gradient-primary rounded-xl flex items-center justify-center">
-                <MapPin className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <p className="font-semibold text-foreground">FlowAgro</p>
-              <p className="text-sm text-muted-foreground">Versão 1.0.0</p>
-              <p className="text-xs text-muted-foreground">
-                © 2024 FlowAgro Technologies
-              </p>
-            </div>
-          </Card>
-
-          {/* Logout Button */}
-          <Card className="shadow-ios-sm">
-            <Button
-              onClick={onLogout}
-              variant="ghost"
-              className="w-full h-14 text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center justify-center space-x-2"
-            >
-              <LogOut className="h-5 w-5" />
-              <span className="font-medium">Sair da conta</span>
-            </Button>
-          </Card>
+      {/* Header */}
+      <div className="bg-card border-b border-border px-4 py-4">
+        <div className="flex items-center space-x-3">
+          <Button
+            onClick={onBack}
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-semibold text-foreground">
+            Configurações
+          </h1>
         </div>
       </div>
 
-      <BottomTabs
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        tabs={tabs}
-      />
+      {/* Content */}
+      <div className="flex-1 p-4 space-y-6">
+        
+        {/* Map Preferences */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <Map className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Preferências do Mapa</h2>
+          </div>
+          
+          <Card className="p-4 shadow-ios-sm">
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Camada padrão do mapa
+                </label>
+                <Select value={defaultMapLayer} onValueChange={setDefaultMapLayer}>
+                  <SelectTrigger className="w-full h-12">
+                    <SelectValue placeholder="Selecione a camada padrão" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border shadow-ios-lg z-50">
+                    {mapLayers.map((layer) => (
+                      <SelectItem key={layer.id} value={layer.id} className="py-3">
+                        {layer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Permissions */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <Navigation className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Permissões</h2>
+          </div>
+          
+          <Card className="p-4 shadow-ios-sm">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Navigation className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Permitir localização GPS</p>
+                    <p className="text-sm text-muted-foreground">Necessário para mapeamento de campo</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={gpsEnabled}
+                  onCheckedChange={setGpsEnabled}
+                />
+              </div>
+
+              <div className="h-px bg-border"></div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Camera className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Permitir acesso à câmera</p>
+                    <p className="text-sm text-muted-foreground">Para captura de eventos no campo</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={cameraEnabled}
+                  onCheckedChange={setCameraEnabled}
+                />
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Units & Format */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <DollarSign className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Unidades e Formato</h2>
+          </div>
+          
+          <Card className="p-4 shadow-ios-sm">
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Sistema de unidades padrão
+                </label>
+                <Select value={defaultUnit} onValueChange={setDefaultUnit}>
+                  <SelectTrigger className="w-full h-12">
+                    <SelectValue placeholder="Selecione o sistema de unidades" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border shadow-ios-lg z-50">
+                    {unitSystems.map((unit) => (
+                      <SelectItem key={unit.id} value={unit.id} className="py-3">
+                        {unit.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Appearance */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <Moon className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Aparência</h2>
+          </div>
+          
+          <Card className="p-4 shadow-ios-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Moon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Modo escuro</p>
+                  <p className="text-sm text-muted-foreground">Ativar tema escuro do aplicativo</p>
+                </div>
+              </div>
+              <Switch
+                checked={darkMode}
+                onCheckedChange={setDarkMode}
+              />
+            </div>
+          </Card>
+        </div>
+
+        {/* Spacer */}
+        <div className="h-8"></div>
+
+        {/* Logout */}
+        <Card className="shadow-ios-md">
+          <Button
+            onClick={onLogout}
+            variant="ghost"
+            className="w-full h-14 text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center justify-center space-x-3"
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="font-semibold text-base">Sair do FlowAgro</span>
+          </Button>
+        </Card>
+      </div>
     </div>
   );
 };
