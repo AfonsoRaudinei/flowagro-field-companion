@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
+import MapLanding from '../components/MapLanding';
 import LoginInitial from './LoginInitial';
 import LoginComplete from './LoginComplete';
 import MainDashboard from './MainDashboard';
 import ChatTechnical from './ChatTechnical';
 import SettingsGeneral from './SettingsGeneral';
 
-type AppScreen = 'login-initial' | 'login-complete' | 'dashboard' | 'chat' | 'settings';
+type AppScreen = 'map-landing' | 'login-initial' | 'login-complete' | 'dashboard' | 'chat' | 'settings';
 
 const Index = () => {
-  const [currentScreen, setCurrentScreen] = useState<AppScreen>('login-initial');
+  const [currentScreen, setCurrentScreen] = useState<AppScreen>('map-landing');
 
   const navigationActions = {
+    // From Map Landing
+    onNavigateToLogin: () => setCurrentScreen('login-initial'),
+    
     // From Login Initial
-    onNavigateToLogin: () => setCurrentScreen('login-complete'),
+    onNavigateToLoginComplete: () => setCurrentScreen('login-complete'),
     
     // From Login Complete
     onLoginSuccess: () => setCurrentScreen('dashboard'),
@@ -32,6 +36,9 @@ const Index = () => {
     // Generic back actions
     onBack: () => {
       switch (currentScreen) {
+        case 'login-initial':
+          setCurrentScreen('map-landing');
+          break;
         case 'login-complete':
           setCurrentScreen('login-initial');
           break;
@@ -47,10 +54,17 @@ const Index = () => {
 
   const renderScreen = () => {
     switch (currentScreen) {
+      case 'map-landing':
+        return (
+          <MapLanding 
+            onNavigateToLogin={navigationActions.onNavigateToLogin}
+          />
+        );
+      
       case 'login-initial':
         return (
           <LoginInitial 
-            onNavigateToLogin={navigationActions.onNavigateToLogin}
+            onNavigateToLogin={navigationActions.onNavigateToLoginComplete}
           />
         );
       
@@ -91,7 +105,7 @@ const Index = () => {
       
       default:
         return (
-          <LoginInitial 
+          <MapLanding 
             onNavigateToLogin={navigationActions.onNavigateToLogin}
           />
         );
