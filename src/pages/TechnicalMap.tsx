@@ -126,6 +126,24 @@ const TechnicalMap: React.FC = () => {
   });
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInOutLoading, setCheckInOutLoading] = useState(false);
+  
+  // Info bar state
+  const [currentField, setCurrentField] = useState<DrawingShape | null>(null);
+  const [phenologicalStage, setPhenologicalStage] = useState<string>('vegetativo');
+  const [showStageEditor, setShowStageEditor] = useState(false);
+
+  const phenologicalStages = [
+    { id: 'vegetativo', name: 'Vegetativo', emoji: '🌱' },
+    { id: 'florescimento', name: 'Florescimento', emoji: '🌸' },
+    { id: 'r1', name: 'R1 - Início do florescimento', emoji: '🌼' },
+    { id: 'r2', name: 'R2 - Florescimento pleno', emoji: '🌻' },
+    { id: 'r3', name: 'R3 - Início da formação da vagem', emoji: '🫘' },
+    { id: 'r4', name: 'R4 - Vagem completa', emoji: '🟢' },
+    { id: 'r5', name: 'R5 - Início do enchimento', emoji: '📈' },
+    { id: 'r6', name: 'R6 - Enchimento completo', emoji: '🔵' },
+    { id: 'r7', name: 'R7 - Início da maturação', emoji: '🟡' },
+    { id: 'r8', name: 'R8 - Maturação plena', emoji: '🟤' }
+  ];
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -805,6 +823,46 @@ const TechnicalMap: React.FC = () => {
       setCheckInOutLoading(false);
     }
   };
+
+  // Field intersection detection
+  const checkCurrentFieldIntersection = () => {
+    if (!userLocation || !drawnShapes.length) {
+      setCurrentField(null);
+      return;
+    }
+
+    // Simple point-in-polygon check (basic implementation)
+    const currentLat = userLocation.latitude;
+    const currentLng = userLocation.longitude;
+
+    for (const shape of drawnShapes) {
+      if (shape.points && shape.points.length >= 3) {
+        // Basic bounding box check first for performance
+        const lats = shape.points.map(p => p.lat || 0).filter(lat => lat !== 0);
+        const lngs = shape.points.map(p => p.lng || 0).filter(lng => lng !== 0);
+        
+        if (lats.length > 0 && lngs.length > 0) {
+          const minLat = Math.min(...lats);
+          const maxLat = Math.max(...lats);
+          const minLng = Math.min(...lngs);
+          const maxLng = Math.max(...lngs);
+
+          if (currentLat >= minLat && currentLat <= maxLat && 
+              currentLng >= minLng && currentLng <= maxLng) {
+            setCurrentField(shape);
+            return;
+          }
+        }
+      }
+    }
+
+    setCurrentField(null);
+  };
+
+  // Update field intersection when location changes
+  useEffect(() => {
+    checkCurrentFieldIntersection();
+  }, [userLocation, drawnShapes]);
     if (map.current) {
       map.current.zoomIn({ duration: 300 });
     }
@@ -1835,8 +1893,105 @@ const TechnicalMap: React.FC = () => {
         </div>
       )}
 
+      {/* Information Bar */}
+      <div className="absolute bottom-20 left-0 right-0 z-30">
+        <div className="mx-2 mb-2">
+          <Card className="bg-card/95 backdrop-blur-sm border border-border shadow-lg">
+            <div className="px-3 py-2">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                {/* Location */}
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                  <span className="text-muted-foreground">Posição:</span>
+                  <span className="text-foreground font-mono text-[10px] truncate">
+                    {userLocation 
+                      ? `${userLocation.latitude.toFixed(6)}, ${userLocation.longitude.toFixed(6)}`
+                      : 'Carregando...'
+                    }
+                  </span>
+                </div>
+
+                {/* Producer */}
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">👤 Produtor:</span>
+                  <span className="text-foreground truncate">
+                    {isConsultor 
+                      ? (selectedProducer?.name || 'Não selecionado')
+                      : (ownFarm?.name || userData?.name || 'N/A')
+                    }
+                  </span>
+                </div>
+
+                {/* Farm */}
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">🏡 Fazenda:</span>
+                  <span className="text-foreground truncate">
+                    {isConsultor 
+                      ? (selectedProducer?.farm || 'Não selecionada')
+                      : (ownFarm?.farm || 'N/A')
+                    }
+                  </span>
+                </div>
+
+                {/* Field */}
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">🌱 Talhão:</span>
+                  <span className="text-foreground truncate">
+                    {currentField?.fieldName || 'Sem talhão'}
+                  </span>
+                </div>
+
+                {/* Phenological Stage */}
+                <div className="col-span-2 flex items-center gap-1 pt-1 border-t border-border">
+                  <span className="text-muted-foreground">📈 Estádio:</span>
+                  <Button
+                    onClick={() => setShowStageEditor(!showStageEditor)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-1 text-xs text-foreground hover:bg-accent"
+                  >
+                    {phenologicalStages.find(s => s.id === phenologicalStage)?.emoji}{' '}
+                    {phenologicalStages.find(s => s.id === phenologicalStage)?.name}
+                  </Button>
+
+                  {/* Stage Selector */}
+                  {showStageEditor && (
+                    <div className="absolute bottom-full right-0 mb-2 w-64">
+                      <Card className="bg-card border border-border shadow-lg">
+                        <div className="p-2">
+                          <div className="text-xs font-medium text-foreground mb-2">
+                            Selecionar Estádio Fenológico:
+                          </div>
+                          <div className="grid grid-cols-1 gap-1 max-h-32 overflow-y-auto">
+                            {phenologicalStages.map((stage) => (
+                              <Button
+                                key={stage.id}
+                                onClick={() => {
+                                  setPhenologicalStage(stage.id);
+                                  setShowStageEditor(false);
+                                }}
+                                variant={phenologicalStage === stage.id ? "default" : "ghost"}
+                                size="sm"
+                                className="justify-start h-auto py-1 px-2 text-xs"
+                              >
+                                <span className="mr-2">{stage.emoji}</span>
+                                {stage.name}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
       {/* Backdrop for closing menus */}
-      {(showLayerSelector || showDrawingTools || showCameraEventSelector || showEventForm) && (
+      {(showLayerSelector || showDrawingTools || showCameraEventSelector || showEventForm || showStageEditor) && (
         <div 
           className="absolute inset-0 z-20"
           onClick={() => {
@@ -1844,6 +1999,7 @@ const TechnicalMap: React.FC = () => {
             setShowDrawingTools(false);
             setShowCameraEventSelector(false);
             setShowEventForm(false);
+            setShowStageEditor(false);
           }}
         />
       )}
