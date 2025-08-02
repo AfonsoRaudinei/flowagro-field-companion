@@ -1192,6 +1192,364 @@ const TechnicalMap: React.FC = () => {
           </div>
         </div>
 
+        {/* Left Floating Toolbar */}
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-3">
+          {/* Layers Button */}
+          <Button
+            onClick={() => setShowLayerSelector(!showLayerSelector)}
+            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            variant="ghost"
+            size="sm"
+          >
+            <Layers className={`h-5 w-5 ${showLayerSelector ? 'text-primary' : 'text-foreground'}`} />
+          </Button>
+
+          {/* Drawing Tools Button */}
+          <Button
+            onClick={() => setShowDrawingTools(!showDrawingTools)}
+            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            variant="ghost"
+            size="sm"
+          >
+            <Edit3 className={`h-5 w-5 ${showDrawingTools ? 'text-primary' : 'text-foreground'}`} />
+          </Button>
+
+          {/* Import Button */}
+          <Button
+            onClick={handleFileImport}
+            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            variant="ghost"
+            size="sm"
+          >
+            <Upload className="h-5 w-5 text-foreground" />
+          </Button>
+
+          {/* Sync Button */}
+          <Button
+            onClick={handleTrailToggle}
+            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            variant="ghost"
+            size="sm"
+          >
+            <Cloud className={`h-5 w-5 ${isRecordingTrail ? 'text-red-500' : 'text-foreground'}`} />
+          </Button>
+        </div>
+
+        {/* Right Floating Toolbar */}
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-3">
+          {/* GPS Fix Button */}
+          <Button
+            onClick={handleGPSRecenter}
+            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            variant="ghost"
+            size="sm"
+          >
+            <Navigation className={`h-5 w-5 ${isGPSEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
+          </Button>
+
+          {/* Zoom In */}
+          <Button
+            onClick={handleZoomIn}
+            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            variant="ghost"
+            size="sm"
+          >
+            <Plus className="h-5 w-5 text-foreground" />
+          </Button>
+
+          {/* Zoom Out */}
+          <Button
+            onClick={handleZoomOut}
+            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            variant="ghost"
+            size="sm"
+          >
+            <Minus className="h-5 w-5 text-foreground" />
+          </Button>
+
+          {/* Camera/Event Button */}
+          <Button
+            onClick={handleCameraOpen}
+            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            variant="ghost"
+            size="sm"
+          >
+            <Camera className="h-5 w-5 text-foreground" />
+          </Button>
+
+          {/* Chat Button */}
+          <Button
+            onClick={() => navigate('/chat')}
+            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            variant="ghost"
+            size="sm"
+          >
+            <MessageCircle className="h-5 w-5 text-foreground" />
+          </Button>
+        </div>
+
+        {/* Layer Selector Panel */}
+        {showLayerSelector && (
+          <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30">
+            <Card className="bg-card/95 backdrop-blur-sm border border-border shadow-lg">
+              <div className="p-4 w-48">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Camadas do Mapa</h3>
+                <div className="space-y-2">
+                  {mapLayers.map((layer) => (
+                    <Button
+                      key={layer.id}
+                      onClick={() => handleLayerChange(layer.id)}
+                      variant={currentLayer === layer.id ? "default" : "ghost"}
+                      size="sm"
+                      className="w-full justify-start h-auto py-2"
+                    >
+                      {layer.name}
+                      {currentLayer === layer.id && (
+                        <span className="ml-auto text-xs">✓</span>
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Drawing Tools Panel */}
+        {showDrawingTools && (
+          <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30">
+            <Card className="bg-card/95 backdrop-blur-sm border border-border shadow-lg">
+              <div className="p-4 w-48">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Ferramentas de Desenho</h3>
+                <div className="space-y-2">
+                  {drawingTools.map((tool) => (
+                    <Button
+                      key={tool.id}
+                      onClick={() => handleToolSelect(tool.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start h-auto py-2"
+                      disabled={isDrawingMode}
+                    >
+                      <tool.icon className="h-4 w-4 mr-2" />
+                      {tool.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Drawing Confirmation Dialog */}
+        {showDrawingConfirm && pendingDrawing && (
+          <div className="absolute inset-0 z-40 bg-black/50 flex items-center justify-center p-4">
+            <Card className="bg-card border border-border shadow-lg w-full max-w-md">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Confirmar Desenho</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="field-name" className="text-sm font-medium text-foreground">
+                      Nome do Talhão
+                    </Label>
+                    <Input
+                      id="field-name"
+                      placeholder="Ex: Talhão 01 - Soja"
+                      value={confirmFormData.fieldName}
+                      onChange={(e) => setConfirmFormData(prev => ({
+                        ...prev,
+                        fieldName: e.target.value
+                      }))}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  {isConsultor && (
+                    <div>
+                      <Label className="text-sm font-medium text-foreground">
+                        Produtor
+                      </Label>
+                      <Select
+                        value={confirmFormData.selectedProducerId}
+                        onValueChange={(value) => setConfirmFormData(prev => ({
+                          ...prev,
+                          selectedProducerId: value,
+                          selectedFarmId: value
+                        }))}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Selecione o produtor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {linkedProducers.map((producer) => (
+                            <SelectItem key={producer.id} value={producer.id}>
+                              {producer.name} - {producer.farm}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {pendingDrawing.areaHa && (
+                    <div className="bg-accent/50 p-3 rounded-lg">
+                      <div className="text-sm font-medium text-foreground">Área Calculada</div>
+                      <div className="text-lg font-bold text-primary">
+                        {pendingDrawing.areaHa} ha
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        ({pendingDrawing.areaM2?.toFixed(0)} m²)
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex space-x-3 mt-6">
+                  <Button
+                    onClick={handleCancelDrawing}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleConfirmDrawing}
+                    className="flex-1"
+                    disabled={!confirmFormData.fieldName.trim()}
+                  >
+                    Salvar
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Event Form Dialog */}
+        {showEventForm && capturedPhoto && (
+          <div className="absolute inset-0 z-40 bg-black/50 flex items-center justify-center p-4">
+            <Card className="bg-card border border-border shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Registrar Evento</h3>
+                
+                <div className="space-y-4">
+                  {/* Photo Preview */}
+                  <div className="aspect-video bg-accent rounded-lg flex items-center justify-center">
+                    <Camera className="h-8 w-8 text-muted-foreground" />
+                  </div>
+
+                  {/* Event Type */}
+                  <div>
+                    <Label className="text-sm font-medium text-foreground">Tipo de Evento</Label>
+                    <Select
+                      value={eventFormData.eventType}
+                      onValueChange={(value: any) => setEventFormData(prev => ({
+                        ...prev,
+                        eventType: value
+                      }))}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {eventTypes.map((type) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.emoji} {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Quantity */}
+                  <div>
+                    <Label htmlFor="quantity" className="text-sm font-medium text-foreground">
+                      Quantidade (opcional)
+                    </Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      placeholder="Ex: 5"
+                      value={eventFormData.quantity}
+                      onChange={(e) => setEventFormData(prev => ({
+                        ...prev,
+                        quantity: e.target.value
+                      }))}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  {/* Severity */}
+                  <div>
+                    <Label className="text-sm font-medium text-foreground">Severidade</Label>
+                    <Select
+                      value={eventFormData.severity}
+                      onValueChange={(value: any) => setEventFormData(prev => ({
+                        ...prev,
+                        severity: value
+                      }))}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="baixo">🟢 Baixo</SelectItem>
+                        <SelectItem value="medio">🟡 Médio</SelectItem>
+                        <SelectItem value="alto">🔴 Alto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Notes */}
+                  <div>
+                    <Label htmlFor="notes" className="text-sm font-medium text-foreground">
+                      Observações (opcional)
+                    </Label>
+                    <Input
+                      id="notes"
+                      placeholder="Ex: Encontrado na bordadura"
+                      value={eventFormData.notes}
+                      onChange={(e) => setEventFormData(prev => ({
+                        ...prev,
+                        notes: e.target.value
+                      }))}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  {/* Location */}
+                  <div className="bg-accent/50 p-3 rounded-lg">
+                    <div className="text-sm font-medium text-foreground">Localização</div>
+                    <div className="text-xs font-mono text-muted-foreground">
+                      {eventFormData.latitude.toFixed(6)}, {eventFormData.longitude.toFixed(6)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex space-x-3 mt-6">
+                  <Button
+                    onClick={() => {
+                      setShowEventForm(false);
+                      setCapturedPhoto(null);
+                    }}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleEventFormSubmit}
+                    className="flex-1"
+                  >
+                    Salvar Registro
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
         {/* Backdrop for closing menus */}
         {(showLayerSelector || showDrawingTools || showCameraEventSelector || showEventForm || showStageEditor) && (
           <div 
