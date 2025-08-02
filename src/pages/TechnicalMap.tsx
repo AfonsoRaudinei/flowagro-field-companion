@@ -87,7 +87,7 @@ const TechnicalMap: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shapeToDelete, setShapeToDelete] = useState<DrawingShape | null>(null);
   const [editingShape, setEditingShape] = useState<DrawingShape | null>(null);
-  const [pendingDrawing, setPendingDrawing] = useState<{shapeType: string, targetFarm: {id: string, farm: string}} | null>(null);
+  const [pendingDrawing, setPendingDrawing] = useState<{shapeType: string, targetFarm: {id: string, farm: string}, areaM2?: number, areaHa?: number} | null>(null);
   const [showDrawingConfirm, setShowDrawingConfirm] = useState(false);
   const [confirmFormData, setConfirmFormData] = useState({
     selectedProducerId: '',
@@ -447,7 +447,16 @@ const TechnicalMap: React.FC = () => {
           fieldName: ''
         });
         
-        setPendingDrawing({ shapeType: toolId, targetFarm });
+        // Calculate mock area (in a real implementation, this would use actual drawing coordinates)
+        const mockArea = Math.random() * 50000 + 10000; // Mock area between 1-5 hectares
+        const areaHa = Math.round(mockArea / 10000 * 100) / 100;
+        
+        setPendingDrawing({ 
+          shapeType: toolId, 
+          targetFarm,
+          areaM2: mockArea,
+          areaHa: areaHa
+        });
         setShowDrawingConfirm(true);
         setIsDrawingMode(false);
         
@@ -811,7 +820,9 @@ const TechnicalMap: React.FC = () => {
           { x: 200, y: 200, lat: -15.7938, lng: -47.8820 },
           { x: 100, y: 200, lat: -15.7938, lng: -47.8825 }
         ],
-        timestamp: new Date()
+        timestamp: new Date(),
+        areaM2: pendingDrawing.areaM2,
+        areaHa: pendingDrawing.areaHa
       };
 
       await DrawingService.saveDrawing(newDrawing);
@@ -822,9 +833,10 @@ const TechnicalMap: React.FC = () => {
       setSelectedTool('');
       setConfirmFormData({ selectedProducerId: '', selectedFarmId: '', fieldName: '' });
 
+      const areaText = pendingDrawing.areaHa ? ` Área: ${pendingDrawing.areaHa} ha` : '';
       toast({
         title: "Talhão salvo com sucesso!",
-        description: `Talhão "${confirmFormData.fieldName}" salvo para ${selectedProducerInfo.farm}`,
+        description: `Talhão "${confirmFormData.fieldName}" salvo para ${selectedProducerInfo.farm}.${areaText}`,
         variant: "default"
       });
     } else {
@@ -1478,6 +1490,18 @@ const TechnicalMap: React.FC = () => {
                   className="w-full bg-background border-border"
                 />
               </div>
+
+              {/* Area Display */}
+              {pendingDrawing && pendingDrawing.areaHa && (
+                <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                      Área: {pendingDrawing.areaHa} ha
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex space-x-3 pt-2">

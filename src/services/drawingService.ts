@@ -17,6 +17,8 @@ export interface DrawingShape {
   timestamp: Date;
   isSelected?: boolean;
   color?: string;
+  areaM2?: number;
+  areaHa?: number;
 }
 
 export class DrawingService {
@@ -25,6 +27,11 @@ export class DrawingService {
   private static listeners: ((shapes: DrawingShape[]) => void)[] = [];
 
   static async saveDrawing(shape: DrawingShape): Promise<void> {
+    // Calculate area before saving
+    const area = this.calculateArea(shape.points);
+    shape.areaM2 = area;
+    shape.areaHa = Math.round(area / 10000 * 100) / 100; // Convert to hectares with 2 decimals
+
     const offlineDrawing: OfflineDrawing = {
       id: shape.id,
       type: 'drawing',
@@ -34,7 +41,9 @@ export class DrawingService {
       timestamp: shape.timestamp,
       syncStatus: 'pending',
       shapeType: shape.shapeType,
-      coordinates: shape.points
+      coordinates: shape.points,
+      areaM2: shape.areaM2,
+      areaHa: shape.areaHa
     };
 
     await OfflineStorageService.save(offlineDrawing);
@@ -89,7 +98,9 @@ export class DrawingService {
           shapeType: drawing.shapeType as any,
           points: drawing.coordinates as DrawingPoint[],
           timestamp: drawing.timestamp,
-          color: this.getShapeColor(drawing.shapeType)
+          color: this.getShapeColor(drawing.shapeType),
+          areaM2: drawing.areaM2,
+          areaHa: drawing.areaHa
         }));
       
       return this.shapes;
@@ -166,5 +177,36 @@ export class DrawingService {
 
   private static notifyListeners(): void {
     this.listeners.forEach(listener => listener([...this.shapes]));
+  }
+
+  private static calculateArea(points: DrawingPoint[]): number {
+    if (points.length < 3) return 0;
+
+    // Use Shoelace formula for geographic coordinates
+    // Convert to projected coordinates for accurate area calculation
+    let area = 0;
+    const n = points.length;
+
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const lat1 = points[i].lat || 0;
+      const lng1 = points[i].lng || 0;
+      const lat2 = points[j].lat || 0;
+      const lng2 = points[j].lng || 0;
+
+      // Convert to radians
+      const lat1Rad = lat1 * Math.PI / 180;
+      const lat2Rad = lat2 * Math.PI / 180;
+      const deltaLng = (lng2 - lng1) * Math.PI / 180;
+
+      // Use spherical excess formula for accurate area on sphere
+      const E = 2 * Math.atan2(Math.tan(deltaLng / 2) * (Math.tan(lat1Rad / 2) + Math.tan(lat2Rad / 2)), 
+                               2 + Math.tan(lat1Rad / 2) * Math.tan(lat2Rad / 2));
+      area += E;
+    }
+
+    // Convert to square meters (Earth's radius ≈ 6,371,000 m)
+    const earthRadius = 6371000;
+    return Math.abs(area) * earthRadius * earthRadius;
   }
 }

@@ -38,6 +38,8 @@ export interface OfflineDrawing extends BaseOfflineData {
   shapeType: string;
   fieldName?: string;
   coordinates: any[];
+  areaM2?: number;
+  areaHa?: number;
 }
 
 export interface OfflineImport extends BaseOfflineData {
