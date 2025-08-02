@@ -8,16 +8,19 @@ import {
   DollarSign,
   Moon,
   LogOut,
-  ToggleLeft,
-  ToggleRight
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import SyncIndicator from '@/components/ui/sync-indicator';
+import { SyncService } from '@/services/syncService';
+import { useToast } from '@/hooks/use-toast';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   // Map Preferences
   const [defaultMapLayer, setDefaultMapLayer] = useState('satellite');
   
@@ -30,6 +33,35 @@ const Settings: React.FC = () => {
   
   // Appearance
   const [darkMode, setDarkMode] = useState(false);
+  const [isForceSyncing, setIsForceSyncing] = useState(false);
+
+  const handleForceSync = async () => {
+    setIsForceSyncing(true);
+    try {
+      const stats = await SyncService.forceSyncNow();
+      if (stats.totalPending === 0) {
+        toast({
+          title: "Sincronização completa",
+          description: "Todos os dados estão sincronizados",
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Sincronização iniciada",
+          description: `${stats.totalPending} ${stats.totalPending === 1 ? 'arquivo sendo' : 'arquivos sendo'} sincronizado${stats.totalPending === 1 ? '' : 's'}`,
+          variant: "default"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro na sincronização",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    } finally {
+      setIsForceSyncing(false);
+    }
+  };
 
   const mapLayers = [
     { id: 'satellite', name: 'Satélite' },
@@ -48,20 +80,21 @@ const Settings: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="bg-card border-b border-border px-4 py-4">
+      <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center space-x-3">
           <Button
             onClick={() => navigate('/technical-map')}
+            className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
             variant="ghost"
             size="icon"
-            className="h-9 w-9"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-5 w-5 text-foreground" />
           </Button>
-          <h1 className="text-xl font-semibold text-foreground">
-            Configurações
-          </h1>
+          <h1 className="text-xl font-semibold text-foreground">Configurações</h1>
         </div>
+        
+        {/* Sync Indicator */}
+        <SyncIndicator />
       </div>
 
       {/* Content */}
@@ -195,6 +228,38 @@ const Settings: React.FC = () => {
                 checked={darkMode}
                 onCheckedChange={setDarkMode}
               />
+            </div>
+          </Card>
+        </div>
+
+        {/* Sync Section */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <RefreshCw className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Sincronização</h2>
+          </div>
+          
+          <Card className="p-4 shadow-ios-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <RefreshCw className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Forçar sincronização</p>
+                  <p className="text-sm text-muted-foreground">Sincronizar todos os dados pendentes agora</p>
+                </div>
+              </div>
+              <Button
+                onClick={handleForceSync}
+                disabled={isForceSyncing}
+                variant="outline"
+                size="sm"
+                className="min-w-[100px]"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isForceSyncing ? 'animate-spin' : ''}`} />
+                {isForceSyncing ? 'Sincronizando...' : 'Sincronizar'}
+              </Button>
             </div>
           </Card>
         </div>

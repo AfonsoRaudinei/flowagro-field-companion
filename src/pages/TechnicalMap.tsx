@@ -31,6 +31,7 @@ import { FileImportService, ImportedFile } from '@/services/fileImportService';
 import { GPSService, UserLocation } from '@/services/gpsService';
 import { TrailService, Trail } from '@/services/trailService';
 import OfflineIndicator from '@/components/ui/offline-indicator';
+import SyncIndicator from '@/components/ui/sync-indicator';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -616,8 +617,8 @@ const TechnicalMap: React.FC = () => {
         </div>
       </div>
 
-      {/* Offline Indicator */}
-      <OfflineIndicator className="absolute top-4 right-4 z-20" />
+      {/* Sync Indicator */}
+      <SyncIndicator className="absolute top-4 right-4 z-20" />
 
       {/* Weather Card */}
       <div className="absolute top-20 right-4 z-10">

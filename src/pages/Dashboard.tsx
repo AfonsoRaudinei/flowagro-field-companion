@@ -20,6 +20,7 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import SyncIndicator from '@/components/ui/sync-indicator';
 
 type ChatFilter = 'agenda' | 'producer' | 'ai' | 'live-field';
 type ViewMode = 'list' | 'conversation';
@@ -349,23 +350,34 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="bg-card border-b border-border px-4 py-4">
+      <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center space-x-3">
-          {viewMode === 'conversation' ? null : (
+          {viewMode === 'conversation' ? (
             <Button
-              onClick={() => navigate('/technical-map')}
+              onClick={handleBackToList}
+              className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
               variant="ghost"
               size="icon"
-              className="h-9 w-9"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-5 w-5 text-foreground" />
+            </Button>
+          ) : (
+            <Button
+              onClick={() => navigate('/technical-map')}
+              className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
+              variant="ghost"
+              size="icon"
+            >
+              <ArrowLeft className="h-5 w-5 text-foreground" />
             </Button>
           )}
-          
           <h1 className="text-xl font-semibold text-foreground">
-            {viewMode === 'conversation' ? '' : 'Conversas Técnicas'}
+            {viewMode === 'conversation' ? selectedChat?.name : 'Conversas Técnicas'}
           </h1>
         </div>
+        
+        {/* Sync Indicator */}
+        <SyncIndicator />
       </div>
 
       {/* Content */}
