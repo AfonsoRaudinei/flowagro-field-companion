@@ -333,9 +333,58 @@ const TechnicalMap: React.FC = () => {
   };
 
   const handleLayerChange = (layerId: string) => {
+    if (!map.current) return;
+    
     setCurrentLayer(layerId);
     setShowLayerSelector(false);
-    // Layer switching logic would go here
+    
+    // Map layer sources for MapTiler
+    const layerSources = {
+      satellite: 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=TomRDHESnrtpittgnpuf',
+      terrain: 'https://api.maptiler.com/maps/terrain/{z}/{x}/{y}.png?key=TomRDHESnrtpittgnpuf',
+      landscape: 'https://api.maptiler.com/maps/landscape/{z}/{x}/{y}.png?key=TomRDHESnrtpittgnpuf',
+      hybrid: 'https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=TomRDHESnrtpittgnpuf',
+      'ndvi-sentinel': 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=TomRDHESnrtpittgnpuf',
+      'ndvi-planet': 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=TomRDHESnrtpittgnpuf'
+    };
+    
+    try {
+      // Remove existing layer and source
+      if (map.current.getLayer('base-layer')) {
+        map.current.removeLayer('base-layer');
+      }
+      if (map.current.getSource('base-source')) {
+        map.current.removeSource('base-source');
+      }
+      
+      // Add new source and layer
+      map.current.addSource('base-source', {
+        type: 'raster',
+        tiles: [layerSources[layerId as keyof typeof layerSources]],
+        tileSize: 256,
+        attribution: '© MapTiler © OpenStreetMap contributors'
+      });
+      
+      map.current.addLayer({
+        id: 'base-layer',
+        type: 'raster',
+        source: 'base-source'
+      });
+      
+      toast({
+        title: "Camada alterada",
+        description: `Visualizando: ${mapLayers.find(l => l.id === layerId)?.name}`,
+        variant: "default"
+      });
+      
+    } catch (error) {
+      console.error('Error switching layer:', error);
+      toast({
+        title: "Erro ao trocar camada",
+        description: "Não foi possível alterar a visualização",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleToolSelect = (toolId: string) => {
@@ -355,7 +404,13 @@ const TechnicalMap: React.FC = () => {
     setShowDrawingTools(false);
     setIsDrawingMode(true);
     
-    // Show confirmation toast
+    // Add visual feedback to map container
+    if (mapContainer.current) {
+      mapContainer.current.style.cursor = 'crosshair';
+      mapContainer.current.classList.add('drawing-active');
+    }
+    
+    // Show confirmation toast with visual feedback
     const toolNames = {
       freehand: 'Mão livre',
       polygon: 'Polígono', 
@@ -364,26 +419,51 @@ const TechnicalMap: React.FC = () => {
     };
     
     toast({
-      title: "Ferramenta de desenho ativada",
-      description: `${toolNames[toolId as keyof typeof toolNames]} - ${targetFarm.farm}`
+      title: "🎯 Ferramenta ativada",
+      description: `${toolNames[toolId as keyof typeof toolNames]} - Toque no mapa para começar`,
+      variant: "default"
     });
 
-    // Simulate drawing completion after 3 seconds (replace with actual drawing logic)
-    setTimeout(() => {
-      // Initialize form data when showing confirmation
-      const defaultProducerId = isProdutor ? ownFarm?.id || '' : selectedProducer?.id || '';
-      const defaultFarmId = isProdutor ? ownFarm?.id || '' : selectedProducer?.id || '';
+    // Add click listener for drawing
+    const handleMapDrawClick = (e: any) => {
+      e.preventDefault();
+      e.stopPropagation();
       
-      setConfirmFormData({
-        selectedProducerId: defaultProducerId,
-        selectedFarmId: defaultFarmId,
-        fieldName: ''
-      });
-      
-      setPendingDrawing({ shapeType: toolId, targetFarm });
-      setShowDrawingConfirm(true);
-      setIsDrawingMode(false);
-    }, 3000);
+      // Simulate drawing start
+      setTimeout(() => {
+        // Remove drawing mode styling
+        if (mapContainer.current) {
+          mapContainer.current.style.cursor = 'default';
+          mapContainer.current.classList.remove('drawing-active');
+        }
+        
+        // Initialize form data when showing confirmation
+        const defaultProducerId = isProdutor ? ownFarm?.id || '' : selectedProducer?.id || '';
+        const defaultFarmId = isProdutor ? ownFarm?.id || '' : selectedProducer?.id || '';
+        
+        setConfirmFormData({
+          selectedProducerId: defaultProducerId,
+          selectedFarmId: defaultFarmId,
+          fieldName: ''
+        });
+        
+        setPendingDrawing({ shapeType: toolId, targetFarm });
+        setShowDrawingConfirm(true);
+        setIsDrawingMode(false);
+        
+        // Remove click listener
+        mapContainer.current?.removeEventListener('click', handleMapDrawClick);
+        
+        toast({
+          title: "✅ Desenho concluído",
+          description: "Configure os dados da área abaixo",
+          variant: "default"
+        });
+      }, 2000);
+    };
+
+    // Add click listener to map container
+    mapContainer.current?.addEventListener('click', handleMapDrawClick);
   };
 
   const saveDrawing = async (shapeType: string, targetFarm: { id: string; farm: string }) => {
@@ -775,6 +855,20 @@ const TechnicalMap: React.FC = () => {
   };
 
   return (
+    <>
+      <style>{`
+        .drawing-active {
+          border: 2px dashed hsl(var(--primary)) !important;
+          animation: dash 1.5s linear infinite;
+        }
+        
+        @keyframes dash {
+          to {
+            stroke-dashoffset: -10;
+          }
+        }
+      `}</style>
+      
     <div className="relative w-full h-screen overflow-hidden bg-background">
       {/* Map Container */}
       <div 
@@ -838,14 +932,12 @@ const TechnicalMap: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-2">
+          <SyncIndicator className="z-20" />
           <div className="bg-card/90 backdrop-blur-sm p-3 rounded-full shadow-ios-md">
             <Compass className="h-5 w-5 text-foreground" />
           </div>
         </div>
       </div>
-
-      {/* Sync Indicator */}
-      <SyncIndicator className="absolute top-4 right-4 z-20" />
 
       {/* Weather Card */}
       <div className="absolute top-20 right-4 z-10">
@@ -877,16 +969,16 @@ const TechnicalMap: React.FC = () => {
         <div className="relative">
           <Button
             onClick={() => setShowLayerSelector(!showLayerSelector)}
-            className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card"
+            className="w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card"
             variant="ghost"
             size="icon"
             title="Camadas do mapa"
           >
-            <Layers className="h-4 w-4" />
+            <Layers className="h-3 w-3" />
           </Button>
           
           {showLayerSelector && (
-            <Card className="absolute top-0 left-12 w-48 p-2 bg-card shadow-ios-lg border border-border z-50">
+            <Card className="absolute top-0 left-10 w-48 p-2 bg-card shadow-ios-lg border border-border z-50">
               {mapLayers.map((layer) => (
                 <Button
                   key={layer.id}
@@ -910,18 +1002,18 @@ const TechnicalMap: React.FC = () => {
           <Button
             onClick={() => setShowDrawingTools(!showDrawingTools)}
             disabled={isDrawingMode}
-            className={`w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card ${
-              isDrawingMode ? 'opacity-50' : ''
+            className={`w-8 h-8 rounded-full backdrop-blur-sm shadow-ios-md border border-border hover:bg-card ${
+              isDrawingMode ? 'bg-primary/20 border-primary animate-pulse' : 'bg-card/90'
             }`}
             variant="ghost"
             size="icon"
             title={isDrawingMode ? 'Desenhando...' : 'Ferramentas de desenho'}
           >
-            <Edit3 className="h-4 w-4" />
+            <Edit3 className="h-3 w-3" />
           </Button>
           
           {showDrawingTools && (
-            <Card className="absolute top-0 left-12 w-44 p-2 bg-card shadow-ios-lg border border-border z-50">
+            <Card className="absolute top-0 left-10 w-44 p-2 bg-card shadow-ios-lg border border-border z-50">
               {drawingTools.map((tool) => {
                 const IconComponent = tool.icon;
                 const isActive = selectedTool === tool.id;
@@ -959,21 +1051,21 @@ const TechnicalMap: React.FC = () => {
       <div className="absolute left-4 top-44 z-10">
         <Button
           onClick={handleFileImport}
-          className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card"
+          className="w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card"
           variant="ghost"
           size="icon"
           title="Importar arquivo KML/KMZ"
         >
-          <Upload className="h-4 w-4" />
+          <Upload className="h-3 w-3" />
         </Button>
       </div>
 
       {/* Optimized Right Side Controls - Single Column */}
-      <div className="absolute right-4 bottom-4 z-10 flex flex-col space-y-2">
+      <div className="absolute right-4 bottom-4 z-10 flex flex-col space-y-3">
         {/* GPS Recenter */}
         <Button
           onClick={handleGPSRecenter}
-          className={`w-10 h-10 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
+          className={`w-8 h-8 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
             isGPSEnabled && userLocation
               ? 'bg-primary/90 text-primary-foreground hover:bg-primary'
               : 'bg-card/90 hover:bg-card text-foreground'
@@ -982,57 +1074,57 @@ const TechnicalMap: React.FC = () => {
           size="icon"
           title="Recentralizar GPS"
         >
-          <Navigation className="h-4 w-4" />
+          <Navigation className="h-3 w-3" />
         </Button>
 
         {/* Zoom Controls */}
         <Button
           onClick={handleZoomIn}
-          className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card"
+          className="w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card"
           variant="ghost"
           size="icon"
           title="Aproximar"
         >
-          <Plus className="h-4 w-4 text-foreground" />
+          <Plus className="h-3 w-3 text-foreground" />
         </Button>
         
         <Button
           onClick={handleZoomOut}
-          className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card"
+          className="w-8 h-8 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card"
           variant="ghost"
           size="icon"
           title="Afastar"
         >
-          <Minus className="h-4 w-4 text-foreground" />
+          <Minus className="h-3 w-3 text-foreground" />
         </Button>
 
         {/* GPS Debug Toggle */}
         <Button
           onClick={() => setShowDebugCoords(!showDebugCoords)}
-          className={`w-10 h-10 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
+          className={`w-8 h-8 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
             showDebugCoords ? 'bg-accent hover:bg-accent/80' : 'bg-card/90 hover:bg-card'
           }`}
           variant="ghost"
           size="icon"
           title="Mostrar coordenadas GPS"
         >
-          <MessageCircle className="h-4 w-4 text-foreground" />
+          <MessageCircle className="h-3 w-3 text-foreground" />
         </Button>
 
         {/* Camera with Event Selector */}
         <div className="relative">
           <Button
             onClick={() => setShowCameraEventSelector(!showCameraEventSelector)}
-            className="w-10 h-10 rounded-full bg-primary/90 backdrop-blur-sm shadow-ios-md text-primary-foreground hover:bg-primary"
+            className="w-8 h-8 rounded-full bg-primary/90 backdrop-blur-sm shadow-ios-md text-primary-foreground hover:bg-primary"
             variant="ghost"
             size="icon"
             title="Tirar foto"
           >
-            <Camera className="h-4 w-4" />
+            <Camera className="h-3 w-3" />
           </Button>
           
           {showCameraEventSelector && (
-            <Card className="absolute bottom-12 right-0 w-56 p-3 bg-card shadow-ios-lg border border-border z-50">
+            <Card className="absolute bottom-10 right-0 w-56 p-3 bg-card shadow-ios-lg border border-border z-50">
               <div className="text-sm font-medium text-foreground mb-3 px-1">
                 📸 Selecionar evento:
               </div>
@@ -1055,7 +1147,7 @@ const TechnicalMap: React.FC = () => {
         {/* Trail Recording Button */}
         <Button
           onClick={handleTrailToggle}
-          className={`w-10 h-10 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
+          className={`w-8 h-8 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
             isRecordingTrail 
               ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
               : 'bg-card/90 hover:bg-card text-foreground'
@@ -1065,7 +1157,7 @@ const TechnicalMap: React.FC = () => {
           disabled={!isGPSEnabled}
           title={isRecordingTrail ? 'Parar gravação de trilha' : 'Iniciar gravação de trilha'}
         >
-          <Route className="h-4 w-4" />
+          <Route className="h-3 w-3" />
         </Button>
       </div>
 
@@ -1421,6 +1513,7 @@ const TechnicalMap: React.FC = () => {
         />
       )}
     </div>
+    </>
   );
 };
 
