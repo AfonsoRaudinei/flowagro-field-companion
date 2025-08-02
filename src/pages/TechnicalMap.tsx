@@ -1104,9 +1104,7 @@ const TechnicalMap: React.FC = () => {
           </Button>
 
           {/* Zoom Out */}
-          <Button onClick={handleZoomOut} className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform" variant="ghost" size="sm">
-            <Minus className="h-5 w-5 text-foreground" />
-          </Button>
+          
 
           {/* PRIORIDADE 1: Câmera - Destaque especial */}
           <Button onClick={handleCameraOpen} className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm shadow-lg border-2 border-primary hover:scale-105 transition-transform" variant="ghost" size="sm">
