@@ -8,7 +8,10 @@ import {
   DollarSign,
   Moon,
   LogOut,
-  RefreshCw
+  RefreshCw,
+  User,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -34,6 +37,11 @@ const Settings: React.FC = () => {
   // Appearance
   const [darkMode, setDarkMode] = useState(false);
   const [isForceSyncing, setIsForceSyncing] = useState(false);
+
+  // Profile and Branding
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [farmLogo, setFarmLogo] = useState<string | null>(null);
+  const [useLogoAsAppIcon, setUseLogoAsAppIcon] = useState(false);
 
   const handleForceSync = async () => {
     setIsForceSyncing(true);
@@ -61,6 +69,29 @@ const Settings: React.FC = () => {
     } finally {
       setIsForceSyncing(false);
     }
+  };
+
+  const handleImageUpload = (type: 'profile' | 'logo') => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          if (type === 'profile') {
+            setProfileImage(result);
+          } else {
+            setFarmLogo(result);
+          }
+          // TODO: Upload to Firebase Storage and save URL to Supabase
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
   };
 
   const mapLayers = [
@@ -99,6 +130,105 @@ const Settings: React.FC = () => {
 
       {/* Content */}
       <div className="flex-1 p-4 space-y-6">
+        
+        {/* Profile and Branding */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <User className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Perfil e Branding</h2>
+          </div>
+          
+          <div className="space-y-4">
+            {/* Profile Photo Card */}
+            <Card className="p-4 shadow-ios-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-16 h-16 rounded-full bg-muted overflow-hidden border-2 border-border">
+                    {profileImage ? (
+                      <img 
+                        src={profileImage} 
+                        alt="Foto de perfil" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                        <User className="h-8 w-8 text-primary" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Foto de Perfil</p>
+                    <p className="text-sm text-muted-foreground">Sua foto pessoal</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => handleImageUpload('profile')}
+                  variant="outline"
+                  size="sm"
+                  className="min-w-[100px]"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Alterar Foto
+                </Button>
+              </div>
+            </Card>
+
+            {/* Farm Logo Card */}
+            <Card className="p-4 shadow-ios-sm">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-16 h-12 rounded-lg bg-muted overflow-hidden border-2 border-border">
+                      {farmLogo ? (
+                        <img 
+                          src={farmLogo} 
+                          alt="Logo da fazenda" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                          <ImageIcon className="h-6 w-6 text-primary" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Logo da Fazenda</p>
+                      <p className="text-sm text-muted-foreground">Logo da sua fazenda ou consultoria</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => handleImageUpload('logo')}
+                    variant="outline"
+                    size="sm"
+                    className="min-w-[100px]"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Alterar Logo
+                  </Button>
+                </div>
+                
+                <div className="h-px bg-border"></div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <ImageIcon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">Usar como ícone do app</p>
+                      <p className="text-sm text-muted-foreground">Personalizar ícone do FlowAgro</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={useLogoAsAppIcon}
+                    onCheckedChange={setUseLogoAsAppIcon}
+                    disabled={!farmLogo}
+                  />
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
         
         {/* Map Preferences */}
         <div className="space-y-3">
