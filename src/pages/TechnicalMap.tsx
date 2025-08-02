@@ -292,22 +292,6 @@ const TechnicalMap: React.FC = () => {
           <div className="bg-card/90 backdrop-blur-sm p-3 rounded-full shadow-ios-md">
             <Compass className="h-5 w-5 text-foreground" />
           </div>
-          <Button
-            onClick={() => navigate('/dashboard')}
-            className="bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
-            variant="ghost"
-            size="icon"
-          >
-            <MessageCircle className="h-5 w-5 text-foreground" />
-          </Button>
-          <Button
-            onClick={() => navigate('/settings')}
-            className="bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
-            variant="ghost"
-            size="icon"
-          >
-            <Settings className="h-5 w-5 text-foreground" />
-          </Button>
         </div>
       </div>
 
