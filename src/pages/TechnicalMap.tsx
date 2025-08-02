@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { CameraService, eventTypes, FieldPhoto } from '@/services/cameraService';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -64,6 +65,8 @@ const TechnicalMap: React.FC = () => {
   const [importedFile, setImportedFile] = useState<File | null>(null);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [drawings, setDrawings] = useState<DrawingMetadata[]>([]);
+  const [fieldPhotos, setFieldPhotos] = useState<FieldPhoto[]>([]);
+  const [showCameraEventSelector, setShowCameraEventSelector] = useState(false);
 
   const mapLayers = [
     { id: 'satellite', name: 'Satelite', style: 'satellite' },
@@ -79,13 +82,6 @@ const TechnicalMap: React.FC = () => {
     { id: 'polygon', name: 'Polígono', icon: Pentagon },
     { id: 'pivot', name: 'Pivô', icon: Circle },
     { id: 'rectangle', name: 'Retângulo', icon: Square }
-  ];
-
-  const eventTypes = [
-    { id: 'pest', name: 'Praga', color: 'bg-red-500' },
-    { id: 'disease', name: 'Doença', color: 'bg-orange-500' },
-    { id: 'poor-stand', name: 'Stand ruim', color: 'bg-yellow-500' },
-    { id: 'nutrient-deficiency', name: 'Deficiência nutricional', color: 'bg-purple-500' }
   ];
 
   useEffect(() => {
@@ -128,6 +124,10 @@ const TechnicalMap: React.FC = () => {
         trackUserLocation: true
       })
     );
+
+    // Load stored photos on component mount
+    const storedPhotos = CameraService.getStoredPhotos();
+    setFieldPhotos(storedPhotos);
 
     return () => {
       map.current?.remove();
@@ -204,6 +204,71 @@ const TechnicalMap: React.FC = () => {
     });
   };
 
+  const handleCameraEventSelect = async (eventType: string) => {
+    const targetFarm = isConsultor ? selectedProducer : ownFarm;
+    
+    if (!targetFarm) {
+      toast({
+        title: "Fazenda não selecionada",
+        description: isConsultor ? "Selecione um produtor antes de tirar foto" : "Dados da fazenda não disponíveis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setShowCameraEventSelector(false);
+
+    try {
+      // Show loading toast
+      toast({
+        title: "Abrindo câmera...",
+        description: "Aguarde um momento"
+      });
+
+      // Take photo
+      const imagePath = await CameraService.takePhoto();
+      
+      // Get current location
+      const location = await CameraService.getCurrentLocation();
+      
+      // Find event details
+      const eventDetails = eventTypes.find(e => e.id === eventType);
+      
+      // Create photo metadata
+      const photo: FieldPhoto = {
+        id: `photo-${Date.now()}`,
+        farmId: targetFarm.id,
+        farmName: targetFarm.farm,
+        eventType: eventType as any,
+        eventLabel: eventDetails?.name || eventType,
+        imagePath,
+        latitude: location?.latitude,
+        longitude: location?.longitude,
+        timestamp: new Date()
+      };
+
+      // Save photo
+      CameraService.savePhoto(photo);
+      
+      // Update local state
+      setFieldPhotos(prev => [...prev, photo]);
+
+      // Show success message
+      toast({
+        title: "Foto registrada com sucesso!",
+        description: `${eventDetails?.emoji} ${eventDetails?.name} em ${targetFarm.farm}`,
+        variant: "default"
+      });
+
+    } catch (error) {
+      toast({
+        title: "Erro ao tirar foto",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && (file.name.endsWith('.kmz') || file.name.endsWith('.kml'))) {
@@ -213,9 +278,7 @@ const TechnicalMap: React.FC = () => {
   };
 
   const handleCameraOpen = (eventType: string) => {
-    setShowEventSelector(false);
-    const targetFarm = isConsultor ? selectedProducer : ownFarm;
-    console.log('Opening camera for event:', eventType, 'for farm:', targetFarm?.farm);
+    handleCameraEventSelect(eventType);
   };
 
   const toggleRecording = () => {
@@ -417,26 +480,27 @@ const TechnicalMap: React.FC = () => {
         {/* Camera with Event Selector */}
         <div className="relative">
           <Button
-            onClick={() => setShowEventSelector(!showEventSelector)}
-            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
+            onClick={() => setShowCameraEventSelector(!showCameraEventSelector)}
+            className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm shadow-ios-md text-primary-foreground hover:bg-primary"
             variant="ghost"
           >
-            <Camera className="h-5 w-5 text-foreground" />
+            <Camera className="h-6 w-6" />
           </Button>
           
-          {showEventSelector && (
-            <Card className="absolute bottom-14 right-0 w-48 p-2 bg-card shadow-ios-lg border border-border z-50">
-              <div className="text-xs font-medium text-muted-foreground mb-2 px-2">
-                Tipo de evento:
+          {showCameraEventSelector && (
+            <Card className="absolute bottom-16 right-0 w-56 p-3 bg-card shadow-ios-lg border border-border z-50">
+              <div className="text-sm font-medium text-foreground mb-3 px-1">
+                📸 Selecionar evento:
               </div>
               {eventTypes.map((event) => (
                 <Button
                   key={event.id}
-                  onClick={() => handleCameraOpen(event.id)}
+                  onClick={() => handleCameraEventSelect(event.id)}
                   variant="ghost"
-                  className="w-full justify-start text-sm mb-1"
+                  className="w-full justify-start text-sm mb-2 hover:bg-accent"
                 >
-                  <div className={`w-3 h-3 rounded-full ${event.color} mr-2`} />
+                  <div className={`w-3 h-3 rounded-full ${event.color} mr-3`} />
+                  <span className="mr-2">{event.emoji}</span>
                   {event.name}
                 </Button>
               ))}
@@ -539,13 +603,13 @@ const TechnicalMap: React.FC = () => {
       )}
 
       {/* Backdrop for closing menus */}
-      {(showLayerSelector || showDrawingTools || showEventSelector) && (
+      {(showLayerSelector || showDrawingTools || showCameraEventSelector) && (
         <div 
           className="absolute inset-0 z-20"
           onClick={() => {
             setShowLayerSelector(false);
             setShowDrawingTools(false);
-            setShowEventSelector(false);
+            setShowCameraEventSelector(false);
           }}
         />
       )}

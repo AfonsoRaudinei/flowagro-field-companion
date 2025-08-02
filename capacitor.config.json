@@ -1,0 +1,18 @@
+{
+  "appId": "app.lovable.ad951335e2fe4c19925a87621e774111",
+  "appName": "flowagro-field-companion",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://ad951335-e2fe-4c19-925a-87621e774111.lovableproject.com?forceHideBadge=true",
+    "cleartext": true
+  },
+  "plugins": {
+    "Camera": {
+      "permissions": ["camera", "photos"]
+    },
+    "Geolocation": {
+      "permissions": ["coarse-location", "fine-location"]
+    }
+  }
+}
