@@ -90,6 +90,8 @@ const TechnicalMap: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shapeToDelete, setShapeToDelete] = useState<DrawingShape | null>(null);
   const [editingShape, setEditingShape] = useState<DrawingShape | null>(null);
+  const [pendingDrawing, setPendingDrawing] = useState<{shapeType: string, targetFarm: {id: string, farm: string}} | null>(null);
+  const [showDrawingConfirm, setShowDrawingConfirm] = useState(false);
 
   const mapLayers = [
     { id: 'satellite', name: 'Satelite', style: 'satellite' },
@@ -366,7 +368,10 @@ const TechnicalMap: React.FC = () => {
 
     // Simulate drawing completion after 3 seconds (replace with actual drawing logic)
     setTimeout(() => {
-      saveDrawing(toolId, targetFarm);
+      // Instead of saving directly, show confirmation
+      setPendingDrawing({ shapeType: toolId, targetFarm });
+      setShowDrawingConfirm(true);
+      setIsDrawingMode(false);
     }, 3000);
   };
 
@@ -688,6 +693,27 @@ const TechnicalMap: React.FC = () => {
     setIsRecording(!isRecording);
     const targetFarm = isConsultor ? selectedProducer : ownFarm;
     console.log('GPS tracking:', !isRecording ? 'started' : 'stopped', 'for farm:', targetFarm?.farm);
+  };
+
+  const handleConfirmDrawing = async () => {
+    if (pendingDrawing) {
+      await saveDrawing(pendingDrawing.shapeType, pendingDrawing.targetFarm);
+      setPendingDrawing(null);
+      setShowDrawingConfirm(false);
+      setSelectedTool('');
+    }
+  };
+
+  const handleCancelDrawing = () => {
+    setPendingDrawing(null);
+    setShowDrawingConfirm(false);
+    setSelectedTool('');
+    
+    toast({
+      title: "Desenho cancelado",
+      description: "Área não foi salva",
+      variant: "default"
+    });
   };
 
   const handleBack = () => {
@@ -1242,6 +1268,38 @@ const TechnicalMap: React.FC = () => {
               </div>
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* Drawing Confirmation Bar */}
+      {showDrawingConfirm && pendingDrawing && (
+        <div className="absolute bottom-0 left-0 right-0 z-40">
+          <div 
+            className="bg-card/95 backdrop-blur-sm border-t border-border px-4 py-3 shadow-lg transition-transform duration-300 ease-out transform translate-y-0"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground">
+                Salvar área desenhada?
+              </span>
+              <div className="flex space-x-3">
+                <Button
+                  onClick={handleCancelDrawing}
+                  variant="outline"
+                  size="sm"
+                  className="px-4 py-2"
+                >
+                  ❌ Cancelar
+                </Button>
+                <Button
+                  onClick={handleConfirmDrawing}
+                  size="sm"
+                  className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  ✅ Confirmar
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
