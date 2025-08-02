@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '@/contexts/UserContext';
 import { User, MapPin, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,8 @@ import { NavigationHeader } from '@/components/ui/navigation';
 
 const LoginForm: React.FC = () => {
   const navigate = useNavigate();
+  const { setUserData } = useUser();
+  
   const [formData, setFormData] = useState({
     fullName: '',
     userProfile: '',
@@ -24,8 +27,13 @@ const LoginForm: React.FC = () => {
   };
 
   const handleSubmit = () => {
-    // Basic validation - all fields required
-    if (formData.fullName && formData.userProfile && formData.zipCode) {
+    if (isFormValid) {
+      // Save user data to context
+      setUserData({
+        fullName: formData.fullName,
+        profile: formData.userProfile as 'consultor' | 'produtor',
+        zipCode: formData.zipCode
+      });
       navigate('/technical-map');
     }
   };
@@ -92,10 +100,10 @@ const LoginForm: React.FC = () => {
                     </div>
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border shadow-ios-lg z-50">
-                    <SelectItem value="consultant" className="text-base py-3 hover:bg-accent focus:bg-accent">
+                    <SelectItem value="consultor" className="text-base py-3 hover:bg-accent focus:bg-accent">
                       Consultor
                     </SelectItem>
-                    <SelectItem value="producer" className="text-base py-3 hover:bg-accent focus:bg-accent">
+                    <SelectItem value="produtor" className="text-base py-3 hover:bg-accent focus:bg-accent">
                       Produtor
                     </SelectItem>
                   </SelectContent>

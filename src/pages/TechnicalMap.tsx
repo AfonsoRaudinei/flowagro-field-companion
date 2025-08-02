@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '@/contexts/UserContext';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { 
@@ -30,6 +31,16 @@ const TechnicalMap: React.FC = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { 
+    userData, 
+    isConsultor, 
+    isProdutor, 
+    linkedProducers, 
+    selectedProducer, 
+    setSelectedProducer, 
+    ownFarm 
+  } = useUser();
   
   const [selectedPlot, setSelectedPlot] = useState<string>('Talhão 01 - Soja');
   const [currentLayer, setCurrentLayer] = useState<string>('satellite');
@@ -118,26 +129,28 @@ const TechnicalMap: React.FC = () => {
   const handleToolSelect = (toolId: string) => {
     setSelectedTool(toolId);
     setShowDrawingTools(false);
-    // Drawing tool activation logic would go here
+    const targetFarm = isConsultor ? selectedProducer : ownFarm;
+    console.log('Drawing tool activated:', toolId, 'for farm:', targetFarm?.farm);
   };
 
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && (file.name.endsWith('.kmz') || file.name.endsWith('.kml'))) {
       setImportedFile(file);
-      // File preview logic would go here
+      // File will be associated with selected producer or own farm
     }
   };
 
   const handleCameraOpen = (eventType: string) => {
     setShowEventSelector(false);
-    // Camera opening logic with event type would go here
-    console.log('Opening camera for event:', eventType);
+    const targetFarm = isConsultor ? selectedProducer : ownFarm;
+    console.log('Opening camera for event:', eventType, 'for farm:', targetFarm?.farm);
   };
 
   const toggleRecording = () => {
     setIsRecording(!isRecording);
-    // GPS tracking logic would go here
+    const targetFarm = isConsultor ? selectedProducer : ownFarm;
+    console.log('GPS tracking:', !isRecording ? 'started' : 'stopped', 'for farm:', targetFarm?.farm);
   };
 
   const handleBack = () => {
@@ -162,7 +175,42 @@ const TechnicalMap: React.FC = () => {
             <ArrowLeft className="h-5 w-5 text-foreground" />
           </Button>
           
-          {selectedPlot && (
+          {/* Producer Selector for Consultants */}
+          {isConsultor && (
+            <div className="flex items-center space-x-2">
+              <Select 
+                value={selectedProducer?.id || ""} 
+                onValueChange={(value) => {
+                  const producer = linkedProducers.find(p => p.id === value);
+                  setSelectedProducer(producer || null);
+                }}
+              >
+                <SelectTrigger className="w-48 bg-card/90 backdrop-blur-sm shadow-ios-md border border-border">
+                  <SelectValue placeholder="Selecionar produtor" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border border-border shadow-lg z-50">
+                  {linkedProducers.map((producer) => (
+                    <SelectItem key={producer.id} value={producer.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{producer.name}</span>
+                        <span className="text-xs text-muted-foreground">{producer.farm}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Farm Display for Producers */}
+          {isProdutor && ownFarm && (
+            <Card className="px-3 py-2 bg-card/90 backdrop-blur-sm shadow-ios-md">
+              <span className="text-sm font-medium text-foreground">{ownFarm.farm}</span>
+            </Card>
+          )}
+
+          {/* Plot Info */}
+          {selectedPlot && (isConsultor ? selectedProducer : isProdutor) && (
             <Card className="px-3 py-2 bg-card/90 backdrop-blur-sm shadow-ios-md">
               <span className="text-sm font-medium text-foreground">{selectedPlot}</span>
             </Card>
@@ -369,11 +417,16 @@ const TechnicalMap: React.FC = () => {
               </Button>
               <Button
                 onClick={() => {
-                  // Associate with producer logic
+                  const targetFarm = isConsultor ? selectedProducer : ownFarm;
+                  if (targetFarm) {
+                    console.log('File associated with:', targetFarm.farm);
+                    // Logic to save file for specific farm
+                  }
                   setImportedFile(null);
                 }}
                 className="bg-success text-white"
                 size="sm"
+                disabled={isConsultor && !selectedProducer}
               >
                 Associar
               </Button>
