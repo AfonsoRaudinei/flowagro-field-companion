@@ -36,6 +36,7 @@ export interface OfflineTrail extends BaseOfflineData {
 export interface OfflineDrawing extends BaseOfflineData {
   type: 'drawing';
   shapeType: string;
+  fieldName?: string;
   coordinates: any[];
 }
 

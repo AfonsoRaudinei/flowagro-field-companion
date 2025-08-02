@@ -28,6 +28,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { CameraService, eventTypes, FieldPhoto } from '@/services/cameraService';
 import { FileImportService, ImportedFile } from '@/services/fileImportService';
@@ -92,6 +93,11 @@ const TechnicalMap: React.FC = () => {
   const [editingShape, setEditingShape] = useState<DrawingShape | null>(null);
   const [pendingDrawing, setPendingDrawing] = useState<{shapeType: string, targetFarm: {id: string, farm: string}} | null>(null);
   const [showDrawingConfirm, setShowDrawingConfirm] = useState(false);
+  const [confirmFormData, setConfirmFormData] = useState({
+    selectedProducerId: '',
+    selectedFarmId: '',
+    fieldName: ''
+  });
 
   const mapLayers = [
     { id: 'satellite', name: 'Satelite', style: 'satellite' },
@@ -368,7 +374,16 @@ const TechnicalMap: React.FC = () => {
 
     // Simulate drawing completion after 3 seconds (replace with actual drawing logic)
     setTimeout(() => {
-      // Instead of saving directly, show confirmation
+      // Initialize form data when showing confirmation
+      const defaultProducerId = isProdutor ? ownFarm?.id || '' : selectedProducer?.id || '';
+      const defaultFarmId = isProdutor ? ownFarm?.id || '' : selectedProducer?.id || '';
+      
+      setConfirmFormData({
+        selectedProducerId: defaultProducerId,
+        selectedFarmId: defaultFarmId,
+        fieldName: ''
+      });
+      
       setPendingDrawing({ shapeType: toolId, targetFarm });
       setShowDrawingConfirm(true);
       setIsDrawingMode(false);
@@ -696,11 +711,57 @@ const TechnicalMap: React.FC = () => {
   };
 
   const handleConfirmDrawing = async () => {
-    if (pendingDrawing) {
-      await saveDrawing(pendingDrawing.shapeType, pendingDrawing.targetFarm);
+    if (pendingDrawing && confirmFormData.fieldName.trim()) {
+      // Get selected producer/farm info
+      const selectedProducerInfo = isConsultor 
+        ? linkedProducers.find(p => p.id === confirmFormData.selectedProducerId)
+        : ownFarm;
+
+      if (!selectedProducerInfo) {
+        toast({
+          title: "Erro na seleção",
+          description: "Produtor ou fazenda não encontrados",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Enhanced drawing with additional metadata
+      const newDrawing: DrawingShape = {
+        id: `drawing-${Date.now()}`,
+        farmId: confirmFormData.selectedFarmId,
+        farmName: selectedProducerInfo.farm,
+        fieldName: confirmFormData.fieldName,
+        shapeType: pendingDrawing.shapeType as any,
+        points: [
+          // Mock points - would be actual drawing coordinates
+          { x: 100, y: 100, lat: -15.7942, lng: -47.8825 },
+          { x: 200, y: 100, lat: -15.7940, lng: -47.8820 },
+          { x: 200, y: 200, lat: -15.7938, lng: -47.8820 },
+          { x: 100, y: 200, lat: -15.7938, lng: -47.8825 }
+        ],
+        timestamp: new Date()
+      };
+
+      await DrawingService.saveDrawing(newDrawing);
+      
+      // Reset form and state
       setPendingDrawing(null);
       setShowDrawingConfirm(false);
       setSelectedTool('');
+      setConfirmFormData({ selectedProducerId: '', selectedFarmId: '', fieldName: '' });
+
+      toast({
+        title: "Talhão salvo com sucesso!",
+        description: `Talhão "${confirmFormData.fieldName}" salvo para ${selectedProducerInfo.farm}`,
+        variant: "default"
+      });
+    } else {
+      toast({
+        title: "Nome obrigatório",
+        description: "Digite um nome para o talhão",
+        variant: "destructive"
+      });
     }
   };
 
@@ -708,6 +769,7 @@ const TechnicalMap: React.FC = () => {
     setPendingDrawing(null);
     setShowDrawingConfirm(false);
     setSelectedTool('');
+    setConfirmFormData({ selectedProducerId: '', selectedFarmId: '', fieldName: '' });
     
     toast({
       title: "Desenho cancelado",
@@ -1271,29 +1333,94 @@ const TechnicalMap: React.FC = () => {
         </div>
       )}
 
-      {/* Drawing Confirmation Bar */}
+      {/* Enhanced Drawing Confirmation Panel */}
       {showDrawingConfirm && pendingDrawing && (
         <div className="absolute bottom-0 left-0 right-0 z-40">
-          <div 
-            className="bg-card/95 backdrop-blur-sm border-t border-border px-4 py-3 shadow-lg transition-transform duration-300 ease-out transform translate-y-0"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-foreground">
-                Salvar área desenhada?
-              </span>
-              <div className="flex space-x-3">
+          <div className="bg-card/95 backdrop-blur-sm border-t border-border shadow-lg">
+            <div className="px-4 py-4 space-y-3">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-foreground">
+                  Configurar área desenhada
+                </h3>
+              </div>
+              
+              {/* Producer Selection (for consultants only) */}
+              {isConsultor && (
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Produtor
+                  </label>
+                  <Select 
+                    value={confirmFormData.selectedProducerId} 
+                    onValueChange={(value) => {
+                      setConfirmFormData(prev => ({
+                        ...prev,
+                        selectedProducerId: value,
+                        selectedFarmId: value // Currently each producer has one farm
+                      }));
+                    }}
+                  >
+                    <SelectTrigger className="w-full bg-background border-border">
+                      <SelectValue placeholder="Selecionar produtor" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border border-border shadow-lg z-50">
+                      {linkedProducers.map((producer) => (
+                        <SelectItem key={producer.id} value={producer.id}>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{producer.name}</span>
+                            <span className="text-xs text-muted-foreground">{producer.farm}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Farm Display */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Fazenda
+                </label>
+                <div className="px-3 py-2 bg-accent/50 border border-border rounded-md">
+                  <span className="text-sm text-foreground">
+                    {isConsultor 
+                      ? linkedProducers.find(p => p.id === confirmFormData.selectedProducerId)?.farm || 'Selecione um produtor'
+                      : ownFarm?.farm || 'Fazenda não disponível'
+                    }
+                  </span>
+                </div>
+              </div>
+
+              {/* Field Name Input */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Nome do Talhão *
+                </label>
+                <Input
+                  value={confirmFormData.fieldName}
+                  onChange={(e) => setConfirmFormData(prev => ({
+                    ...prev,
+                    fieldName: e.target.value
+                  }))}
+                  placeholder="Digite o nome do talhão..."
+                  className="w-full bg-background border-border"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3 pt-2">
                 <Button
                   onClick={handleCancelDrawing}
                   variant="outline"
-                  size="sm"
-                  className="px-4 py-2"
+                  className="flex-1 py-2"
                 >
                   ❌ Cancelar
                 </Button>
                 <Button
                   onClick={handleConfirmDrawing}
-                  size="sm"
-                  className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="flex-1 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                  disabled={!confirmFormData.fieldName.trim() || (isConsultor && !confirmFormData.selectedProducerId)}
                 >
                   ✅ Confirmar
                 </Button>

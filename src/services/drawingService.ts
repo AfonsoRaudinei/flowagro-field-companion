@@ -11,6 +11,7 @@ export interface DrawingShape {
   id: string;
   farmId: string;
   farmName: string;
+  fieldName?: string;
   shapeType: 'freehand' | 'polygon' | 'pivot' | 'rectangle';
   points: DrawingPoint[];
   timestamp: Date;
@@ -29,6 +30,7 @@ export class DrawingService {
       type: 'drawing',
       farmId: shape.farmId,
       farmName: shape.farmName,
+      fieldName: shape.fieldName,
       timestamp: shape.timestamp,
       syncStatus: 'pending',
       shapeType: shape.shapeType,
@@ -83,6 +85,7 @@ export class DrawingService {
           id: drawing.id,
           farmId: drawing.farmId,
           farmName: drawing.farmName,
+          fieldName: drawing.fieldName,
           shapeType: drawing.shapeType as any,
           points: drawing.coordinates as DrawingPoint[],
           timestamp: drawing.timestamp,
