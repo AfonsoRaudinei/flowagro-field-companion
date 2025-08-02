@@ -1071,9 +1071,7 @@ const TechnicalMap: React.FC = () => {
         {/* Left Floating Toolbar */}
         <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-2">
           {/* Back Button */}
-          <Button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-border hover:bg-white" variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-          </Button>
+          
 
           {/* Layers Button */}
           <Button onClick={() => setShowLayerSelector(!showLayerSelector)} className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-border hover:bg-white" variant="ghost" size="sm">
