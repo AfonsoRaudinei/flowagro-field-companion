@@ -1,5 +1,6 @@
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
+import { OfflineStorageService, OfflinePhoto } from './offlineStorageService';
 
 export interface FieldPhoto {
   id: string;
@@ -54,29 +55,63 @@ export class CameraService {
     }
   }
 
-  static savePhoto(photo: FieldPhoto): void {
-    // Get existing photos from localStorage
-    const existingPhotos = this.getStoredPhotos();
-    
-    // Add new photo
-    const updatedPhotos = [...existingPhotos, photo];
-    
-    // Save to localStorage
-    localStorage.setItem('fieldPhotos', JSON.stringify(updatedPhotos));
+  static async savePhoto(photo: FieldPhoto): Promise<void> {
+    // Save to offline storage
+    const offlinePhoto: OfflinePhoto = {
+      id: photo.id,
+      type: 'photo',
+      farmId: photo.farmId,
+      farmName: photo.farmName,
+      timestamp: photo.timestamp,
+      syncStatus: 'pending',
+      eventType: photo.eventType,
+      eventLabel: photo.eventLabel,
+      imagePath: photo.imagePath,
+      latitude: photo.latitude,
+      longitude: photo.longitude
+    };
+
+    await OfflineStorageService.save(offlinePhoto);
   }
 
-  static getStoredPhotos(): FieldPhoto[] {
+  static async getStoredPhotos(): Promise<FieldPhoto[]> {
     try {
-      const stored = localStorage.getItem('fieldPhotos');
-      return stored ? JSON.parse(stored) : [];
+      const offlinePhotos = await OfflineStorageService.getByType<OfflinePhoto>('photo');
+      return offlinePhotos.map(photo => ({
+        id: photo.id,
+        farmId: photo.farmId,
+        farmName: photo.farmName,
+        eventType: photo.eventType as any,
+        eventLabel: photo.eventLabel,
+        imagePath: photo.imagePath,
+        latitude: photo.latitude,
+        longitude: photo.longitude,
+        timestamp: photo.timestamp
+      }));
     } catch (error) {
       console.error('Error reading stored photos:', error);
       return [];
     }
   }
 
-  static getPhotosByFarm(farmId: string): FieldPhoto[] {
-    const allPhotos = this.getStoredPhotos();
-    return allPhotos.filter(photo => photo.farmId === farmId);
+  static async getPhotosByFarm(farmId: string): Promise<FieldPhoto[]> {
+    try {
+      const farmData = await OfflineStorageService.getByFarmId(farmId);
+      const photos = farmData.filter(item => item.type === 'photo') as OfflinePhoto[];
+      return photos.map(photo => ({
+        id: photo.id,
+        farmId: photo.farmId,
+        farmName: photo.farmName,
+        eventType: photo.eventType as any,
+        eventLabel: photo.eventLabel,
+        imagePath: photo.imagePath,
+        latitude: photo.latitude,
+        longitude: photo.longitude,
+        timestamp: photo.timestamp
+      }));
+    } catch (error) {
+      console.error('Error reading photos by farm:', error);
+      return [];
+    }
   }
 }

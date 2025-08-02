@@ -30,6 +30,7 @@ import { CameraService, eventTypes, FieldPhoto } from '@/services/cameraService'
 import { FileImportService, ImportedFile } from '@/services/fileImportService';
 import { GPSService, UserLocation } from '@/services/gpsService';
 import { TrailService, Trail } from '@/services/trailService';
+import OfflineIndicator from '@/components/ui/offline-indicator';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -137,17 +138,26 @@ const TechnicalMap: React.FC = () => {
     );
 
     // Load stored photos, imported files and trails on component mount
-    const storedPhotos = CameraService.getStoredPhotos();
-    const storedImports = FileImportService.getStoredImports();
-    const activeTrail = TrailService.getCurrentTrail();
-    setFieldPhotos(storedPhotos);
-    setImportedFiles(storedImports);
-    
-    // Check if there's an active trail
-    if (activeTrail?.isActive) {
-      setCurrentTrail(activeTrail);
-      setIsRecordingTrail(true);
-    }
+    const loadStoredData = async () => {
+      try {
+        const storedPhotos = await CameraService.getStoredPhotos();
+        const storedImports = await FileImportService.getStoredImports();
+        const activeTrail = TrailService.getCurrentTrail();
+
+        setFieldPhotos(storedPhotos);
+        setImportedFiles(storedImports);
+        
+        // Check if there's an active trail
+        if (activeTrail?.isActive) {
+          setCurrentTrail(activeTrail);
+          setIsRecordingTrail(true);
+        }
+      } catch (error) {
+        console.error('Error loading stored data:', error);
+      }
+    };
+
+    loadStoredData();
 
     // Initialize GPS
     initializeGPS();
@@ -370,7 +380,7 @@ const TechnicalMap: React.FC = () => {
       };
 
       // Save photo
-      CameraService.savePhoto(photo);
+      await CameraService.savePhoto(photo);
       
       // Update local state
       setFieldPhotos(prev => [...prev, photo]);
@@ -605,6 +615,9 @@ const TechnicalMap: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Offline Indicator */}
+      <OfflineIndicator className="absolute top-4 right-4 z-20" />
 
       {/* Weather Card */}
       <div className="absolute top-20 right-4 z-10">

@@ -16,6 +16,9 @@
     },
     "Haptics": {
       "permissions": ["haptic"]
+    },
+    "Network": {
+      "permissions": ["network-state"]
     }
   }
 }

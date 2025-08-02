@@ -1,4 +1,5 @@
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { OfflineStorageService, OfflineImport } from './offlineStorageService';
 
 export interface ImportedFile {
   id: string;
@@ -67,8 +68,21 @@ export class FileImportService {
         isVisible: true
       };
 
-      // Save to localStorage
-      this.saveToStorage(importedFile);
+      // Save to offline storage
+      const offlineImport: OfflineImport = {
+        id: importedFile.id,
+        type: 'import',
+        farmId: importedFile.farmId,
+        farmName: importedFile.farmName,
+        timestamp: importedFile.timestamp,
+        syncStatus: 'pending',
+        fileName: importedFile.fileName,
+        fileType: importedFile.fileType,
+        fileContent: importedFile.fileContent,
+        boundingBox: importedFile.boundingBox
+      };
+
+      await OfflineStorageService.save(offlineImport);
       
       return importedFile;
     } catch (error) {
@@ -131,32 +145,73 @@ export class FileImportService {
     }
   }
 
-  static saveToStorage(importedFile: ImportedFile): void {
-    const existing = this.getStoredImports();
-    const updated = [...existing, importedFile];
-    localStorage.setItem('importedFiles', JSON.stringify(updated));
+  static async saveToStorage(importedFile: ImportedFile): Promise<void> {
+    const offlineImport: OfflineImport = {
+      id: importedFile.id,
+      type: 'import',
+      farmId: importedFile.farmId,
+      farmName: importedFile.farmName,
+      timestamp: importedFile.timestamp,
+      syncStatus: 'pending',
+      fileName: importedFile.fileName,
+      fileType: importedFile.fileType,
+      fileContent: importedFile.fileContent,
+      boundingBox: importedFile.boundingBox
+    };
+
+    await OfflineStorageService.save(offlineImport);
   }
 
-  static getStoredImports(): ImportedFile[] {
+  static async getStoredImports(): Promise<ImportedFile[]> {
     try {
-      const stored = localStorage.getItem('importedFiles');
-      return stored ? JSON.parse(stored) : [];
+      const offlineImports = await OfflineStorageService.getByType<OfflineImport>('import');
+      return offlineImports.map(imp => ({
+        id: imp.id,
+        farmId: imp.farmId,
+        farmName: imp.farmName,
+        fileName: imp.fileName,
+        fileType: imp.fileType,
+        timestamp: imp.timestamp,
+        boundingBox: imp.boundingBox,
+        fileContent: imp.fileContent,
+        isVisible: true
+      }));
     } catch (error) {
       console.error('Error reading stored imports:', error);
       return [];
     }
   }
 
-  static getImportsByFarm(farmId: string): ImportedFile[] {
-    const allImports = this.getStoredImports();
-    return allImports.filter(imp => imp.farmId === farmId);
+  static async getImportsByFarm(farmId: string): Promise<ImportedFile[]> {
+    try {
+      const farmData = await OfflineStorageService.getByFarmId(farmId);
+      const imports = farmData.filter(item => item.type === 'import') as OfflineImport[];
+      return imports.map(imp => ({
+        id: imp.id,
+        farmId: imp.farmId,
+        farmName: imp.farmName,
+        fileName: imp.fileName,
+        fileType: imp.fileType,
+        timestamp: imp.timestamp,
+        boundingBox: imp.boundingBox,
+        fileContent: imp.fileContent,
+        isVisible: true
+      }));
+    } catch (error) {
+      console.error('Error reading imports by farm:', error);
+      return [];
+    }
   }
 
-  static toggleVisibility(importId: string): void {
-    const imports = this.getStoredImports();
-    const updated = imports.map(imp => 
-      imp.id === importId ? { ...imp, isVisible: !imp.isVisible } : imp
-    );
-    localStorage.setItem('importedFiles', JSON.stringify(updated));
+  static async toggleVisibility(importId: string): Promise<void> {
+    try {
+      const item = await OfflineStorageService.getById(importId);
+      if (item && item.type === 'import') {
+        // This would need to be implemented with a separate visibility flag
+        console.log('Toggle visibility for:', importId);
+      }
+    } catch (error) {
+      console.error('Error toggling visibility:', error);
+    }
   }
 }

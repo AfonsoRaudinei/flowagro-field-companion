@@ -1,4 +1,5 @@
 import { GPSService, UserLocation } from './gpsService';
+import { OfflineStorageService, OfflineTrail } from './offlineStorageService';
 
 export interface TrailPoint {
   latitude: number;
@@ -150,25 +151,60 @@ export class TrailService {
     return totalDistance;
   }
 
-  static saveTrail(trail: Trail): void {
-    const existing = this.getStoredTrails();
-    const updated = [...existing, trail];
-    localStorage.setItem('trails', JSON.stringify(updated));
+  static async saveTrail(trail: Trail): Promise<void> {
+    const offlineTrail: OfflineTrail = {
+      id: trail.id,
+      type: 'trail',
+      farmId: trail.farmId,
+      farmName: trail.farmName,
+      timestamp: trail.endTime || trail.startTime,
+      syncStatus: 'pending',
+      points: trail.points,
+      startTime: trail.startTime,
+      endTime: trail.endTime!,
+      totalDistance: trail.totalDistance || 0
+    };
+
+    await OfflineStorageService.save(offlineTrail);
   }
 
-  static getStoredTrails(): Trail[] {
+  static async getStoredTrails(): Promise<Trail[]> {
     try {
-      const stored = localStorage.getItem('trails');
-      return stored ? JSON.parse(stored) : [];
+      const offlineTrails = await OfflineStorageService.getByType<OfflineTrail>('trail');
+      return offlineTrails.map(trail => ({
+        id: trail.id,
+        farmId: trail.farmId,
+        farmName: trail.farmName,
+        points: trail.points,
+        startTime: trail.startTime,
+        endTime: trail.endTime,
+        isActive: false, // Stored trails are never active
+        totalDistance: trail.totalDistance
+      }));
     } catch (error) {
       console.error('Error reading stored trails:', error);
       return [];
     }
   }
 
-  static getTrailsByFarm(farmId: string): Trail[] {
-    const allTrails = this.getStoredTrails();
-    return allTrails.filter(trail => trail.farmId === farmId);
+  static async getTrailsByFarm(farmId: string): Promise<Trail[]> {
+    try {
+      const farmData = await OfflineStorageService.getByFarmId(farmId);
+      const trails = farmData.filter(item => item.type === 'trail') as OfflineTrail[];
+      return trails.map(trail => ({
+        id: trail.id,
+        farmId: trail.farmId,
+        farmName: trail.farmName,
+        points: trail.points,
+        startTime: trail.startTime,
+        endTime: trail.endTime,
+        isActive: false,
+        totalDistance: trail.totalDistance
+      }));
+    } catch (error) {
+      console.error('Error reading trails by farm:', error);
+      return [];
+    }
   }
 
   static getCurrentTrail(): Trail | null {
