@@ -27,6 +27,7 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { CameraService, eventTypes, FieldPhoto } from '@/services/cameraService';
+import { FileImportService, ImportedFile } from '@/services/fileImportService';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -67,6 +68,8 @@ const TechnicalMap: React.FC = () => {
   const [drawings, setDrawings] = useState<DrawingMetadata[]>([]);
   const [fieldPhotos, setFieldPhotos] = useState<FieldPhoto[]>([]);
   const [showCameraEventSelector, setShowCameraEventSelector] = useState(false);
+  const [importedFiles, setImportedFiles] = useState<ImportedFile[]>([]);
+  const [previewFile, setPreviewFile] = useState<ImportedFile | null>(null);
 
   const mapLayers = [
     { id: 'satellite', name: 'Satelite', style: 'satellite' },
@@ -125,9 +128,11 @@ const TechnicalMap: React.FC = () => {
       })
     );
 
-    // Load stored photos on component mount
+    // Load stored photos and imported files on component mount
     const storedPhotos = CameraService.getStoredPhotos();
+    const storedImports = FileImportService.getStoredImports();
     setFieldPhotos(storedPhotos);
+    setImportedFiles(storedImports);
 
     return () => {
       map.current?.remove();
@@ -269,11 +274,70 @@ const TechnicalMap: React.FC = () => {
     }
   };
 
-  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && (file.name.endsWith('.kmz') || file.name.endsWith('.kml'))) {
-      setImportedFile(file);
-      // File will be associated with selected producer or own farm
+  const handleFileImport = async () => {
+    const targetFarm = isConsultor ? selectedProducer : ownFarm;
+    
+    if (!targetFarm) {
+      toast({
+        title: "Fazenda não selecionada",
+        description: isConsultor ? "Selecione um produtor antes de importar" : "Dados da fazenda não disponíveis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: "Abrindo seletor de arquivos...",
+        description: "Selecione um arquivo KML ou KMZ"
+      });
+
+      const file = await FileImportService.importFile();
+      
+      if (!file) {
+        toast({
+          title: "Importação cancelada",
+          variant: "default"
+        });
+        return;
+      }
+
+      if (!file.name.endsWith('.kml') && !file.name.endsWith('.kmz')) {
+        toast({
+          title: "Formato não suportado",
+          description: "Selecione apenas arquivos .kml ou .kmz",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Processando arquivo...",
+        description: "Aguarde um momento"
+      });
+
+      const importedFile = await FileImportService.saveImportedFile(
+        file, 
+        targetFarm.id, 
+        targetFarm.farm
+      );
+
+      // Update local state
+      setImportedFiles(prev => [...prev, importedFile]);
+      setPreviewFile(importedFile);
+
+      toast({
+        title: "Área importada com sucesso!",
+        description: `📁 ${file.name} para ${targetFarm.farm}`,
+        variant: "default"
+      });
+
+    } catch (error) {
+      toast({
+        title: "Erro ao importar arquivo",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
     }
   };
 
@@ -459,20 +523,13 @@ const TechnicalMap: React.FC = () => {
       {/* Import Button */}
       <div className="absolute left-4 top-44 z-10">
         <Button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={handleFileImport}
           className="flex items-center space-x-2 bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
           variant="ghost"
         >
           <Upload className="h-4 w-4" />
           <span className="text-sm">Importar</span>
         </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".kmz,.kml"
-          onChange={handleFileImport}
-          className="hidden"
-        />
       </div>
 
       {/* Right Side Controls */}
@@ -535,11 +592,66 @@ const TechnicalMap: React.FC = () => {
         </Button>
       </div>
 
-      {/* Import Preview Overlay */}
+      {/* File Preview Overlay */}
+      {previewFile && (
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center">
+          <Card className="p-6 mx-4 bg-card shadow-ios-lg max-w-sm w-full">
+            <div className="text-center">
+              <Upload className="h-12 w-12 text-primary mx-auto mb-4" />
+              <h3 className="font-semibold text-foreground mb-2">Arquivo Importado</h3>
+              <p className="text-sm text-muted-foreground mb-1">
+                📁 {previewFile.fileName}
+              </p>
+              <p className="text-xs text-muted-foreground mb-4">
+                🏡 {previewFile.farmName}
+              </p>
+              
+              {previewFile.boundingBox && (
+                <div className="mb-4 p-3 bg-accent/20 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Área detectada:</p>
+                  <p className="text-xs font-mono">
+                    {previewFile.boundingBox.north.toFixed(4)}°N, {previewFile.boundingBox.west.toFixed(4)}°W
+                  </p>
+                </div>
+              )}
+              
+              <div className="flex space-x-3">
+                <Button
+                  onClick={() => setPreviewFile(null)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  Fechar
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Center map on imported area if bounding box available
+                    if (previewFile.boundingBox && map.current) {
+                      const center = [
+                        (previewFile.boundingBox.east + previewFile.boundingBox.west) / 2,
+                        (previewFile.boundingBox.north + previewFile.boundingBox.south) / 2
+                      ];
+                      map.current.flyTo({ center: center as [number, number], zoom: 15 });
+                    }
+                    setPreviewFile(null);
+                  }}
+                  className="bg-primary text-primary-foreground flex-1"
+                  size="sm"
+                >
+                  Ver no Mapa
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Legacy Import Preview - Remove this when above is working */}
       {importedFile && (
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center">
           <Card className="p-6 mx-4 bg-card shadow-ios-lg">
-            <h3 className="font-semibold text-foreground mb-4">Arquivo importado</h3>
+            <h3 className="font-semibold text-foreground mb-4">Arquivo importado (legacy)</h3>
             <p className="text-sm text-muted-foreground mb-4">
               {importedFile.name}
             </p>
