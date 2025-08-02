@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { UserProvider } from "./contexts/UserContext";
 import SwipeNavigation from "./components/SwipeNavigation";
+import ProtectedRoute from "./components/ProtectedRoute";
 import HomePage from "./pages/HomePage";
 import LoginForm from "./pages/LoginForm";
 import NotFound from "./pages/NotFound";
@@ -16,8 +17,8 @@ const queryClient = new QueryClient();
 const AppLayout = () => {
   const location = useLocation();
   
-  // Show swipe navigation only on authenticated screens
-  const showSwipeNav = ['/technical-map', '/dashboard', '/settings'].includes(location.pathname);
+  // Show swipe navigation on authenticated screens
+  const showSwipeNav = ['/technical-map', '/chat', '/profile'].includes(location.pathname);
   
   return (
     <>
@@ -29,6 +30,21 @@ const AppLayout = () => {
             <Route path="/" element={<HomePage />} />
             <Route path="/login-form" element={<LoginForm />} />
             <Route path="/phenological-stages" element={<PhenologicalStages />} />
+            <Route path="/technical-map" element={
+              <ProtectedRoute>
+                <SwipeNavigation />
+              </ProtectedRoute>
+            } />
+            <Route path="/chat" element={
+              <ProtectedRoute>
+                <SwipeNavigation />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <SwipeNavigation />
+              </ProtectedRoute>
+            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </div>

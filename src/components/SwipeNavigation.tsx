@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Map, MessageCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TechnicalMap from '@/pages/TechnicalMap';
@@ -10,7 +11,21 @@ interface SwipeNavigationProps {
 }
 
 const SwipeNavigation: React.FC<SwipeNavigationProps> = ({ className = '' }) => {
-  const [activeTab, setActiveTab] = useState(0); // 0: Map, 1: Chat, 2: Profile
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Map URL paths to tab indices
+  const pathToTabIndex = {
+    '/technical-map': 0,
+    '/chat': 1, 
+    '/profile': 2
+  };
+  
+  // Initialize active tab based on current URL
+  const [activeTab, setActiveTab] = useState(() => {
+    return pathToTabIndex[location.pathname as keyof typeof pathToTabIndex] || 0;
+  });
+  
   const [isTransitioning, setIsTransitioning] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
@@ -21,23 +36,34 @@ const SwipeNavigation: React.FC<SwipeNavigationProps> = ({ className = '' }) => 
   const tabs = [
     {
       id: 'technical-map',
+      path: '/technical-map',
       label: 'Mapa',
       icon: Map,
       component: TechnicalMap
     },
     {
       id: 'chat',
+      path: '/chat',
       label: 'Chat', 
       icon: MessageCircle,
       component: Chat
     },
     {
       id: 'profile',
+      path: '/profile',
       label: 'Perfil',
       icon: User,
       component: Settings
     }
   ];
+
+  // Update active tab when URL changes
+  useEffect(() => {
+    const currentTabIndex = pathToTabIndex[location.pathname as keyof typeof pathToTabIndex];
+    if (currentTabIndex !== undefined && currentTabIndex !== activeTab) {
+      setActiveTab(currentTabIndex);
+    }
+  }, [location.pathname, activeTab]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isTransitioning) return;
@@ -74,6 +100,12 @@ const SwipeNavigation: React.FC<SwipeNavigationProps> = ({ className = '' }) => 
     
     setIsTransitioning(true);
     setActiveTab(newTab);
+    
+    // Navigate to the corresponding URL
+    const targetTab = tabs[newTab];
+    if (targetTab) {
+      navigate(targetTab.path);
+    }
     
     // Reset transition state after animation
     setTimeout(() => {

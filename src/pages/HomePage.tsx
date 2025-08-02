@@ -24,7 +24,7 @@ const HomePage: React.FC = () => {
           'satellite': {
             type: 'raster',
             tiles: [
-              'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=YOUR_MAPTILER_KEY'
+              'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=MZ7IzlO1sjOVafWQMaNa'
             ],
             tileSize: 256,
             attribution: '© MapTiler © OpenStreetMap contributors'

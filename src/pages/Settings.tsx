@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useUser, UserData } from '@/contexts/UserContext';
 import { 
   ArrowLeft,
   Map,
@@ -24,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setUserData } = useUser();
   // Map Preferences
   const [defaultMapLayer, setDefaultMapLayer] = useState('satellite');
   
@@ -92,6 +94,26 @@ const Settings: React.FC = () => {
       }
     };
     input.click();
+  };
+
+  const handleLogout = () => {
+    // Clear user data from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('flowagro_user_data');
+    }
+    
+    // Clear user data from context - set to null to trigger logout
+    setUserData(null as unknown as UserData);
+    
+    // Show success message
+    toast({
+      title: "Logout realizado",
+      description: "Você foi desconectado com sucesso",
+      variant: "default"
+    });
+    
+    // Redirect to home page
+    navigate('/');
   };
 
   const mapLayers = [
@@ -392,7 +414,7 @@ const Settings: React.FC = () => {
         {/* Logout */}
         <Card className="shadow-ios-md">
           <Button
-            onClick={() => navigate('/login-mapa')}
+            onClick={handleLogout}
             variant="ghost"
             className="w-full h-14 text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center justify-center space-x-3"
           >
