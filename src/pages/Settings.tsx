@@ -113,14 +113,6 @@ const Settings: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center space-x-3">
-          <Button
-            onClick={() => navigate('/technical-map')}
-            className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
-            variant="ghost"
-            size="icon"
-          >
-            <ArrowLeft className="h-5 w-5 text-foreground" />
-          </Button>
           <h1 className="text-xl font-semibold text-foreground">Configurações</h1>
         </div>
         
