@@ -1181,45 +1181,45 @@ const TechnicalMap: React.FC = () => {
         </div>
 
         {/* Left Floating Toolbar */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-3">
-          {/* Layers Button */}
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-2">
+          {/* Back Button */}
           <Button
-            onClick={() => setShowLayerSelector(!showLayerSelector)}
-            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-border hover:bg-white"
             variant="ghost"
             size="sm"
           >
-            <Layers className={`h-5 w-5 ${showLayerSelector ? 'text-primary' : 'text-foreground'}`} />
+            <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+          </Button>
+
+          {/* Layers Button */}
+          <Button
+            onClick={() => setShowLayerSelector(!showLayerSelector)}
+            className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-border hover:bg-white"
+            variant="ghost"
+            size="sm"
+          >
+            <Layers className={`h-4 w-4 ${showLayerSelector ? 'text-primary' : 'text-muted-foreground'}`} />
           </Button>
 
           {/* Drawing Tools Button */}
           <Button
             onClick={() => setShowDrawingTools(!showDrawingTools)}
-            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-border hover:bg-white"
             variant="ghost"
             size="sm"
           >
-            <Edit3 className={`h-5 w-5 ${showDrawingTools ? 'text-primary' : 'text-foreground'}`} />
+            <Edit3 className={`h-4 w-4 ${showDrawingTools ? 'text-primary' : 'text-muted-foreground'}`} />
           </Button>
 
           {/* Import Button */}
           <Button
             onClick={handleFileImport}
-            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-border hover:bg-white"
             variant="ghost"
             size="sm"
           >
-            <Upload className="h-5 w-5 text-foreground" />
-          </Button>
-
-          {/* Sync Button */}
-          <Button
-            onClick={handleTrailToggle}
-            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
-            variant="ghost"
-            size="sm"
-          >
-            <Cloud className={`h-5 w-5 ${isRecordingTrail ? 'text-red-500' : 'text-foreground'}`} />
+            <Upload className="h-4 w-4 text-muted-foreground" />
           </Button>
         </div>
 
