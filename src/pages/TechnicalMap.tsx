@@ -29,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CameraService, eventTypes, FieldPhoto } from '@/services/cameraService';
 import { FileImportService, ImportedFile } from '@/services/fileImportService';
 import { GPSService, UserLocation } from '@/services/gpsService';
+import { TrailService, Trail } from '@/services/trailService';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -75,6 +76,8 @@ const TechnicalMap: React.FC = () => {
   const [isGPSEnabled, setIsGPSEnabled] = useState(false);
   const [showDebugCoords, setShowDebugCoords] = useState(false);
   const [gpsWatchId, setGpsWatchId] = useState<string | null>(null);
+  const [currentTrail, setCurrentTrail] = useState<Trail | null>(null);
+  const [isRecordingTrail, setIsRecordingTrail] = useState(false);
 
   const mapLayers = [
     { id: 'satellite', name: 'Satelite', style: 'satellite' },
@@ -133,11 +136,18 @@ const TechnicalMap: React.FC = () => {
       })
     );
 
-    // Load stored photos and imported files on component mount
+    // Load stored photos, imported files and trails on component mount
     const storedPhotos = CameraService.getStoredPhotos();
     const storedImports = FileImportService.getStoredImports();
+    const activeTrail = TrailService.getCurrentTrail();
     setFieldPhotos(storedPhotos);
     setImportedFiles(storedImports);
+    
+    // Check if there's an active trail
+    if (activeTrail?.isActive) {
+      setCurrentTrail(activeTrail);
+      setIsRecordingTrail(true);
+    }
 
     // Initialize GPS
     initializeGPS();
@@ -375,6 +385,73 @@ const TechnicalMap: React.FC = () => {
     } catch (error) {
       toast({
         title: "Erro ao tirar foto",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleTrailToggle = async () => {
+    const targetFarm = isConsultor ? selectedProducer : ownFarm;
+    
+    if (!targetFarm) {
+      toast({
+        title: "Fazenda não selecionada",
+        description: isConsultor ? "Selecione um produtor antes de gravar trilha" : "Dados da fazenda não disponíveis",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!isGPSEnabled) {
+      toast({
+        title: "GPS não disponível",
+        description: "Ative o GPS antes de gravar trilhas",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      if (isRecordingTrail) {
+        // Stop recording
+        const completedTrail = await TrailService.stopTrailRecording();
+        
+        setIsRecordingTrail(false);
+        setCurrentTrail(null);
+        
+        if (completedTrail) {
+          toast({
+            title: "Trilha salva!",
+            description: `📍 ${TrailService.formatDistance(completedTrail.totalDistance || 0)} em ${targetFarm.farm}`,
+            variant: "default"
+          });
+        }
+        
+      } else {
+        // Start recording
+        const trail = await TrailService.startTrailRecording(
+          targetFarm.id,
+          targetFarm.farm,
+          (updatedTrail) => {
+            setCurrentTrail(updatedTrail);
+            // Could update map here with new points
+          }
+        );
+        
+        setIsRecordingTrail(true);
+        setCurrentTrail(trail);
+        
+        toast({
+          title: "Gravando trilha...",
+          description: `📍 Trilha iniciada em ${targetFarm.farm}`,
+          variant: "default"
+        });
+      }
+      
+    } catch (error) {
+      toast({
+        title: "Erro na trilha",
         description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive"
       });
@@ -641,6 +718,23 @@ const TechnicalMap: React.FC = () => {
 
       {/* Right Side Controls */}
       <div className="absolute right-4 bottom-32 z-10 flex flex-col space-y-3">
+        {/* Trail Recording Button */}
+        <Button
+          onClick={handleTrailToggle}
+          className={`px-4 py-2 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
+            isRecordingTrail 
+              ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
+              : 'bg-primary/90 hover:bg-primary text-primary-foreground'
+          }`}
+          variant="ghost"
+          disabled={!isGPSEnabled}
+        >
+          <Route className="h-4 w-4 mr-2" />
+          <span className="text-sm font-medium">
+            {isRecordingTrail ? 'Parar Trilha' : 'Iniciar Trilha'}
+          </span>
+        </Button>
+
         {/* Camera with Event Selector */}
         <div className="relative">
           <Button
@@ -800,6 +894,29 @@ const TechnicalMap: React.FC = () => {
               >
                 Associar
               </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Trail Recording Status */}
+      {isRecordingTrail && currentTrail && (
+        <div className="absolute top-20 left-4 right-4 z-10">
+          <Card className="p-3 bg-red-500/90 backdrop-blur-sm shadow-ios-md text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                <span className="text-sm font-medium">
+                  Gravando trilha
+                </span>
+              </div>
+              <div className="text-sm">
+                {currentTrail.points.length > 0 && (
+                  <>
+                    {TrailService.formatDistance(currentTrail.totalDistance || 0)} • {TrailService.formatDuration(currentTrail.startTime)}
+                  </>
+                )}
+              </div>
             </div>
           </Card>
         </div>
