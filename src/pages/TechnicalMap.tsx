@@ -19,7 +19,8 @@ import {
   MessageCircle,
   Plus,
   Minus,
-  Trash2
+  Trash2,
+  LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
