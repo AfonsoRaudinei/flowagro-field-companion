@@ -1115,9 +1115,7 @@ const TechnicalMap: React.FC = () => {
           </Button>
 
           {/* PRIORIDADE 3: Ocorrências */}
-          <Button onClick={() => setShowEventSelector(!showEventSelector)} className="w-12 h-12 rounded-full bg-orange-500/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform" variant="ghost" size="sm">
-            <MessageCircle className="h-5 w-5 text-white" />
-          </Button>
+          
         </div>
 
         {/* Layer Selector Panel */}
