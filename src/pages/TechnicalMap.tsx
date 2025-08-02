@@ -26,7 +26,8 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { CameraService, eventTypes, FieldPhoto } from '@/services/cameraService';
+import { Label } from '@/components/ui/label';
+import { CameraService, eventTypes, FieldPhoto, CheckInOut } from '@/services/cameraService';
 import { FileImportService, ImportedFile } from '@/services/fileImportService';
 import { GPSService, UserLocation } from '@/services/gpsService';
 import { TrailService, Trail } from '@/services/trailService';
@@ -110,6 +111,20 @@ const TechnicalMap: React.FC = () => {
     { id: 'pivot', name: 'Pivô', icon: Circle },
     { id: 'rectangle', name: 'Retângulo', icon: Square }
   ];
+
+  // Enhanced event recording state
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [eventFormData, setEventFormData] = useState({
+    eventType: 'sugador' as const,
+    quantity: '',
+    severity: 'medio' as const,
+    notes: '',
+    latitude: 0,
+    longitude: 0
+  });
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [checkInOutLoading, setCheckInOutLoading] = useState(false);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -614,7 +629,8 @@ const TechnicalMap: React.FC = () => {
         imagePath,
         latitude: location?.latitude,
         longitude: location?.longitude,
-        timestamp: new Date()
+        timestamp: new Date(),
+        severity: 'medio' // Default severity, will be updated by event form
       };
 
       // Save photo
@@ -639,7 +655,155 @@ const TechnicalMap: React.FC = () => {
     }
   };
 
-  const handleZoomIn = () => {
+  // Enhanced camera and event recording functions
+  const handleCameraOpen = async () => {
+    try {
+      // Take photo first
+      const imagePath = await CameraService.takePhoto();
+      
+      // Get current location
+      const location = await GPSService.getCurrentLocation();
+      
+      // Set captured photo and location data
+      setCapturedPhoto(imagePath);
+      setEventFormData(prev => ({
+        ...prev,
+        latitude: location.latitude,
+        longitude: location.longitude
+      }));
+      
+      // Show event form
+      setShowEventForm(true);
+      
+    } catch (error) {
+      console.error('Camera error:', error);
+      toast({
+        title: "Erro ao acessar a câmera",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEventFormSubmit = async () => {
+    if (!capturedPhoto) return;
+
+    try {
+      // Get target farm based on user type
+      const targetFarm = isConsultor ? selectedProducer : ownFarm;
+
+      if (!targetFarm) {
+        toast({
+          title: "Erro",
+          description: "Produtor não selecionado",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const eventDetails = eventTypes.find(e => e.id === eventFormData.eventType);
+      
+      const photo: FieldPhoto = {
+        id: `photo-${Date.now()}`,
+        farmId: targetFarm.id,
+        farmName: targetFarm.farm,
+        eventType: eventFormData.eventType,
+        eventLabel: eventDetails?.name || eventFormData.eventType,
+        imagePath: capturedPhoto,
+        latitude: eventFormData.latitude,
+        longitude: eventFormData.longitude,
+        timestamp: new Date(),
+        severity: eventFormData.severity,
+        quantity: eventFormData.quantity ? parseInt(eventFormData.quantity) : undefined,
+        notes: eventFormData.notes.trim() || undefined
+      };
+
+      await CameraService.savePhoto(photo);
+      
+      // Create chat message
+      const chatMessage = CameraService.createChatMessage(photo);
+      
+      // Reset form
+      setShowEventForm(false);
+      setCapturedPhoto(null);
+      setEventFormData({
+        eventType: 'sugador',
+        quantity: '',
+        severity: 'medio',
+        notes: '',
+        latitude: 0,
+        longitude: 0
+      });
+      
+      toast({
+        title: "Registro salvo!",
+        description: "Evento registrado e enviado para o chat do produtor",
+        variant: "default"
+      });
+      
+    } catch (error) {
+      console.error('Error saving event:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar evento",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCheckInOut = async () => {
+    setCheckInOutLoading(true);
+    
+    try {
+      const location = await GPSService.getCurrentLocation();
+      const targetFarm = isConsultor ? selectedProducer : ownFarm;
+
+      if (!targetFarm) {
+        toast({
+          title: "Erro",
+          description: "Produtor não selecionado",
+          variant: "destructive"
+        });
+        setCheckInOutLoading(false);
+        return;
+      }
+
+      const eventType = isCheckedIn ? 'checkout' : 'checkin';
+      const checkInOut: CheckInOut = {
+        id: `checkinout-${Date.now()}`,
+        farmId: targetFarm.id,
+        farmName: targetFarm.farm,
+        type: eventType,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        timestamp: new Date()
+      };
+
+      await CameraService.saveCheckInOut(checkInOut);
+      
+      const time = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const emoji = eventType === 'checkin' ? '🟢' : '🔴';
+      const action = eventType === 'checkin' ? 'Chegada' : 'Saída';
+      
+      setIsCheckedIn(!isCheckedIn);
+      
+      toast({
+        title: `${emoji} ${action} registrada`,
+        description: `${action} às ${time} na ${targetFarm.farm}`,
+        variant: "default"
+      });
+      
+    } catch (error) {
+      console.error('Check-in/out error:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao registrar entrada/saída",
+        variant: "destructive"
+      });
+    } finally {
+      setCheckInOutLoading(false);
+    }
+  };
     if (map.current) {
       map.current.zoomIn({ duration: 300 });
     }
@@ -1126,11 +1290,11 @@ const TechnicalMap: React.FC = () => {
         {/* Camera with Event Selector */}
         <div className="relative">
           <Button
-            onClick={() => setShowCameraEventSelector(!showCameraEventSelector)}
-            className="w-8 h-8 rounded-full bg-primary/90 backdrop-blur-sm shadow-ios-md text-primary-foreground hover:bg-primary"
+            onClick={() => handleCameraOpen()}
+            className="w-8 h-8 rounded-full bg-green-500/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-green-600 text-white"
             variant="ghost"
             size="icon"
-            title="Tirar foto"
+            title="Registrar evento de campo"
           >
             <Camera className="h-3 w-3" />
           </Button>
@@ -1525,14 +1689,160 @@ const TechnicalMap: React.FC = () => {
         </div>
       )}
 
+      {/* Enhanced Event Recording Form */}
+      {showEventForm && capturedPhoto && (
+        <div className="absolute bottom-0 left-0 right-0 z-50">
+          <div className="bg-card/95 backdrop-blur-sm border-t border-border shadow-lg">
+            <div className="px-4 py-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-foreground">
+                  📸 Novo Registro de Campo
+                </h3>
+                <Button
+                  onClick={() => {
+                    setShowEventForm(false);
+                    setCapturedPhoto(null);
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  ✕
+                </Button>
+              </div>
+
+              {/* Event Type Selection */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Tipo de Evento
+                </Label>
+                <Select
+                  value={eventFormData.eventType}
+                  onValueChange={(value) => setEventFormData(prev => ({
+                    ...prev,
+                    eventType: value as any
+                  }))}
+                >
+                  <SelectTrigger className="w-full bg-background border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border border-border shadow-lg z-50">
+                    {eventTypes.map((event) => (
+                      <SelectItem key={event.id} value={event.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{event.emoji}</span>
+                          <span>{event.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Quantity (for insect events) */}
+              {(eventFormData.eventType === 'sugador' || eventFormData.eventType === 'mastigador') && (
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    Quantidade de Insetos
+                  </Label>
+                  <Input
+                    type="number"
+                    value={eventFormData.quantity}
+                    onChange={(e) => setEventFormData(prev => ({
+                      ...prev,
+                      quantity: e.target.value
+                    }))}
+                    placeholder="Ex: 5"
+                    className="w-full bg-background border-border"
+                  />
+                </div>
+              )}
+
+              {/* Severity Level */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Nível de Severidade
+                </Label>
+                <Select
+                  value={eventFormData.severity}
+                  onValueChange={(value) => setEventFormData(prev => ({
+                    ...prev,
+                    severity: value as any
+                  }))}
+                >
+                  <SelectTrigger className="w-full bg-background border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border border-border shadow-lg z-50">
+                    <SelectItem value="baixo">🟢 Baixo</SelectItem>
+                    <SelectItem value="medio">🟡 Médio</SelectItem>
+                    <SelectItem value="alto">🔴 Alto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Location Display */}
+              <div className="bg-accent/50 border border-border rounded-md p-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-foreground">
+                    {eventFormData.latitude && eventFormData.longitude
+                      ? `${eventFormData.latitude.toFixed(6)}, ${eventFormData.longitude.toFixed(6)}`
+                      : 'Localização não disponível'
+                    }
+                  </span>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Observações (opcional)
+                </Label>
+                <textarea
+                  value={eventFormData.notes}
+                  onChange={(e) => setEventFormData(prev => ({
+                    ...prev,
+                    notes: e.target.value
+                  }))}
+                  placeholder="Adicione observações sobre o evento..."
+                  className="w-full min-h-[60px] px-3 py-2 bg-background border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3 pt-2">
+                <Button
+                  onClick={() => {
+                    setShowEventForm(false);
+                    setCapturedPhoto(null);
+                  }}
+                  variant="outline"
+                  className="flex-1 py-2"
+                >
+                  ❌ Cancelar
+                </Button>
+                <Button
+                  onClick={handleEventFormSubmit}
+                  className="flex-1 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  ✅ Salvar evento
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Backdrop for closing menus */}
-      {(showLayerSelector || showDrawingTools || showCameraEventSelector) && (
+      {(showLayerSelector || showDrawingTools || showCameraEventSelector || showEventForm) && (
         <div 
           className="absolute inset-0 z-20"
           onClick={() => {
             setShowLayerSelector(false);
             setShowDrawingTools(false);
             setShowCameraEventSelector(false);
+            setShowEventForm(false);
           }}
         />
       )}

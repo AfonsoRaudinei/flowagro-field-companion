@@ -18,6 +18,9 @@ export interface OfflinePhoto extends BaseOfflineData {
   imagePath: string;
   latitude?: number;
   longitude?: number;
+  quantity?: number;
+  severity?: string;
+  notes?: string;
 }
 
 export interface OfflineTrail extends BaseOfflineData {
@@ -55,7 +58,14 @@ export interface OfflineImport extends BaseOfflineData {
   };
 }
 
-export type OfflineData = OfflinePhoto | OfflineTrail | OfflineDrawing | OfflineImport;
+export interface OfflineCheckInOut extends BaseOfflineData {
+  type: 'checkinout';
+  eventType: 'checkin' | 'checkout';
+  latitude: number;
+  longitude: number;
+}
+
+export type OfflineData = OfflinePhoto | OfflineTrail | OfflineDrawing | OfflineImport | OfflineCheckInOut;
 
 export class OfflineStorageService {
   private static DB_NAME = 'FlowAgroOfflineDB';
