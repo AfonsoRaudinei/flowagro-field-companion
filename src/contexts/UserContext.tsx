@@ -48,26 +48,10 @@ const mockOwnFarm: Producer = {
 };
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize user data from localStorage if available
-  const [userData, setUserDataState] = useState<UserData | null>(() => {
-    if (typeof window !== 'undefined') {
-      const storedUserData = localStorage.getItem('flowagro_user_data');
-      return storedUserData ? JSON.parse(storedUserData) : null;
-    }
-    return null;
-  });
-  
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [selectedProducer, setSelectedProducer] = useState<Producer | null>(null);
   const [linkedProducers, setLinkedProducers] = useState<Producer[]>(mockLinkedProducers);
   const [ownFarm, setOwnFarm] = useState<Producer | null>(mockOwnFarm);
-
-  // Enhanced setUserData with localStorage persistence
-  const setUserData = (data: UserData) => {
-    setUserDataState(data);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('flowagro_user_data', JSON.stringify(data));
-    }
-  };
 
   const isConsultor = userData?.profile === 'consultor';
   const isProdutor = userData?.profile === 'produtor';

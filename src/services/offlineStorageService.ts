@@ -21,10 +21,6 @@ export interface OfflinePhoto extends BaseOfflineData {
   quantity?: number;
   severity?: string;
   notes?: string;
-  // Campos para estádio fenológico
-  phenologicalStage?: string;
-  phenologicalStageComplete?: string;
-  culture?: string;
 }
 
 export interface OfflineTrail extends BaseOfflineData {
@@ -47,10 +43,6 @@ export interface OfflineDrawing extends BaseOfflineData {
   coordinates: any[];
   areaM2?: number;
   areaHa?: number;
-  // Campos para estádio fenológico
-  phenologicalStage?: string;
-  phenologicalStageComplete?: string;
-  culture?: string;
 }
 
 export interface OfflineImport extends BaseOfflineData {

@@ -15,10 +15,6 @@ export interface FieldPhoto {
   quantity?: number;
   severity: 'baixo' | 'medio' | 'alto';
   notes?: string;
-  // Campos para estádio fenológico
-  phenologicalStage?: string; // Sigla (ex: "V1")
-  phenologicalStageComplete?: string; // Descrição completa (ex: "V1 – Primeira folha com colar visível")
-  culture?: string; // Cultura (ex: "soja", "milho", "algodao")
 }
 
 export interface CheckInOut {
@@ -90,11 +86,7 @@ export class CameraService {
       longitude: photo.longitude,
       quantity: photo.quantity,
       severity: photo.severity,
-      notes: photo.notes,
-      // Salvar campos de estádio fenológico
-      phenologicalStage: photo.phenologicalStage,
-      phenologicalStageComplete: photo.phenologicalStageComplete,
-      culture: photo.culture
+      notes: photo.notes
     };
 
     await OfflineStorageService.save(offlinePhoto);
@@ -132,11 +124,7 @@ export class CameraService {
         timestamp: photo.timestamp,
         quantity: photo.quantity,
         severity: (photo.severity || 'medio') as 'baixo' | 'medio' | 'alto',
-        notes: photo.notes,
-        // Recuperar campos de estádio fenológico
-        phenologicalStage: photo.phenologicalStage,
-        phenologicalStageComplete: photo.phenologicalStageComplete,
-        culture: photo.culture
+        notes: photo.notes
       }));
     } catch (error) {
       console.error('Error reading stored photos:', error);
@@ -160,11 +148,7 @@ export class CameraService {
         timestamp: photo.timestamp,
         quantity: photo.quantity,
         severity: (photo.severity || 'medio') as 'baixo' | 'medio' | 'alto',
-        notes: photo.notes,
-        // Recuperar campos de estádio fenológico
-        phenologicalStage: photo.phenologicalStage,
-        phenologicalStageComplete: photo.phenologicalStageComplete,
-        culture: photo.culture
+        notes: photo.notes
       }));
     } catch (error) {
       console.error('Error reading photos by farm:', error);
@@ -214,11 +198,6 @@ export class CameraService {
     }
     
     message += ` — Severidade: ${photo.severity} — ${time} — ${coords}`;
-    
-    // Incluir estádio fenológico se disponível
-    if (photo.phenologicalStageComplete) {
-      message += ` — Estádio: ${photo.phenologicalStageComplete}`;
-    }
     
     if (photo.notes) {
       message += ` — Obs: ${photo.notes}`;

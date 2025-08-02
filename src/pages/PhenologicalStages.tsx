@@ -3,17 +3,60 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getStagesByCategory } from '@/data/phenologicalStages';
 
 const PhenologicalStages: React.FC = () => {
   const navigate = useNavigate();
-  const [selectedCulture, setSelectedCulture] = useState<'soja' | 'milho' | 'algodao'>('soja');
+  const [selectedCulture, setSelectedCulture] = useState<'soja' | 'milho'>('soja');
 
-  // Usar dados centralizados
-  const vegetativeStages = getStagesByCategory(selectedCulture, 'vegetativo');
-  const reproductiveStages = getStagesByCategory(selectedCulture, 'reprodutivo');
+  const sojaStages = {
+    vegetativos: [
+      { code: 'VE', name: 'Emergência', description: 'Cotilédones acima da superfície do solo' },
+      { code: 'VC', name: 'Cotilédones expandidos', description: 'Cotilédones completamente expandidos' },
+      { code: 'V1', name: 'Primeiro nó', description: 'Folhas unifolioladas completamente desenvolvidas' },
+      { code: 'V2', name: 'Segundo nó', description: 'Primeira folha trifoliolada completamente desenvolvida' },
+      { code: 'V3', name: 'Terceiro nó', description: 'Segunda folha trifoliolada completamente desenvolvida' },
+      { code: 'V4', name: 'Quarto nó', description: 'Terceira folha trifoliolada completamente desenvolvida' },
+      { code: 'V5', name: 'Quinto nó', description: 'Quarta folha trifoliolada completamente desenvolvida' },
+      { code: 'V6', name: 'Sexto nó', description: 'Quinta folha trifoliolada completamente desenvolvida' }
+    ],
+    reprodutivos: [
+      { code: 'R1', name: 'Início do florescimento', description: 'Uma flor aberta em qualquer nó da haste principal' },
+      { code: 'R2', name: 'Florescimento pleno', description: 'Flor aberta no 1º ou 2º nó reprodutivo da haste principal' },
+      { code: 'R3', name: 'Início da formação da vagem', description: 'Vagem com 1,5 cm no 1º ao 4º nó reprodutivo' },
+      { code: 'R4', name: 'Vagem completamente desenvolvida', description: 'Vagem com 2 a 4 cm no 1º ao 4º nó reprodutivo' },
+      { code: 'R5', name: 'Início do enchimento do grão', description: 'Grão com 10% do tamanho final na vagem' },
+      { code: 'R6', name: 'Grão verde preenchendo a cavidade', description: 'Vagem contendo grãos verdes preenchendo a cavidade' },
+      { code: 'R7', name: 'Início da maturação', description: 'Uma vagem normal na planta com coloração de madura' },
+      { code: 'R8', name: 'Maturação plena', description: '95% das vagens com coloração de vagem madura' }
+    ]
+  };
 
-  const renderStageGroup = (title: string, stages: Array<{code: string, name: string, fullDescription: string}>) => (
+  const milhoStages = {
+    vegetativos: [
+      { code: 'VE', name: 'Emergência', description: 'Coleóptilo emerge da superfície do solo' },
+      { code: 'V1', name: 'Primeira folha', description: 'Primeira folha com colar visível' },
+      { code: 'V2', name: 'Segunda folha', description: 'Segunda folha com colar visível' },
+      { code: 'V3', name: 'Terceira folha', description: 'Terceira folha com colar visível' },
+      { code: 'V4', name: 'Quarta folha', description: 'Quarta folha com colar visível' },
+      { code: 'V5', name: 'Quinta folha', description: 'Quinta folha com colar visível' },
+      { code: 'V6', name: 'Sexta folha', description: 'Sexta folha com colar visível' },
+      { code: 'VT', name: 'Pendoamento', description: 'Último ramo do pendão completamente visível' }
+    ],
+    reprodutivos: [
+      { code: 'R1', name: 'Embonecamento', description: 'Estigmas visíveis' },
+      { code: 'R2', name: 'Grão leitoso', description: 'Grão com aparência leitosa' },
+      { code: 'R3', name: 'Grão pastoso', description: 'Grãos amarelos na base, suco leitoso' },
+      { code: 'R4', name: 'Grão farináceo', description: 'Grãos consistência pastosa, linha de leite visível' },
+      { code: 'R5', name: 'Grão dentado', description: 'Formação da depressão na parte superior dos grãos' },
+      { code: 'R6', name: 'Maturidade fisiológica', description: 'Formação da camada preta na inserção dos grãos' }
+    ]
+  };
+
+  const getCurrentStages = () => {
+    return selectedCulture === 'soja' ? sojaStages : milhoStages;
+  };
+
+  const renderStageGroup = (title: string, stages: Array<{code: string, name: string, description: string}>) => (
     <div className="mb-6">
       <h3 className="text-lg font-semibold text-foreground mb-4">{title}</h3>
       <div className="space-y-3">
@@ -26,7 +69,7 @@ const PhenologicalStages: React.FC = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-foreground mb-1">{stage.name}</h4>
-                  <p className="text-sm text-muted-foreground">{stage.fullDescription}</p>
+                  <p className="text-sm text-muted-foreground">{stage.description}</p>
                 </div>
               </div>
             </CardContent>
@@ -72,22 +115,14 @@ const PhenologicalStages: React.FC = () => {
             >
               Milho
             </Button>
-            <Button
-              variant={selectedCulture === 'algodao' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedCulture('algodao')}
-              className="flex-1"
-            >
-              Algodão
-            </Button>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="p-4 pb-20">
-        {renderStageGroup('Estádios Vegetativos', vegetativeStages)}
-        {renderStageGroup('Estádios Reprodutivos', reproductiveStages)}
+        {renderStageGroup('Estádios Vegetativos', getCurrentStages().vegetativos)}
+        {renderStageGroup('Estádios Reprodutivos', getCurrentStages().reprodutivos)}
       </div>
     </div>
   );

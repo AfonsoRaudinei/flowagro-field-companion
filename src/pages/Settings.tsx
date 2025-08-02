@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUser, UserData } from '@/contexts/UserContext';
 import { 
   ArrowLeft,
   Map,
@@ -9,10 +8,7 @@ import {
   DollarSign,
   Moon,
   LogOut,
-  RefreshCw,
-  User,
-  Upload,
-  Image as ImageIcon
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -25,7 +21,6 @@ import { useToast } from '@/hooks/use-toast';
 const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { setUserData } = useUser();
   // Map Preferences
   const [defaultMapLayer, setDefaultMapLayer] = useState('satellite');
   
@@ -39,11 +34,6 @@ const Settings: React.FC = () => {
   // Appearance
   const [darkMode, setDarkMode] = useState(false);
   const [isForceSyncing, setIsForceSyncing] = useState(false);
-
-  // Profile and Branding
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [farmLogo, setFarmLogo] = useState<string | null>(null);
-  const [useLogoAsAppIcon, setUseLogoAsAppIcon] = useState(false);
 
   const handleForceSync = async () => {
     setIsForceSyncing(true);
@@ -73,49 +63,6 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleImageUpload = (type: 'profile' | 'logo') => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          if (type === 'profile') {
-            setProfileImage(result);
-          } else {
-            setFarmLogo(result);
-          }
-          // TODO: Upload to Firebase Storage and save URL to Supabase
-        };
-        reader.readAsDataURL(file);
-      }
-    };
-    input.click();
-  };
-
-  const handleLogout = () => {
-    // Clear user data from localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('flowagro_user_data');
-    }
-    
-    // Clear user data from context - set to null to trigger logout
-    setUserData(null as unknown as UserData);
-    
-    // Show success message
-    toast({
-      title: "Logout realizado",
-      description: "Você foi desconectado com sucesso",
-      variant: "default"
-    });
-    
-    // Redirect to home page
-    navigate('/');
-  };
-
   const mapLayers = [
     { id: 'satellite', name: 'Satélite' },
     { id: 'hybrid', name: 'Híbrido' },
@@ -135,6 +82,14 @@ const Settings: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center space-x-3">
+          <Button
+            onClick={() => navigate('/technical-map')}
+            className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
+            variant="ghost"
+            size="icon"
+          >
+            <ArrowLeft className="h-5 w-5 text-foreground" />
+          </Button>
           <h1 className="text-xl font-semibold text-foreground">Configurações</h1>
         </div>
         
@@ -144,105 +99,6 @@ const Settings: React.FC = () => {
 
       {/* Content */}
       <div className="flex-1 p-4 space-y-6">
-        
-        {/* Profile and Branding */}
-        <div className="space-y-3">
-          <div className="flex items-center space-x-2">
-            <User className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Perfil e Branding</h2>
-          </div>
-          
-          <div className="space-y-4">
-            {/* Profile Photo Card */}
-            <Card className="p-4 shadow-ios-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-16 h-16 rounded-full bg-muted overflow-hidden border-2 border-border">
-                    {profileImage ? (
-                      <img 
-                        src={profileImage} 
-                        alt="Foto de perfil" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                        <User className="h-8 w-8 text-primary" />
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Foto de Perfil</p>
-                    <p className="text-sm text-muted-foreground">Sua foto pessoal</p>
-                  </div>
-                </div>
-                <Button
-                  onClick={() => handleImageUpload('profile')}
-                  variant="outline"
-                  size="sm"
-                  className="min-w-[100px]"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Alterar Foto
-                </Button>
-              </div>
-            </Card>
-
-            {/* Farm Logo Card */}
-            <Card className="p-4 shadow-ios-sm">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-16 h-12 rounded-lg bg-muted overflow-hidden border-2 border-border">
-                      {farmLogo ? (
-                        <img 
-                          src={farmLogo} 
-                          alt="Logo da fazenda" 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                          <ImageIcon className="h-6 w-6 text-primary" />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">Logo da Fazenda</p>
-                      <p className="text-sm text-muted-foreground">Logo da sua fazenda ou consultoria</p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => handleImageUpload('logo')}
-                    variant="outline"
-                    size="sm"
-                    className="min-w-[100px]"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Alterar Logo
-                  </Button>
-                </div>
-                
-                <div className="h-px bg-border"></div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <ImageIcon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">Usar como ícone do app</p>
-                      <p className="text-sm text-muted-foreground">Personalizar ícone do FlowAgro</p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={useLogoAsAppIcon}
-                    onCheckedChange={setUseLogoAsAppIcon}
-                    disabled={!farmLogo}
-                  />
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
         
         {/* Map Preferences */}
         <div className="space-y-3">
@@ -414,7 +270,7 @@ const Settings: React.FC = () => {
         {/* Logout */}
         <Card className="shadow-ios-md">
           <Button
-            onClick={handleLogout}
+            onClick={() => navigate('/login-mapa')}
             variant="ghost"
             className="w-full h-14 text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center justify-center space-x-3"
           >
