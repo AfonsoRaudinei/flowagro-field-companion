@@ -1,14 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Plus, Minus, Navigation, MessageCircle, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-interface MapLandingProps {
-  onNavigateToLogin: () => void;
-}
-
-const MapLanding: React.FC<MapLandingProps> = ({ onNavigateToLogin }) => {
+const LoginMapa: React.FC = () => {
+  const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -173,7 +171,7 @@ const MapLanding: React.FC<MapLandingProps> = ({ onNavigateToLogin }) => {
       {/* FlowAgro Button */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
         <Button
-          onClick={onNavigateToLogin}
+          onClick={() => navigate('/login-form')}
           className="px-8 py-4 bg-success text-white rounded-full shadow-ios-button font-semibold text-lg hover:bg-success/90 transition-all"
         >
           FlowAgro
@@ -183,4 +181,4 @@ const MapLanding: React.FC<MapLandingProps> = ({ onNavigateToLogin }) => {
   );
 };
 
-export default MapLanding;
+export default LoginMapa;

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, MapPin, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,12 +8,8 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { NavigationHeader } from '@/components/ui/navigation';
 
-interface LoginCompleteProps {
-  onBack: () => void;
-  onLoginSuccess: () => void;
-}
-
-const LoginComplete: React.FC<LoginCompleteProps> = ({ onBack, onLoginSuccess }) => {
+const LoginForm: React.FC = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fullName: '',
     userProfile: '',
@@ -29,7 +26,7 @@ const LoginComplete: React.FC<LoginCompleteProps> = ({ onBack, onLoginSuccess })
   const handleSubmit = () => {
     // Basic validation - all fields required
     if (formData.fullName && formData.userProfile && formData.zipCode) {
-      onLoginSuccess();
+      navigate('/technical-map');
     }
   };
 
@@ -39,7 +36,7 @@ const LoginComplete: React.FC<LoginCompleteProps> = ({ onBack, onLoginSuccess })
     <div className="min-h-screen bg-background flex flex-col">
       <NavigationHeader
         title="FlowAgro"
-        onBack={onBack}
+        onBack={() => navigate('/login-mapa')}
         showBackButton={true}
       />
 
@@ -152,4 +149,4 @@ const LoginComplete: React.FC<LoginCompleteProps> = ({ onBack, onLoginSuccess })
   );
 };
 
-export default LoginComplete;
+export default LoginForm;

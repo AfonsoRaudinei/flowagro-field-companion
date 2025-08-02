@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft,
   Map,
@@ -15,19 +16,8 @@ import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface SettingsGeneralProps {
-  onBack: () => void;
-  onNavigateToMap: () => void;
-  onNavigateToChat: () => void;
-  onLogout: () => void;
-}
-
-const SettingsGeneral: React.FC<SettingsGeneralProps> = ({ 
-  onBack, 
-  onNavigateToMap, 
-  onNavigateToChat,
-  onLogout 
-}) => {
+const Settings: React.FC = () => {
+  const navigate = useNavigate();
   // Map Preferences
   const [defaultMapLayer, setDefaultMapLayer] = useState('satellite');
   
@@ -61,7 +51,7 @@ const SettingsGeneral: React.FC<SettingsGeneralProps> = ({
       <div className="bg-card border-b border-border px-4 py-4">
         <div className="flex items-center space-x-3">
           <Button
-            onClick={onBack}
+            onClick={() => navigate('/technical-map')}
             variant="ghost"
             size="icon"
             className="h-9 w-9"
@@ -215,7 +205,7 @@ const SettingsGeneral: React.FC<SettingsGeneralProps> = ({
         {/* Logout */}
         <Card className="shadow-ios-md">
           <Button
-            onClick={onLogout}
+            onClick={() => navigate('/login-mapa')}
             variant="ghost"
             className="w-full h-14 text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center justify-center space-x-3"
           >
@@ -228,4 +218,4 @@ const SettingsGeneral: React.FC<SettingsGeneralProps> = ({
   );
 };
 
-export default SettingsGeneral;
+export default Settings;

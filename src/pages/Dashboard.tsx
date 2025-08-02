@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft,
   Send, 
@@ -20,20 +21,11 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface ChatTechnicalProps {
-  onBack: () => void;
-  onNavigateToMap: () => void;
-  onNavigateToSettings: () => void;
-}
-
 type ChatFilter = 'agenda' | 'producer' | 'ai' | 'live-field';
 type ViewMode = 'list' | 'conversation';
 
-const ChatTechnical: React.FC<ChatTechnicalProps> = ({ 
-  onBack, 
-  onNavigateToMap, 
-  onNavigateToSettings 
-}) => {
+const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [chatFilter, setChatFilter] = useState<ChatFilter>('producer');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedChat, setSelectedChat] = useState<any>(null);
@@ -361,7 +353,7 @@ const ChatTechnical: React.FC<ChatTechnicalProps> = ({
         <div className="flex items-center space-x-3">
           {viewMode === 'conversation' ? null : (
             <Button
-              onClick={onBack}
+              onClick={() => navigate('/technical-map')}
               variant="ghost"
               size="icon"
               className="h-9 w-9"
@@ -382,4 +374,4 @@ const ChatTechnical: React.FC<ChatTechnicalProps> = ({
   );
 };
 
-export default ChatTechnical;
+export default Dashboard;

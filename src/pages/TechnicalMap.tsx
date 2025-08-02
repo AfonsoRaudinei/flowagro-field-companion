@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { 
@@ -16,18 +17,16 @@ import {
   Pentagon,
   Route,
   Play,
-  StopCircle
+  StopCircle,
+  MessageCircle,
+  Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface MainDashboardProps {
-  onNavigateToChat: () => void;
-  onNavigateToSettings: () => void;
-}
-
-const MainDashboard: React.FC<MainDashboardProps> = ({ onNavigateToChat, onNavigateToSettings }) => {
+const TechnicalMap: React.FC = () => {
+  const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -143,7 +142,7 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ onNavigateToChat, onNavig
 
   const handleBack = () => {
     // Navigation logic would go here
-    console.log('Going back');
+    navigate('/login-form');
   };
 
   return (
@@ -170,8 +169,26 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ onNavigateToChat, onNavig
           )}
         </div>
 
-        <div className="bg-card/90 backdrop-blur-sm p-3 rounded-full shadow-ios-md">
-          <Compass className="h-5 w-5 text-foreground" />
+        <div className="flex items-center space-x-2">
+          <div className="bg-card/90 backdrop-blur-sm p-3 rounded-full shadow-ios-md">
+            <Compass className="h-5 w-5 text-foreground" />
+          </div>
+          <Button
+            onClick={() => navigate('/dashboard')}
+            className="bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
+            variant="ghost"
+            size="icon"
+          >
+            <MessageCircle className="h-5 w-5 text-foreground" />
+          </Button>
+          <Button
+            onClick={() => navigate('/settings')}
+            className="bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
+            variant="ghost"
+            size="icon"
+          >
+            <Settings className="h-5 w-5 text-foreground" />
+          </Button>
         </div>
       </div>
 
@@ -380,4 +397,4 @@ const MainDashboard: React.FC<MainDashboardProps> = ({ onNavigateToChat, onNavig
   );
 };
 
-export default MainDashboard;
+export default TechnicalMap;
