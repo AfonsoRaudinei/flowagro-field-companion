@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { UserProvider } from "./contexts/UserContext";
 import SwipeNavigation from "./components/SwipeNavigation";
-import LoginMapa from "./pages/LoginMapa";
+import HomePage from "./pages/HomePage";
 import LoginForm from "./pages/LoginForm";
 import NotFound from "./pages/NotFound";
 import PhenologicalStages from "./pages/PhenologicalStages";
@@ -26,8 +26,7 @@ const AppLayout = () => {
       ) : (
         <div className="w-full max-w-md mx-auto bg-background min-h-screen">
           <Routes>
-            <Route path="/" element={<LoginMapa />} />
-            <Route path="/login-mapa" element={<LoginMapa />} />
+            <Route path="/" element={<HomePage />} />
             <Route path="/login-form" element={<LoginForm />} />
             <Route path="/phenological-stages" element={<PhenologicalStages />} />
             <Route path="*" element={<NotFound />} />

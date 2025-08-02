@@ -5,7 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { Plus, Minus, Navigation, MessageCircle, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const LoginMapa: React.FC = () => {
+const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -181,4 +181,4 @@ const LoginMapa: React.FC = () => {
   );
 };
 
-export default LoginMapa;
+export default HomePage;
