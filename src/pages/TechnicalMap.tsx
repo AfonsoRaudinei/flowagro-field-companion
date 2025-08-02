@@ -37,6 +37,8 @@ import OfflineIndicator from '@/components/ui/offline-indicator';
 import SyncIndicator from '@/components/ui/sync-indicator';
 import ShapeEditControls from '@/components/ui/shape-edit-controls';
 import { DrawingService, DrawingShape } from '@/services/drawingService';
+import FarmInfoCard from '@/components/FarmInfoCard';
+import StatusCard from '@/components/StatusCard';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -71,6 +73,12 @@ const TechnicalMap: React.FC = () => {
   const [showDrawingTools, setShowDrawingTools] = useState(false);
   const [selectedTool, setSelectedTool] = useState<string>('');
   const [showEventSelector, setShowEventSelector] = useState(false);
+  
+  // Farm info state
+  const [selectedCulture, setSelectedCulture] = useState<string>('soja');
+  const [selectedStage, setSelectedStage] = useState<string>('ve');
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'pending' | 'error'>('synced');
   
   const [importedFile, setImportedFile] = useState<File | null>(null);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
@@ -109,6 +117,12 @@ const TechnicalMap: React.FC = () => {
     { id: 'polygon', name: 'Polígono', icon: Pentagon },
     { id: 'pivot', name: 'Pivô', icon: Circle },
     { id: 'rectangle', name: 'Retângulo', icon: Square }
+  ];
+
+  const floatingActions = [
+    { id: 'camera', name: 'Câmera', icon: Camera, priority: 1 },
+    { id: 'trails', name: 'Trilhas', icon: Route, priority: 2 },
+    { id: 'events', name: 'Ocorrências', icon: MessageCircle, priority: 3 }
   ];
 
   // Enhanced event recording state
@@ -1074,110 +1088,30 @@ const TechnicalMap: React.FC = () => {
             </Button>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <OfflineIndicator />
-            <SyncIndicator />
-          </div>
+          {/* Status Card no topo direito */}
+          <StatusCard
+            isOnline={isOnline}
+            syncStatus={syncStatus}
+            weather={weatherData}
+            onClick={() => {
+              toast({
+                title: "Status do Sistema",
+                description: `Conectado: ${isOnline ? 'Sim' : 'Não'} • Sync: ${syncStatus}`,
+                variant: "default"
+              });
+            }}
+          />
         </div>
 
-        {/* Weather Card */}
-        <div className="absolute top-20 left-4 z-10">
-          <Card className="bg-card/90 backdrop-blur-sm shadow-ios-md border border-border">
-            <div className="p-3 flex items-center space-x-2">
-              <span className="text-lg">{weatherData.condition}</span>
-              <div className="text-sm">
-                <div className="font-semibold text-foreground">{weatherData.temperature}°C</div>
-                <div className="text-muted-foreground text-xs">
-                  {weatherData.humidity}% • {weatherData.windSpeed}km/h
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Information Bar */}
-        <div className="absolute bottom-20 left-0 right-0 z-30">
-          <div className="mx-3 mb-2">
-            <Card className="bg-white/95 backdrop-blur-sm border border-gray-200 shadow-lg rounded-xl">
-              <div className="px-4 py-3">
-                <div className="space-y-2 text-sm">
-                  {/* Producer/User Name */}
-                  <div className="flex items-center gap-2">
-                    <span>👤</span>
-                    <span className="text-gray-900 font-medium">
-                      {isConsultor 
-                        ? (selectedProducer?.name || 'Não selecionado')
-                        : (ownFarm?.name || userData?.fullName || 'N/A')
-                      }
-                    </span>
-                  </div>
-
-                  {/* Farm */}
-                  <div className="flex items-center gap-2">
-                    <span>🏡</span>
-                    <span className="text-gray-900 truncate">
-                      {isConsultor 
-                        ? (selectedProducer?.farm || 'Não selecionada')
-                        : (ownFarm?.farm || 'N/A')
-                      }
-                    </span>
-                  </div>
-
-                  {/* Field */}
-                  <div className="flex items-center gap-2">
-                    <span>🌱</span>
-                    <span className="text-gray-600">Talhão:</span>
-                    <span className="text-gray-900 truncate">
-                      {currentField?.fieldName || 'Sem talhão'}
-                    </span>
-                  </div>
-
-                  {/* Phenological Stage */}
-                  <div className="flex items-center gap-2 relative">
-                    <span>📊</span>
-                    <span className="text-gray-600">Estádio:</span>
-                    <button
-                      onClick={() => setShowStageEditor(!showStageEditor)}
-                      className="text-gray-900 hover:text-blue-600 transition-colors"
-                    >
-                      {phenologicalStages.find(s => s.id === phenologicalStage)?.emoji}{' '}
-                      {phenologicalStages.find(s => s.id === phenologicalStage)?.name}
-                    </button>
-
-                    {/* Stage Selector */}
-                    {showStageEditor && (
-                      <div className="absolute bottom-full right-0 mb-2 w-64 z-10">
-                        <Card className="bg-white border border-gray-200 shadow-lg rounded-lg">
-                          <div className="p-3">
-                            <div className="text-sm font-medium text-gray-900 mb-3">
-                              Selecionar Estádio Fenológico:
-                            </div>
-                            <div className="grid grid-cols-1 gap-1 max-h-40 overflow-y-auto">
-                              {phenologicalStages.map((stage) => (
-                                <Button
-                                  key={stage.id}
-                                  onClick={() => {
-                                    setPhenologicalStage(stage.id);
-                                    setShowStageEditor(false);
-                                  }}
-                                  variant={phenologicalStage === stage.id ? "default" : "ghost"}
-                                  size="sm"
-                                  className="justify-start h-auto py-2 px-3 text-sm"
-                                >
-                                  <span className="mr-2">{stage.emoji}</span>
-                                  {stage.name}
-                                </Button>
-                              ))}
-                            </div>
-                          </div>
-                        </Card>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
+        {/* Card Minha Fazenda - Centro inferior, acima da tab bar */}
+        <div className="absolute bottom-20 left-0 right-0 z-30 px-4">
+          <FarmInfoCard
+            selectedCulture={selectedCulture}
+            selectedStage={selectedStage}
+            onCultureChange={setSelectedCulture}
+            onStageChange={setSelectedStage}
+            onStagesClick={() => navigate('/phenological-stages')}
+          />
         </div>
 
         {/* Left Floating Toolbar */}
@@ -1223,7 +1157,7 @@ const TechnicalMap: React.FC = () => {
           </Button>
         </div>
 
-        {/* Right Floating Toolbar */}
+        {/* Right Floating Toolbar - Reorganizado por prioridade */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-3">
           {/* GPS Fix Button */}
           <Button
@@ -1255,24 +1189,36 @@ const TechnicalMap: React.FC = () => {
             <Minus className="h-5 w-5 text-foreground" />
           </Button>
 
-          {/* Camera/Event Button */}
+          {/* PRIORIDADE 1: Câmera - Destaque especial */}
           <Button
             onClick={handleCameraOpen}
-            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm shadow-lg border-2 border-primary hover:scale-105 transition-transform"
             variant="ghost"
             size="sm"
           >
-            <Camera className="h-5 w-5 text-foreground" />
+            <Camera className="h-6 w-6 text-primary-foreground" />
           </Button>
 
-          {/* Chat Button */}
+          {/* PRIORIDADE 2: Trilhas */}
           <Button
-            onClick={() => navigate('/chat')}
-            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            onClick={handleTrailToggle}
+            className={`w-12 h-12 rounded-full backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform ${
+              isRecordingTrail ? 'bg-red-500/90 text-white' : 'bg-card/90'
+            }`}
             variant="ghost"
             size="sm"
           >
-            <MessageCircle className="h-5 w-5 text-foreground" />
+            <Route className="h-5 w-5" />
+          </Button>
+
+          {/* PRIORIDADE 3: Ocorrências */}
+          <Button
+            onClick={() => setShowEventSelector(!showEventSelector)}
+            className="w-12 h-12 rounded-full bg-orange-500/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            variant="ghost"
+            size="sm"
+          >
+            <MessageCircle className="h-5 w-5 text-white" />
           </Button>
         </div>
 

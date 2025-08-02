@@ -11,6 +11,7 @@ import TechnicalMap from "./pages/TechnicalMap";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import PhenologicalStages from "./pages/PhenologicalStages";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const AppLayout = () => {
           <Route path="/technical-map" element={<TechnicalMap />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/phenological-stages" element={<PhenologicalStages />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
