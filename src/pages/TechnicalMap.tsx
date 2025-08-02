@@ -22,7 +22,8 @@ import {
   MessageCircle,
   Settings,
   Plus,
-  Minus
+  Minus,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -34,6 +35,8 @@ import { GPSService, UserLocation } from '@/services/gpsService';
 import { TrailService, Trail } from '@/services/trailService';
 import OfflineIndicator from '@/components/ui/offline-indicator';
 import SyncIndicator from '@/components/ui/sync-indicator';
+import ShapeEditControls from '@/components/ui/shape-edit-controls';
+import { DrawingService, DrawingShape } from '@/services/drawingService';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -82,6 +85,11 @@ const TechnicalMap: React.FC = () => {
   const [gpsWatchId, setGpsWatchId] = useState<string | null>(null);
   const [currentTrail, setCurrentTrail] = useState<Trail | null>(null);
   const [isRecordingTrail, setIsRecordingTrail] = useState(false);
+  const [drawnShapes, setDrawnShapes] = useState<DrawingShape[]>([]);
+  const [selectedShape, setSelectedShape] = useState<DrawingShape | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [shapeToDelete, setShapeToDelete] = useState<DrawingShape | null>(null);
+  const [editingShape, setEditingShape] = useState<DrawingShape | null>(null);
 
   const mapLayers = [
     { id: 'satellite', name: 'Satelite', style: 'satellite' },
@@ -191,16 +199,21 @@ const TechnicalMap: React.FC = () => {
       try {
         const storedPhotos = await CameraService.getStoredPhotos();
         const storedImports = await FileImportService.getStoredImports();
+        const storedDrawings = await DrawingService.loadDrawings();
         const activeTrail = TrailService.getCurrentTrail();
 
         setFieldPhotos(storedPhotos);
         setImportedFiles(storedImports);
+        setDrawnShapes(storedDrawings);
         
         // Check if there's an active trail
         if (activeTrail?.isActive) {
           setCurrentTrail(activeTrail);
           setIsRecordingTrail(true);
         }
+
+        // Listen for drawing updates
+        DrawingService.addListener(setDrawnShapes);
       } catch (error) {
         console.error('Error loading stored data:', error);
       }
@@ -213,6 +226,8 @@ const TechnicalMap: React.FC = () => {
       if (gpsWatchId) {
         GPSService.clearWatch(gpsWatchId);
       }
+      // Remove drawing listener
+      DrawingService.removeListener(setDrawnShapes);
       map.current?.remove();
     };
   }, []);
@@ -355,29 +370,24 @@ const TechnicalMap: React.FC = () => {
     }, 3000);
   };
 
-  const handleZoomIn = () => {
-    if (map.current) {
-      map.current.zoomIn({ duration: 300 });
-    }
-  };
-
-  const handleZoomOut = () => {
-    if (map.current) {
-      map.current.zoomOut({ duration: 300 });
-    }
-  };
-
-  const saveDrawing = (shapeType: string, targetFarm: { id: string; farm: string }) => {
-    const newDrawing: DrawingMetadata = {
+  const saveDrawing = async (shapeType: string, targetFarm: { id: string; farm: string }) => {
+    const newDrawing: DrawingShape = {
       id: `drawing-${Date.now()}`,
       farmId: targetFarm.id,
       farmName: targetFarm.farm,
-      shapeType,
-      timestamp: new Date(),
-      coordinates: [] // Would contain actual drawing coordinates
+      shapeType: shapeType as any,
+      points: [
+        // Mock points - would be actual drawing coordinates
+        { x: 100, y: 100, lat: -15.7942, lng: -47.8825 },
+        { x: 200, y: 100, lat: -15.7940, lng: -47.8820 },
+        { x: 200, y: 200, lat: -15.7938, lng: -47.8820 },
+        { x: 100, y: 200, lat: -15.7938, lng: -47.8825 }
+      ],
+      timestamp: new Date()
     };
 
-    setDrawings(prev => [...prev, newDrawing]);
+    await DrawingService.saveDrawing(newDrawing);
+    
     setIsDrawingMode(false);
     setSelectedTool('');
 
@@ -393,6 +403,70 @@ const TechnicalMap: React.FC = () => {
       description: `${shapeNames[shapeType as keyof typeof shapeNames]} salva para ${targetFarm.farm}`,
       variant: "default"
     });
+  };
+
+  const handleShapeClick = (shape: DrawingShape, event: React.MouseEvent) => {
+    event.stopPropagation();
+    
+    const targetFarm = isConsultor ? selectedProducer : ownFarm;
+    const canEdit = targetFarm && DrawingService.canEdit(
+      shape, 
+      targetFarm.id, 
+      isConsultor, 
+      selectedProducer?.id
+    );
+
+    if (canEdit) {
+      const clickedShape = DrawingService.selectShape(shape.id);
+      setSelectedShape(clickedShape);
+    } else {
+      toast({
+        title: "Acesso negado",
+        description: "Você não pode editar esta área",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEditShape = () => {
+    if (selectedShape) {
+      setEditingShape(selectedShape);
+      toast({
+        title: "Modo de edição",
+        description: "Modifique a forma e toque para salvar",
+        variant: "default"
+      });
+    }
+  };
+
+  const handleDeleteShape = () => {
+    if (selectedShape) {
+      setShapeToDelete(selectedShape);
+      setShowDeleteConfirm(true);
+    }
+  };
+
+  const confirmDeleteShape = async () => {
+    if (shapeToDelete) {
+      await DrawingService.deleteDrawing(shapeToDelete.id);
+      setSelectedShape(null);
+      setShapeToDelete(null);
+      setShowDeleteConfirm(false);
+      
+      toast({
+        title: "Área removida",
+        description: `${shapeToDelete.farmName} - área excluída`,
+        variant: "default"
+      });
+    }
+  };
+
+  const handleMapClick = () => {
+    // Deselect shape when clicking on empty map area
+    if (selectedShape && !editingShape) {
+      DrawingService.deselectShape();
+      setSelectedShape(null);
+    }
   };
 
   const handleCameraEventSelect = async (eventType: string) => {
@@ -457,6 +531,18 @@ const TechnicalMap: React.FC = () => {
         description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleZoomIn = () => {
+    if (map.current) {
+      map.current.zoomIn({ duration: 300 });
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (map.current) {
+      map.current.zoomOut({ duration: 300 });
     }
   };
 
@@ -612,7 +698,11 @@ const TechnicalMap: React.FC = () => {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
       {/* Map Container */}
-      <div ref={mapContainer} className="absolute inset-0" />
+      <div 
+        ref={mapContainer} 
+        className="absolute inset-0" 
+        onClick={handleMapClick}
+      />
       
       {/* Top Bar */}
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4">
@@ -1083,6 +1173,73 @@ const TechnicalMap: React.FC = () => {
               >
                 Cancelar
               </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Drawn Shapes */}
+      {drawnShapes.map((shape) => (
+        <div
+          key={shape.id}
+          className={`absolute pointer-events-auto z-30 ${
+            shape.isSelected ? 'ring-2 ring-primary ring-opacity-50' : ''
+          }`}
+          style={{
+            // Mock positioning - would be calculated from actual coordinates
+            left: shape.points[0]?.x || 0,
+            top: shape.points[0]?.y || 0,
+            width: 100,
+            height: 100,
+            backgroundColor: shape.color + '20',
+            border: `2px solid ${shape.color}`,
+            borderRadius: shape.shapeType === 'pivot' ? '50%' : '4px'
+          }}
+          onClick={(e) => handleShapeClick(shape, e)}
+        />
+      ))}
+
+      {/* Shape Edit Controls */}
+      {selectedShape && (
+        <ShapeEditControls
+          position={{ x: selectedShape.points[0]?.x || 0, y: selectedShape.points[0]?.y || 0 }}
+          onEdit={handleEditShape}
+          onDelete={handleDeleteShape}
+          canEdit={true}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && shapeToDelete && (
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <Card className="p-6 mx-4 bg-card shadow-ios-lg max-w-sm w-full">
+            <div className="text-center">
+              <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="font-semibold text-foreground mb-2">Remover área</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Deseja remover esta área de <strong>{shapeToDelete.farmName}</strong>?
+              </p>
+              
+              <div className="flex space-x-3">
+                <Button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setShapeToDelete(null);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={confirmDeleteShape}
+                  className="bg-red-500 hover:bg-red-600 text-white flex-1"
+                  size="sm"
+                >
+                  Remover
+                </Button>
+              </div>
             </div>
           </Card>
         </div>

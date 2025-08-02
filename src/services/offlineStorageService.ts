@@ -1,4 +1,4 @@
-export type SyncStatus = 'pending' | 'synced' | 'failed';
+export type SyncStatus = 'pending' | 'synced' | 'failed' | 'deleted-pending-sync';
 
 export interface BaseOfflineData {
   id: string;
@@ -8,6 +8,7 @@ export interface BaseOfflineData {
   syncStatus: SyncStatus;
   lastSyncAttempt?: Date;
   syncError?: string;
+  isDeleted?: boolean;
 }
 
 export interface OfflinePhoto extends BaseOfflineData {
@@ -184,6 +185,32 @@ export class OfflineStorageService {
       const request = store.delete(id);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve();
+    });
+  }
+
+  static async markAsDeleted(id: string): Promise<void> {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([this.STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(this.STORE_NAME);
+      
+      // First get the item
+      const getRequest = store.get(id);
+      getRequest.onsuccess = () => {
+        const data = getRequest.result;
+        if (data) {
+          data.isDeleted = true;
+          data.syncStatus = 'deleted-pending-sync';
+          data.lastSyncAttempt = new Date();
+          
+          const putRequest = store.put(data);
+          putRequest.onerror = () => reject(putRequest.error);
+          putRequest.onsuccess = () => resolve();
+        } else {
+          reject(new Error('Item not found'));
+        }
+      };
+      getRequest.onerror = () => reject(getRequest.error);
     });
   }
 
