@@ -20,7 +20,9 @@ import {
   Play,
   StopCircle,
   MessageCircle,
-  Settings
+  Settings,
+  Plus,
+  Minus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -100,15 +102,16 @@ const TechnicalMap: React.FC = () => {
   useEffect(() => {
     if (!mapContainer.current) return;
 
+    // Initialize map with MapTiler
     map.current = new maplibregl.Map({
       container: mapContainer.current,
       style: {
         version: 8,
         sources: {
-          'satellite': {
+          'maptiler-satellite': {
             type: 'raster',
             tiles: [
-              'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=YOUR_MAPTILER_KEY'
+              'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=TomRDHESnrtpittgnpuf'
             ],
             tileSize: 256,
             attribution: '© MapTiler © OpenStreetMap contributors'
@@ -118,27 +121,72 @@ const TechnicalMap: React.FC = () => {
           {
             id: 'satellite',
             type: 'raster',
-            source: 'satellite'
+            source: 'maptiler-satellite'
           }
         ]
       },
-      center: [-47.8825, -15.7942],
-      zoom: 14,
+      center: [-52.0, -10.0], // Default center on Brazil
+      zoom: 16,
       pitch: 0,
       bearing: 0
     });
 
-    // Add user location control
+    // Add map controls
     map.current.addControl(
-      new maplibregl.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true
-        },
-        trackUserLocation: true
-      })
+      new maplibregl.NavigationControl({
+        showCompass: true,
+        showZoom: true,
+        visualizePitch: false
+      }),
+      'top-left'
     );
 
-    // Load stored photos, imported files and trails on component mount
+    // Add geolocate control
+    const geolocateControl = new maplibregl.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true
+      },
+      trackUserLocation: true
+    });
+
+    map.current.addControl(geolocateControl, 'top-left');
+
+    // Handle map load errors
+    map.current.on('error', (e) => {
+      console.error('Map loading error:', e);
+      toast({
+        title: "Erro ao carregar o mapa",
+        description: "Verifique a chave da API.",
+        variant: "destructive"
+      });
+    });
+
+    // Try to get user's location when map loads
+    map.current.on('load', async () => {
+      try {
+        if (isGPSEnabled && userLocation) {
+          map.current?.flyTo({
+            center: [userLocation.longitude, userLocation.latitude],
+            zoom: 16,
+            duration: 1000
+          });
+        } else {
+          // Try to trigger GPS location
+          try {
+            geolocateControl.trigger();
+          } catch (error) {
+            console.log('GPS trigger failed, using default location');
+          }
+        }
+      } catch (error) {
+        console.log('Location unavailable, using default center');
+      }
+    });
+
+    // Initialize GPS and load data
+    initializeGPS();
+
+    // Load stored data
     const loadStoredData = async () => {
       try {
         const storedPhotos = await CameraService.getStoredPhotos();
@@ -159,9 +207,6 @@ const TechnicalMap: React.FC = () => {
     };
 
     loadStoredData();
-
-    // Initialize GPS
-    initializeGPS();
 
     return () => {
       // Cleanup GPS watch
@@ -207,7 +252,8 @@ const TechnicalMap: React.FC = () => {
         if (map.current) {
           map.current.flyTo({
             center: [location.longitude, location.latitude],
-            zoom: 16
+            zoom: 16,
+            duration: 1000
           });
         }
 
@@ -307,6 +353,18 @@ const TechnicalMap: React.FC = () => {
     setTimeout(() => {
       saveDrawing(toolId, targetFarm);
     }, 3000);
+  };
+
+  const handleZoomIn = () => {
+    if (map.current) {
+      map.current.zoomIn({ duration: 300 });
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (map.current) {
+      map.current.zoomOut({ duration: 300 });
+    }
   };
 
   const saveDrawing = (shapeType: string, targetFarm: { id: string; farm: string }) => {
@@ -808,6 +866,27 @@ const TechnicalMap: React.FC = () => {
           <span className="text-xs font-bold">GPS</span>
         </Button>
 
+        {/* Zoom Controls */}
+        <div className="flex flex-col space-y-2 mb-3">
+          <Button
+            onClick={handleZoomIn}
+            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
+            variant="ghost"
+            size="icon"
+          >
+            <Plus className="h-5 w-5 text-foreground" />
+          </Button>
+          
+          <Button
+            onClick={handleZoomOut}
+            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
+            variant="ghost"
+            size="icon"
+          >
+            <Minus className="h-5 w-5 text-foreground" />
+          </Button>
+        </div>
+
         {/* GPS Recenter */}
         <Button
           onClick={handleGPSRecenter}
@@ -862,7 +941,11 @@ const TechnicalMap: React.FC = () => {
                         (previewFile.boundingBox.east + previewFile.boundingBox.west) / 2,
                         (previewFile.boundingBox.north + previewFile.boundingBox.south) / 2
                       ];
-                      map.current.flyTo({ center: center as [number, number], zoom: 15 });
+                      map.current.flyTo({ 
+                        center: center as [number, number], 
+                        zoom: 15,
+                        duration: 1000
+                      });
                     }
                     setPreviewFile(null);
                   }}
