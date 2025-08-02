@@ -117,9 +117,7 @@ const LoginMapa: React.FC = () => {
       
       {/* Status Message */}
       {statusMessage && <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
-          <div className="bg-card/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-ios-md">
-            <p className="text-sm text-foreground font-medium">{statusMessage}</p>
-          </div>
+          
         </div>}
 
       {/* Compass */}
