@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Map, MessageCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TechnicalMap from '@/pages/TechnicalMap';
-import Dashboard from '@/pages/Dashboard';
+import Chat from '@/pages/Chat';
 import Settings from '@/pages/Settings';
 
 interface SwipeNavigationProps {
@@ -29,7 +29,7 @@ const SwipeNavigation: React.FC<SwipeNavigationProps> = ({ className = '' }) => 
       id: 'chat',
       label: 'Chat', 
       icon: MessageCircle,
-      component: Dashboard
+      component: Chat
     },
     {
       id: 'profile',
@@ -97,23 +97,9 @@ const SwipeNavigation: React.FC<SwipeNavigationProps> = ({ className = '' }) => 
         onTouchEnd={handleTouchEnd}
       >
         <div
-          className={`h-full transition-transform duration-300 ease-out ${
-            isTransitioning ? '' : ''
-          }`}
-          style={{
-            transform: `translateX(-${activeTab * 100}%)`,
-            width: '300%',
-            display: 'flex'
-          }}
+          className={`h-full transition-transform duration-300 ease-out`}
         >
-          {tabs.map((tab, index) => {
-            const Component = tab.component;
-            return (
-              <div key={tab.id} className="w-1/3 h-full">
-                <Component />
-              </div>
-            );
-          })}
+          {getCurrentComponent()}
         </div>
       </div>
 
