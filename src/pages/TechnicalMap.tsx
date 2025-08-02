@@ -39,6 +39,7 @@ import ShapeEditControls from '@/components/ui/shape-edit-controls';
 import { DrawingService, DrawingShape } from '@/services/drawingService';
 import FarmInfoCard from '@/components/FarmInfoCard';
 import StatusCard from '@/components/StatusCard';
+import { formatStageForReport } from '@/data/phenologicalStages';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -76,7 +77,7 @@ const TechnicalMap: React.FC = () => {
   
   // Farm info state
   const [selectedCulture, setSelectedCulture] = useState<string>('soja');
-  const [selectedStage, setSelectedStage] = useState<string>('ve');
+  const [selectedStage, setSelectedStage] = useState<string>('VE'); // Usar código de estádio diretamente
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'pending' | 'error'>('synced');
   
@@ -698,7 +699,11 @@ const TechnicalMap: React.FC = () => {
         timestamp: new Date(),
         severity: eventFormData.severity,
         quantity: eventFormData.quantity ? parseInt(eventFormData.quantity) : undefined,
-        notes: eventFormData.notes.trim() || undefined
+        notes: eventFormData.notes.trim() || undefined,
+        // IMPORTANTE: Salvar estádio com descrição completa para relatórios
+        phenologicalStage: selectedStage, // Sigla (ex: "V1")
+        phenologicalStageComplete: formatStageForReport(selectedCulture, selectedStage), // Descrição completa (ex: "V1 – Primeira folha com colar visível")
+        culture: selectedCulture // Adicionar cultura também
       };
 
       await CameraService.savePhoto(photo);
@@ -1008,7 +1013,11 @@ const TechnicalMap: React.FC = () => {
         ],
         timestamp: new Date(),
         areaM2: pendingDrawing.areaM2,
-        areaHa: pendingDrawing.areaHa
+        areaHa: pendingDrawing.areaHa,
+        // IMPORTANTE: Salvar estádio com descrição completa para relatórios
+        phenologicalStage: selectedStage, // Sigla (ex: "V1") 
+        phenologicalStageComplete: formatStageForReport(selectedCulture, selectedStage), // Descrição completa
+        culture: selectedCulture // Adicionar cultura também
       };
 
       await DrawingService.saveDrawing(newDrawing);

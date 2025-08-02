@@ -19,6 +19,10 @@ export interface DrawingShape {
   color?: string;
   areaM2?: number;
   areaHa?: number;
+  // Campos para estádio fenológico
+  phenologicalStage?: string; // Sigla (ex: "V1")
+  phenologicalStageComplete?: string; // Descrição completa (ex: "V1 – Primeira folha com colar visível")
+  culture?: string; // Cultura (ex: "soja", "milho", "algodao")
 }
 
 export class DrawingService {
@@ -43,7 +47,11 @@ export class DrawingService {
       shapeType: shape.shapeType,
       coordinates: shape.points,
       areaM2: shape.areaM2,
-      areaHa: shape.areaHa
+      areaHa: shape.areaHa,
+      // Salvar campos de estádio fenológico
+      phenologicalStage: shape.phenologicalStage,
+      phenologicalStageComplete: shape.phenologicalStageComplete,
+      culture: shape.culture
     };
 
     await OfflineStorageService.save(offlineDrawing);
@@ -100,7 +108,11 @@ export class DrawingService {
           timestamp: drawing.timestamp,
           color: this.getShapeColor(drawing.shapeType),
           areaM2: drawing.areaM2,
-          areaHa: drawing.areaHa
+          areaHa: drawing.areaHa,
+          // Recuperar campos de estádio fenológico
+          phenologicalStage: drawing.phenologicalStage,
+          phenologicalStageComplete: drawing.phenologicalStageComplete,
+          culture: drawing.culture
         }));
       
       return this.shapes;

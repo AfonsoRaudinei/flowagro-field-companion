@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getStagesForCulture, formatStageForUI } from '@/data/phenologicalStages';
 
 interface FarmInfoCardProps {
   className?: string;
@@ -25,63 +26,8 @@ const FarmInfoCard: React.FC<FarmInfoCardProps> = ({
     { value: 'algodao', label: 'Algodão' }
   ];
 
-  const sojaStages = [
-    { value: 've', label: 'VE' },
-    { value: 'vc', label: 'VC' },
-    { value: 'v1', label: 'V1' },
-    { value: 'v2', label: 'V2' },
-    { value: 'v3', label: 'V3' },
-    { value: 'r1', label: 'R1' },
-    { value: 'r2', label: 'R2' },
-    { value: 'r3', label: 'R3' },
-    { value: 'r4', label: 'R4' },
-    { value: 'r5', label: 'R5' },
-    { value: 'r6', label: 'R6' },
-    { value: 'r7', label: 'R7' },
-    { value: 'r8', label: 'R8' }
-  ];
-
-  const milhoStages = [
-    { value: 've', label: 'VE' },
-    { value: 'v1', label: 'V1' },
-    { value: 'v2', label: 'V2' },
-    { value: 'v3', label: 'V3' },
-    { value: 'v4', label: 'V4' },
-    { value: 'v5', label: 'V5' },
-    { value: 'v6', label: 'V6' },
-    { value: 'vt', label: 'VT' },
-    { value: 'r1', label: 'R1' },
-    { value: 'r2', label: 'R2' },
-    { value: 'r3', label: 'R3' },
-    { value: 'r4', label: 'R4' },
-    { value: 'r5', label: 'R5' },
-    { value: 'r6', label: 'R6' }
-  ];
-
-  const algodaoStages = [
-    { value: 've', label: 'VE' },
-    { value: 'v1', label: 'V1' },
-    { value: 'v2', label: 'V2' },
-    { value: 'b1', label: 'B1' },
-    { value: 'b2', label: 'B2' },
-    { value: 'f1', label: 'F1' },
-    { value: 'f2', label: 'F2' },
-    { value: 'c1', label: 'C1' },
-    { value: 'c2', label: 'C2' }
-  ];
-
-  const getStagesForCulture = () => {
-    switch (selectedCulture) {
-      case 'soja':
-        return sojaStages;
-      case 'milho':
-        return milhoStages;
-      case 'algodao':
-        return algodaoStages;
-      default:
-        return sojaStages;
-    }
-  };
+  // Buscar estádios dinamicamente baseado na cultura selecionada
+  const availableStages = getStagesForCulture(selectedCulture);
 
   return (
     <Card className={`bg-background/95 backdrop-blur-sm border shadow-lg ${className}`}>
@@ -112,9 +58,9 @@ const FarmInfoCard: React.FC<FarmInfoCardProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {getStagesForCulture().map((stage) => (
-                  <SelectItem key={stage.value} value={stage.value}>
-                    {stage.label}
+                {availableStages.map((stage) => (
+                  <SelectItem key={stage.code} value={stage.code}>
+                    {formatStageForUI(stage.code)}
                   </SelectItem>
                 ))}
               </SelectContent>
