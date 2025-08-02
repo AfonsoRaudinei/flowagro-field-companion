@@ -12,15 +12,11 @@ import {
   Camera, 
   Navigation, 
   Cloud,
-  ChevronDown,
   Square,
   Circle,
   Pentagon,
   Route,
-  Play,
-  StopCircle,
   MessageCircle,
-  Settings,
   Plus,
   Minus,
   Trash2
@@ -72,7 +68,7 @@ const TechnicalMap: React.FC = () => {
   const [showDrawingTools, setShowDrawingTools] = useState(false);
   const [selectedTool, setSelectedTool] = useState<string>('');
   const [showEventSelector, setShowEventSelector] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
+  
   const [importedFile, setImportedFile] = useState<File | null>(null);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [drawings, setDrawings] = useState<DrawingMetadata[]>([]);
@@ -704,11 +700,6 @@ const TechnicalMap: React.FC = () => {
     handleCameraEventSelect(eventType);
   };
 
-  const toggleRecording = () => {
-    setIsRecording(!isRecording);
-    const targetFarm = isConsultor ? selectedProducer : ownFarm;
-    console.log('GPS tracking:', !isRecording ? 'started' : 'stopped', 'for farm:', targetFarm?.farm);
-  };
 
   const handleConfirmDrawing = async () => {
     if (pendingDrawing && confirmFormData.fieldName.trim()) {
@@ -881,21 +872,21 @@ const TechnicalMap: React.FC = () => {
         </Card>
       </div>
 
-      {/* Layer Selector */}
+      {/* Layer Selector - Repositioned */}
       <div className="absolute top-20 left-4 z-10">
         <div className="relative">
           <Button
             onClick={() => setShowLayerSelector(!showLayerSelector)}
-            className="flex items-center space-x-2 bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
+            className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card"
             variant="ghost"
+            size="icon"
+            title="Camadas do mapa"
           >
             <Layers className="h-4 w-4" />
-            <span className="text-sm">Camadas</span>
-            <ChevronDown className="h-3 w-3" />
           </Button>
           
           {showLayerSelector && (
-            <Card className="absolute top-12 left-0 w-48 p-2 bg-card shadow-ios-lg border border-border z-50">
+            <Card className="absolute top-0 left-12 w-48 p-2 bg-card shadow-ios-lg border border-border z-50">
               {mapLayers.map((layer) => (
                 <Button
                   key={layer.id}
@@ -913,25 +904,24 @@ const TechnicalMap: React.FC = () => {
         </div>
       </div>
 
-      {/* Drawing Tools */}
+      {/* Drawing Tools - Optimized */}
       <div className="absolute left-4 top-32 z-10">
         <div className="relative">
           <Button
             onClick={() => setShowDrawingTools(!showDrawingTools)}
             disabled={isDrawingMode}
-            className={`flex items-center space-x-2 bg-card/90 backdrop-blur-sm shadow-ios-md border border-border ${
+            className={`w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card ${
               isDrawingMode ? 'opacity-50' : ''
             }`}
             variant="ghost"
+            size="icon"
+            title={isDrawingMode ? 'Desenhando...' : 'Ferramentas de desenho'}
           >
             <Edit3 className="h-4 w-4" />
-            <span className="text-sm">
-              {isDrawingMode ? 'Desenhando...' : 'Desenhar'}
-            </span>
           </Button>
           
           {showDrawingTools && (
-            <Card className="absolute top-12 left-0 w-44 p-2 bg-card shadow-ios-lg border border-border z-50">
+            <Card className="absolute top-0 left-12 w-44 p-2 bg-card shadow-ios-lg border border-border z-50">
               {drawingTools.map((tool) => {
                 const IconComponent = tool.icon;
                 const isActive = selectedTool === tool.id;
@@ -965,49 +955,84 @@ const TechnicalMap: React.FC = () => {
         </div>
       </div>
 
-      {/* Import Button */}
+      {/* Import Button - Optimized */}
       <div className="absolute left-4 top-44 z-10">
         <Button
           onClick={handleFileImport}
-          className="flex items-center space-x-2 bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
+          className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card"
           variant="ghost"
+          size="icon"
+          title="Importar arquivo KML/KMZ"
         >
           <Upload className="h-4 w-4" />
-          <span className="text-sm">Importar</span>
         </Button>
       </div>
 
-      {/* Right Side Controls */}
-      <div className="absolute right-4 bottom-32 z-10 flex flex-col space-y-3">
-        {/* Trail Recording Button */}
+      {/* Optimized Right Side Controls - Single Column */}
+      <div className="absolute right-4 bottom-4 z-10 flex flex-col space-y-2">
+        {/* GPS Recenter */}
         <Button
-          onClick={handleTrailToggle}
-          className={`px-4 py-2 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
-            isRecordingTrail 
-              ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
-              : 'bg-primary/90 hover:bg-primary text-primary-foreground'
+          onClick={handleGPSRecenter}
+          className={`w-10 h-10 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
+            isGPSEnabled && userLocation
+              ? 'bg-primary/90 text-primary-foreground hover:bg-primary'
+              : 'bg-card/90 hover:bg-card text-foreground'
           }`}
           variant="ghost"
-          disabled={!isGPSEnabled}
+          size="icon"
+          title="Recentralizar GPS"
         >
-          <Route className="h-4 w-4 mr-2" />
-          <span className="text-sm font-medium">
-            {isRecordingTrail ? 'Parar Trilha' : 'Iniciar Trilha'}
-          </span>
+          <Navigation className="h-4 w-4" />
+        </Button>
+
+        {/* Zoom Controls */}
+        <Button
+          onClick={handleZoomIn}
+          className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card"
+          variant="ghost"
+          size="icon"
+          title="Aproximar"
+        >
+          <Plus className="h-4 w-4 text-foreground" />
+        </Button>
+        
+        <Button
+          onClick={handleZoomOut}
+          className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:bg-card"
+          variant="ghost"
+          size="icon"
+          title="Afastar"
+        >
+          <Minus className="h-4 w-4 text-foreground" />
+        </Button>
+
+        {/* GPS Debug Toggle */}
+        <Button
+          onClick={() => setShowDebugCoords(!showDebugCoords)}
+          className={`w-10 h-10 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
+            showDebugCoords ? 'bg-accent hover:bg-accent/80' : 'bg-card/90 hover:bg-card'
+          }`}
+          variant="ghost"
+          size="icon"
+          title="Mostrar coordenadas GPS"
+        >
+          <MessageCircle className="h-4 w-4 text-foreground" />
         </Button>
 
         {/* Camera with Event Selector */}
         <div className="relative">
           <Button
             onClick={() => setShowCameraEventSelector(!showCameraEventSelector)}
-            className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm shadow-ios-md text-primary-foreground hover:bg-primary"
+            className="w-10 h-10 rounded-full bg-primary/90 backdrop-blur-sm shadow-ios-md text-primary-foreground hover:bg-primary"
             variant="ghost"
+            size="icon"
+            title="Tirar foto"
           >
-            <Camera className="h-6 w-6" />
+            <Camera className="h-4 w-4" />
           </Button>
           
           {showCameraEventSelector && (
-            <Card className="absolute bottom-16 right-0 w-56 p-3 bg-card shadow-ios-lg border border-border z-50">
+            <Card className="absolute bottom-12 right-0 w-56 p-3 bg-card shadow-ios-lg border border-border z-50">
               <div className="text-sm font-medium text-foreground mb-3 px-1">
                 📸 Selecionar evento:
               </div>
@@ -1027,66 +1052,20 @@ const TechnicalMap: React.FC = () => {
           )}
         </div>
 
-        {/* GPS Tracking */}
+        {/* Trail Recording Button */}
         <Button
-          onClick={toggleRecording}
-          className={`w-12 h-12 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
-            isRecording 
-              ? 'bg-red-500 hover:bg-red-600 text-white' 
-              : 'bg-card/90 hover:bg-card'
-          }`}
-          variant="ghost"
-        >
-          {isRecording ? (
-            <StopCircle className="h-5 w-5" />
-          ) : (
-            <Play className="h-5 w-5 text-foreground" />
-          )}
-        </Button>
-
-        {/* GPS Tracking Status */}
-        <Button
-          onClick={() => setShowDebugCoords(!showDebugCoords)}
-          className={`w-12 h-12 rounded-full backdrop-blur-sm shadow-ios-md border border-border mb-3 ${
-            showDebugCoords ? 'bg-accent' : 'bg-card/90 hover:bg-card'
-          }`}
-          variant="ghost"
-        >
-          <span className="text-xs font-bold">GPS</span>
-        </Button>
-
-        {/* Zoom Controls */}
-        <div className="flex flex-col space-y-2 mb-3">
-          <Button
-            onClick={handleZoomIn}
-            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
-            variant="ghost"
-            size="icon"
-          >
-            <Plus className="h-5 w-5 text-foreground" />
-          </Button>
-          
-          <Button
-            onClick={handleZoomOut}
-            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
-            variant="ghost"
-            size="icon"
-          >
-            <Minus className="h-5 w-5 text-foreground" />
-          </Button>
-        </div>
-
-        {/* GPS Recenter */}
-        <Button
-          onClick={handleGPSRecenter}
-          className={`w-14 h-14 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
-            isGPSEnabled && userLocation
-              ? 'bg-primary/90 text-primary-foreground hover:bg-primary'
+          onClick={handleTrailToggle}
+          className={`w-10 h-10 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
+            isRecordingTrail 
+              ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
               : 'bg-card/90 hover:bg-card text-foreground'
           }`}
           variant="ghost"
+          size="icon"
+          disabled={!isGPSEnabled}
+          title={isRecordingTrail ? 'Parar gravação de trilha' : 'Iniciar gravação de trilha'}
         >
-          <Navigation className="h-6 w-6" />
+          <Route className="h-4 w-4" />
         </Button>
       </div>
 
