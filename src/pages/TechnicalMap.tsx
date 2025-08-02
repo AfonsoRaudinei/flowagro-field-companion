@@ -1099,9 +1099,7 @@ const TechnicalMap: React.FC = () => {
           </Button>
 
           {/* Zoom In */}
-          <Button onClick={handleZoomIn} className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform" variant="ghost" size="sm">
-            <Plus className="h-5 w-5 text-foreground" />
-          </Button>
+          
 
           {/* Zoom Out */}
           
