@@ -25,9 +25,21 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+
+// Types for drawing management
+interface DrawingMetadata {
+  id: string;
+  farmId: string;
+  farmName: string;
+  shapeType: string;
+  timestamp: Date;
+  coordinates?: any[];
+}
 
 const TechnicalMap: React.FC = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +62,8 @@ const TechnicalMap: React.FC = () => {
   const [showEventSelector, setShowEventSelector] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [importedFile, setImportedFile] = useState<File | null>(null);
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [drawings, setDrawings] = useState<DrawingMetadata[]>([]);
 
   const mapLayers = [
     { id: 'satellite', name: 'Satelite', style: 'satellite' },
@@ -127,10 +141,67 @@ const TechnicalMap: React.FC = () => {
   };
 
   const handleToolSelect = (toolId: string) => {
+    const targetFarm = isConsultor ? selectedProducer : ownFarm;
+    
+    // Check if a farm is selected (for consultants) or available (for producers)
+    if (!targetFarm) {
+      toast({
+        title: "Fazenda não selecionada",
+        description: isConsultor ? "Selecione um produtor antes de desenhar" : "Dados da fazenda não disponíveis",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSelectedTool(toolId);
     setShowDrawingTools(false);
-    const targetFarm = isConsultor ? selectedProducer : ownFarm;
-    console.log('Drawing tool activated:', toolId, 'for farm:', targetFarm?.farm);
+    setIsDrawingMode(true);
+    
+    // Show confirmation toast
+    const toolNames = {
+      freehand: 'Mão livre',
+      polygon: 'Polígono', 
+      pivot: 'Pivô',
+      rectangle: 'Retângulo'
+    };
+    
+    toast({
+      title: "Ferramenta de desenho ativada",
+      description: `${toolNames[toolId as keyof typeof toolNames]} - ${targetFarm.farm}`
+    });
+
+    // Simulate drawing completion after 3 seconds (replace with actual drawing logic)
+    setTimeout(() => {
+      saveDrawing(toolId, targetFarm);
+    }, 3000);
+  };
+
+  const saveDrawing = (shapeType: string, targetFarm: { id: string; farm: string }) => {
+    const newDrawing: DrawingMetadata = {
+      id: `drawing-${Date.now()}`,
+      farmId: targetFarm.id,
+      farmName: targetFarm.farm,
+      shapeType,
+      timestamp: new Date(),
+      coordinates: [] // Would contain actual drawing coordinates
+    };
+
+    setDrawings(prev => [...prev, newDrawing]);
+    setIsDrawingMode(false);
+    setSelectedTool('');
+
+    const shapeNames = {
+      freehand: 'Área livre',
+      polygon: 'Polígono', 
+      pivot: 'Área de pivô',
+      rectangle: 'Área retangular'
+    };
+
+    toast({
+      title: "Área salva com sucesso!",
+      description: `${shapeNames[shapeType as keyof typeof shapeNames]} salva para ${targetFarm.farm}`,
+      variant: "default"
+    });
   };
 
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -291,31 +362,48 @@ const TechnicalMap: React.FC = () => {
         <div className="relative">
           <Button
             onClick={() => setShowDrawingTools(!showDrawingTools)}
-            className="flex items-center space-x-2 bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
+            disabled={isDrawingMode}
+            className={`flex items-center space-x-2 bg-card/90 backdrop-blur-sm shadow-ios-md border border-border ${
+              isDrawingMode ? 'opacity-50' : ''
+            }`}
             variant="ghost"
           >
             <Edit3 className="h-4 w-4" />
-            <span className="text-sm">Desenhar</span>
+            <span className="text-sm">
+              {isDrawingMode ? 'Desenhando...' : 'Desenhar'}
+            </span>
           </Button>
           
           {showDrawingTools && (
             <Card className="absolute top-12 left-0 w-44 p-2 bg-card shadow-ios-lg border border-border z-50">
               {drawingTools.map((tool) => {
                 const IconComponent = tool.icon;
+                const isActive = selectedTool === tool.id;
                 return (
                   <Button
                     key={tool.id}
                     onClick={() => handleToolSelect(tool.id)}
                     variant="ghost"
+                    disabled={isDrawingMode}
                     className={`w-full justify-start text-sm mb-1 ${
-                      selectedTool === tool.id ? 'bg-accent' : ''
-                    }`}
+                      isActive ? 'bg-accent' : ''
+                    } ${isDrawingMode ? 'opacity-50' : ''}`}
                   >
                     <IconComponent className="h-4 w-4 mr-2" />
                     {tool.name}
+                    {isActive && isDrawingMode && (
+                      <span className="ml-auto text-xs text-primary">Ativo</span>
+                    )}
                   </Button>
                 );
               })}
+              {isDrawingMode && (
+                <div className="mt-2 pt-2 border-t border-border">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Desenhe no mapa...
+                  </p>
+                </div>
+              )}
             </Card>
           )}
         </div>
@@ -429,6 +517,37 @@ const TechnicalMap: React.FC = () => {
                 disabled={isConsultor && !selectedProducer}
               >
                 Associar
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Drawing Status Indicator */}
+      {isDrawingMode && (
+        <div className="absolute bottom-20 left-4 right-4 z-10">
+          <Card className="p-3 bg-primary/90 backdrop-blur-sm shadow-ios-md text-primary-foreground">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                <span className="text-sm font-medium">
+                  Modo de desenho ativo
+                </span>
+              </div>
+              <Button
+                onClick={() => {
+                  setIsDrawingMode(false);
+                  setSelectedTool('');
+                  toast({
+                    title: "Desenho cancelado",
+                    variant: "default"
+                  });
+                }}
+                variant="ghost"
+                size="sm"
+                className="text-primary-foreground hover:bg-white/20"
+              >
+                Cancelar
               </Button>
             </div>
           </Card>
