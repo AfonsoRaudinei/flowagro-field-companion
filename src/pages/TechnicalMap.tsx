@@ -681,11 +681,22 @@ const TechnicalMap: React.FC = () => {
       {/* Weather Card */}
       <div className="absolute top-20 right-4 z-10">
         <Card className="p-3 bg-card/90 backdrop-blur-sm shadow-ios-md w-32">
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <Cloud className="h-6 w-6 mx-auto text-primary mb-1" />
             <div className="text-xs font-medium text-foreground">25°C</div>
             <div className="text-xs text-muted-foreground">Ensolarado</div>
-            <Button variant="ghost" size="sm" className="mt-1 h-6 text-xs">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="mt-2 h-6 text-xs hover:bg-accent/50 w-full"
+              onClick={() => {
+                toast({
+                  title: "Radar meteorológico",
+                  description: "Radar meteorológico em desenvolvimento",
+                  variant: "default"
+                });
+              }}
+            >
               Radar
             </Button>
           </div>
