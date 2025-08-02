@@ -1097,26 +1097,14 @@ const TechnicalMap: React.FC = () => {
 
         {/* Information Bar */}
         <div className="absolute bottom-20 left-0 right-0 z-30">
-          <div className="mx-2 mb-2">
-            <Card className="bg-card/95 backdrop-blur-sm border border-border shadow-lg">
-              <div className="px-3 py-2">
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                  {/* Location */}
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                    <span className="text-muted-foreground">Posição:</span>
-                    <span className="text-foreground font-mono text-[10px] truncate">
-                      {userLocation 
-                        ? `${userLocation.latitude.toFixed(6)}, ${userLocation.longitude.toFixed(6)}`
-                        : 'Carregando...'
-                      }
-                    </span>
-                  </div>
-
-                  {/* Producer */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-muted-foreground">👤 Produtor:</span>
-                    <span className="text-foreground truncate">
+          <div className="mx-3 mb-2">
+            <Card className="bg-white/95 backdrop-blur-sm border border-gray-200 shadow-lg rounded-xl">
+              <div className="px-4 py-3">
+                <div className="space-y-2 text-sm">
+                  {/* Producer/User Name */}
+                  <div className="flex items-center gap-2">
+                    <span>👤</span>
+                    <span className="text-gray-900 font-medium">
                       {isConsultor 
                         ? (selectedProducer?.name || 'Não selecionado')
                         : (ownFarm?.name || userData?.fullName || 'N/A')
@@ -1125,9 +1113,9 @@ const TechnicalMap: React.FC = () => {
                   </div>
 
                   {/* Farm */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-muted-foreground">🏡 Fazenda:</span>
-                    <span className="text-foreground truncate">
+                  <div className="flex items-center gap-2">
+                    <span>🏡</span>
+                    <span className="text-gray-900 truncate">
                       {isConsultor 
                         ? (selectedProducer?.farm || 'Não selecionada')
                         : (ownFarm?.farm || 'N/A')
@@ -1136,35 +1124,35 @@ const TechnicalMap: React.FC = () => {
                   </div>
 
                   {/* Field */}
-                  <div className="flex items-center gap-1">
-                    <span className="text-muted-foreground">🌱 Talhão:</span>
-                    <span className="text-foreground truncate">
+                  <div className="flex items-center gap-2">
+                    <span>🌱</span>
+                    <span className="text-gray-600">Talhão:</span>
+                    <span className="text-gray-900 truncate">
                       {currentField?.fieldName || 'Sem talhão'}
                     </span>
                   </div>
 
                   {/* Phenological Stage */}
-                  <div className="col-span-2 flex items-center gap-1 pt-1 border-t border-border">
-                    <span className="text-muted-foreground">📈 Estádio:</span>
-                    <Button
+                  <div className="flex items-center gap-2 relative">
+                    <span>📊</span>
+                    <span className="text-gray-600">Estádio:</span>
+                    <button
                       onClick={() => setShowStageEditor(!showStageEditor)}
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-1 text-xs text-foreground hover:bg-accent"
+                      className="text-gray-900 hover:text-blue-600 transition-colors"
                     >
                       {phenologicalStages.find(s => s.id === phenologicalStage)?.emoji}{' '}
                       {phenologicalStages.find(s => s.id === phenologicalStage)?.name}
-                    </Button>
+                    </button>
 
                     {/* Stage Selector */}
                     {showStageEditor && (
-                      <div className="absolute bottom-full right-0 mb-2 w-64">
-                        <Card className="bg-card border border-border shadow-lg">
-                          <div className="p-2">
-                            <div className="text-xs font-medium text-foreground mb-2">
+                      <div className="absolute bottom-full right-0 mb-2 w-64 z-10">
+                        <Card className="bg-white border border-gray-200 shadow-lg rounded-lg">
+                          <div className="p-3">
+                            <div className="text-sm font-medium text-gray-900 mb-3">
                               Selecionar Estádio Fenológico:
                             </div>
-                            <div className="grid grid-cols-1 gap-1 max-h-32 overflow-y-auto">
+                            <div className="grid grid-cols-1 gap-1 max-h-40 overflow-y-auto">
                               {phenologicalStages.map((stage) => (
                                 <Button
                                   key={stage.id}
@@ -1174,7 +1162,7 @@ const TechnicalMap: React.FC = () => {
                                   }}
                                   variant={phenologicalStage === stage.id ? "default" : "ghost"}
                                   size="sm"
-                                  className="justify-start h-auto py-1 px-2 text-xs"
+                                  className="justify-start h-auto py-2 px-3 text-sm"
                                 >
                                   <span className="mr-2">{stage.emoji}</span>
                                   {stage.name}
