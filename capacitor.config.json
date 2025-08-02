@@ -13,6 +13,9 @@
     },
     "Geolocation": {
       "permissions": ["coarse-location", "fine-location"]
+    },
+    "Haptics": {
+      "permissions": ["haptic"]
     }
   }
 }

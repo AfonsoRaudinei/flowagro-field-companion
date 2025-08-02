@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { CameraService, eventTypes, FieldPhoto } from '@/services/cameraService';
 import { FileImportService, ImportedFile } from '@/services/fileImportService';
+import { GPSService, UserLocation } from '@/services/gpsService';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -70,6 +71,10 @@ const TechnicalMap: React.FC = () => {
   const [showCameraEventSelector, setShowCameraEventSelector] = useState(false);
   const [importedFiles, setImportedFiles] = useState<ImportedFile[]>([]);
   const [previewFile, setPreviewFile] = useState<ImportedFile | null>(null);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [isGPSEnabled, setIsGPSEnabled] = useState(false);
+  const [showDebugCoords, setShowDebugCoords] = useState(false);
+  const [gpsWatchId, setGpsWatchId] = useState<string | null>(null);
 
   const mapLayers = [
     { id: 'satellite', name: 'Satelite', style: 'satellite' },
@@ -134,10 +139,112 @@ const TechnicalMap: React.FC = () => {
     setFieldPhotos(storedPhotos);
     setImportedFiles(storedImports);
 
+    // Initialize GPS
+    initializeGPS();
+
     return () => {
+      // Cleanup GPS watch
+      if (gpsWatchId) {
+        GPSService.clearWatch(gpsWatchId);
+      }
       map.current?.remove();
     };
   }, []);
+
+  const initializeGPS = async () => {
+    try {
+      // Check if permissions are already granted
+      const hasPermission = await GPSService.checkPermissions();
+      
+      if (!hasPermission) {
+        // Request permissions
+        const granted = await GPSService.requestPermissions();
+        
+        if (!granted) {
+          toast({
+            title: "Permissão necessária",
+            description: "Permissão de localização é necessária para usar o mapa técnico",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Get initial location
+      try {
+        const location = await GPSService.getCurrentLocation();
+        setUserLocation(location);
+        setIsGPSEnabled(true);
+        
+        toast({
+          title: "GPS ativado",
+          description: "Localização disponível",
+          variant: "default"
+        });
+
+        // Center map on user location
+        if (map.current) {
+          map.current.flyTo({
+            center: [location.longitude, location.latitude],
+            zoom: 16
+          });
+        }
+
+      } catch (error) {
+        toast({
+          title: "Erro ao obter localização",
+          description: "Verifique se o GPS está ativado",
+          variant: "destructive"
+        });
+      }
+
+    } catch (error) {
+      console.error('GPS initialization error:', error);
+      toast({
+        title: "Erro no GPS",
+        description: "Não foi possível inicializar o GPS",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleGPSRecenter = async () => {
+    if (!isGPSEnabled) {
+      await initializeGPS();
+      return;
+    }
+
+    try {
+      toast({
+        title: "Obtendo localização...",
+        description: "Aguarde um momento"
+      });
+
+      const location = await GPSService.getCurrentLocation();
+      setUserLocation(location);
+
+      if (map.current) {
+        map.current.flyTo({
+          center: [location.longitude, location.latitude],
+          zoom: 16,
+          duration: 1000
+        });
+      }
+
+      toast({
+        title: "Localização atualizada",
+        description: `Precisão: ${Math.round(location.accuracy)}m`,
+        variant: "default"
+      });
+
+    } catch (error) {
+      toast({
+        title: "Erro ao obter localização",
+        description: "Verifique se o GPS está ativado",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleLayerChange = (layerId: string) => {
     setCurrentLayer(layerId);
@@ -582,13 +689,28 @@ const TechnicalMap: React.FC = () => {
           )}
         </Button>
 
-        {/* GPS Center */}
+        {/* GPS Tracking Status */}
         <Button
-          onClick={() => map.current?.flyTo({ center: [-47.8825, -15.7942], zoom: 14 })}
-          className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
+          onClick={() => setShowDebugCoords(!showDebugCoords)}
+          className={`w-12 h-12 rounded-full backdrop-blur-sm shadow-ios-md border border-border mb-3 ${
+            showDebugCoords ? 'bg-accent' : 'bg-card/90 hover:bg-card'
+          }`}
           variant="ghost"
         >
-          <Navigation className="h-5 w-5 text-foreground" />
+          <span className="text-xs font-bold">GPS</span>
+        </Button>
+
+        {/* GPS Recenter */}
+        <Button
+          onClick={handleGPSRecenter}
+          className={`w-14 h-14 rounded-full backdrop-blur-sm shadow-ios-md border border-border ${
+            isGPSEnabled && userLocation
+              ? 'bg-primary/90 text-primary-foreground hover:bg-primary'
+              : 'bg-card/90 hover:bg-card text-foreground'
+          }`}
+          variant="ghost"
+        >
+          <Navigation className="h-6 w-6" />
         </Button>
       </div>
 
@@ -680,6 +802,33 @@ const TechnicalMap: React.FC = () => {
               </Button>
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* GPS Debug Coordinates */}
+      {showDebugCoords && userLocation && (
+        <div className="absolute bottom-20 left-4 z-10">
+          <Card className="p-3 bg-card/95 backdrop-blur-sm shadow-ios-md border border-border">
+            <div className="text-xs space-y-1">
+              <p className="font-medium text-foreground">📍 Localização GPS</p>
+              <p className="font-mono text-muted-foreground">
+                {GPSService.formatCoordinates(userLocation.latitude, userLocation.longitude)}
+              </p>
+              <p className="text-muted-foreground">
+                Precisão: {Math.round(userLocation.accuracy)}m
+              </p>
+              <p className="text-muted-foreground text-xs">
+                {userLocation.timestamp.toLocaleTimeString()}
+              </p>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* GPS Status Indicator */}
+      {isGPSEnabled && userLocation && (
+        <div className="absolute top-52 right-4 z-10">
+          <div className="w-3 h-3 bg-primary rounded-full shadow-lg animate-pulse" />
         </div>
       )}
 
