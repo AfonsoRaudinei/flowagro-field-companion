@@ -4,7 +4,7 @@ import { useUser } from '@/contexts/UserContext';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { 
-  ArrowLeft, 
+  ArrowLeft,
   Compass, 
   Layers, 
   Edit3, 
@@ -21,7 +21,8 @@ import {
   Minus,
   Trash2,
   LogOut,
-  MapPin
+  MapPin,
+  LogIn
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -40,6 +41,9 @@ import { DrawingService, DrawingShape } from '@/services/drawingService';
 import FarmInfoCard from '@/components/FarmInfoCard';
 import StatusCard from '@/components/StatusCard';
 import { formatStageForReport } from '@/data/phenologicalStages';
+import HeaderBar from '@/components/HeaderBar';
+import AgricultureContextCard from '@/components/AgricultureContextCard';
+import CheckInOutButtons from '@/components/CheckInOutButtons';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -144,6 +148,7 @@ const TechnicalMap: React.FC = () => {
   const [currentField, setCurrentField] = useState<DrawingShape | null>(null);
   const [phenologicalStage, setPhenologicalStage] = useState<string>('vegetativo');
   const [showStageEditor, setShowStageEditor] = useState(false);
+  const [showContextSelector, setShowContextSelector] = useState(false);
 
   const phenologicalStages = [
     { id: 'vegetativo', name: 'Vegetativo', emoji: '🌱' },
@@ -165,6 +170,25 @@ const TechnicalMap: React.FC = () => {
     windSpeed: 12,
     condition: '☀️'
   };
+
+  // Current time state
+  const [currentTime, setCurrentTime] = useState('');
+
+  // Update time every minute
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(now.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }));
+    };
+    
+    updateTime();
+    const interval = setInterval(updateTime, 60000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -1057,7 +1081,6 @@ const TechnicalMap: React.FC = () => {
   };
 
   const handleBack = () => {
-    // Navigation logic would go here
     navigate('/login-form');
   };
 
@@ -1084,57 +1107,40 @@ const TechnicalMap: React.FC = () => {
           onClick={handleMapClick}
         />
         
-        {/* Top Bar */}
-        <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4">
-          <div className="flex items-center space-x-3">
-            <Button
-              onClick={handleBack}
-              className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border"
-              variant="ghost"
-              size="sm"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </div>
+        {/* Header Bar */}
+        <HeaderBar
+          onBack={handleBack}
+          weatherData={weatherData}
+          isOnline={isOnline}
+          syncStatus={syncStatus}
+          currentTime={currentTime}
+          userName={userData?.fullName}
+        />
 
-          {/* Status Card no topo direito */}
-          <StatusCard
-            isOnline={isOnline}
-            syncStatus={syncStatus}
-            weather={weatherData}
-            onClick={() => {
-              toast({
-                title: "Status do Sistema",
-                description: `Conectado: ${isOnline ? 'Sim' : 'Não'} • Sync: ${syncStatus}`,
-                variant: "default"
-              });
-            }}
+        {/* Check-in/Check-out Buttons - Upper center */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+          <CheckInOutButtons
+            isCheckedIn={isCheckedIn}
+            loading={checkInOutLoading}
+            onCheckIn={handleCheckInOut}
+            onCheckOut={handleCheckInOut}
           />
         </div>
 
-        {/* Card Minha Fazenda - Centro inferior, acima da tab bar */}
-        <div className="absolute bottom-20 left-0 right-0 z-30 px-4">
-          <FarmInfoCard
-            selectedCulture={selectedCulture}
-            selectedStage={selectedStage}
-            onCultureChange={setSelectedCulture}
-            onStageChange={setSelectedStage}
-            onStagesClick={() => navigate('/phenological-stages')}
+        {/* Agriculture Context Card - Bottom center, above floating actions */}
+        <div className="absolute bottom-24 left-0 right-0 z-30 px-4">
+          <AgricultureContextCard
+            producerName="José Augusto Miranda"
+            farmName="Fazenda Retiro"
+            plotName="T-1"
+            culture="Soja"
+            stage={selectedStage}
+            onClick={() => setShowContextSelector(true)}
           />
         </div>
 
         {/* Left Floating Toolbar */}
         <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-2">
-          {/* Back Button */}
-          <Button
-            onClick={() => navigate(-1)}
-            className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-border hover:bg-white"
-            variant="ghost"
-            size="sm"
-          >
-            <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-          </Button>
-
           {/* Layers Button */}
           <Button
             onClick={() => setShowLayerSelector(!showLayerSelector)}
@@ -1166,8 +1172,8 @@ const TechnicalMap: React.FC = () => {
           </Button>
         </div>
 
-        {/* Right Floating Toolbar - Reorganizado por prioridade */}
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-3">
+        {/* Right Floating Actions - Reorganized by priority */}
+        <div className="absolute right-4 bottom-32 z-20 flex flex-col space-y-3">
           {/* GPS Fix Button */}
           <Button
             onClick={handleGPSRecenter}
@@ -1178,56 +1184,56 @@ const TechnicalMap: React.FC = () => {
             <Navigation className={`h-5 w-5 ${isGPSEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
           </Button>
 
-          {/* Zoom In */}
-          <Button
-            onClick={handleZoomIn}
-            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
-            variant="ghost"
-            size="sm"
-          >
-            <Plus className="h-5 w-5 text-foreground" />
-          </Button>
+          {/* Zoom Controls */}
+          <div className="flex flex-col space-y-1">
+            <Button
+              onClick={handleZoomIn}
+              className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+              variant="ghost"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 text-foreground" />
+            </Button>
+            <Button
+              onClick={handleZoomOut}
+              className="w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+              variant="ghost"
+              size="sm"
+            >
+              <Minus className="h-4 w-4 text-foreground" />
+            </Button>
+          </div>
 
-          {/* Zoom Out */}
-          <Button
-            onClick={handleZoomOut}
-            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
-            variant="ghost"
-            size="sm"
-          >
-            <Minus className="h-5 w-5 text-foreground" />
-          </Button>
-
-          {/* PRIORIDADE 1: Câmera - Destaque especial */}
+          {/* PRIORITY 1: Camera - Special highlight */}
           <Button
             onClick={handleCameraOpen}
-            className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm shadow-lg border-2 border-primary hover:scale-105 transition-transform"
-            variant="ghost"
+            className="w-16 h-16 rounded-full bg-primary shadow-lg hover:scale-105 transition-transform"
+            variant="default"
             size="sm"
           >
-            <Camera className="h-6 w-6 text-primary-foreground" />
+            <Camera className="h-7 w-7 text-primary-foreground" />
           </Button>
 
-          {/* PRIORIDADE 2: Trilhas */}
+          {/* PRIORITY 2: Trails */}
           <Button
             onClick={handleTrailToggle}
-            className={`w-12 h-12 rounded-full backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform ${
-              isRecordingTrail ? 'bg-red-500/90 text-white' : 'bg-card/90'
+            className={`w-14 h-14 rounded-full backdrop-blur-sm shadow-lg border-2 hover:scale-105 transition-transform ${
+              isRecordingTrail ? 'bg-red-500 border-red-600 text-white' : 'bg-blue-500 border-blue-600 text-white'
             }`}
             variant="ghost"
             size="sm"
           >
-            <Route className="h-5 w-5" />
+            <Route className="h-6 w-6" />
           </Button>
 
-          {/* PRIORIDADE 3: Ocorrências */}
+          {/* PRIORITY 3: Occurrences */}
           <Button
             onClick={() => setShowEventSelector(!showEventSelector)}
-            className="w-12 h-12 rounded-full bg-orange-500/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            className="w-14 h-14 rounded-full bg-orange-500 border-2 border-orange-600 shadow-lg hover:scale-105 transition-transform"
             variant="ghost"
             size="sm"
           >
-            <MessageCircle className="h-5 w-5 text-white" />
+            <MessageCircle className="h-6 w-6 text-white" />
           </Button>
         </div>
 
