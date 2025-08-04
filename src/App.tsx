@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { UserProvider } from "./contexts/UserContext";
 import BottomNavigation from "./components/ui/bottom-navigation";
-import LoginMapa from "./pages/LoginMapa";
+import LoginPage from "./pages/LoginPage";
 import LoginForm from "./pages/LoginForm";
 import TechnicalMap from "./pages/TechnicalMap";
 import Dashboard from "./pages/Dashboard";
@@ -26,8 +26,7 @@ const AppLayout = () => {
     <>
       <div className={`w-full max-w-md mx-auto bg-background min-h-screen ${showBottomNav ? 'pb-16' : ''}`}>
         <Routes>
-          <Route path="/" element={<LoginMapa />} />
-          <Route path="/login-mapa" element={<LoginMapa />} />
+          <Route path="/" element={<LoginPage />} />
           <Route path="/login-form" element={<LoginForm />} />
           <Route path="/technical-map" element={<TechnicalMap />} />
           <Route path="/dashboard" element={<Dashboard />} />

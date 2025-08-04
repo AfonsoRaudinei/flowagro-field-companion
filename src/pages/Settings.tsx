@@ -244,7 +244,7 @@ const Settings: React.FC = () => {
 
         {/* Logout */}
         <Card className="shadow-ios-md">
-          <Button onClick={() => navigate('/login-mapa')} variant="ghost" className="w-full h-14 text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center justify-center space-x-3">
+          <Button onClick={() => navigate('/')} variant="ghost" className="w-full h-14 text-destructive hover:bg-destructive/10 hover:text-destructive flex items-center justify-center space-x-3">
             <LogOut className="h-5 w-5" />
             <span className="font-semibold text-base">Sair do FlowAgro</span>
           </Button>

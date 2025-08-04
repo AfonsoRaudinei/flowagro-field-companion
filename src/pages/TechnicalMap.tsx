@@ -20,6 +20,7 @@ import ShapeEditControls from '@/components/ui/shape-edit-controls';
 import { DrawingService, DrawingShape } from '@/services/drawingService';
 import FarmInfoCard from '@/components/FarmInfoCard';
 import StatusCard from '@/components/StatusCard';
+import { MAP_LAYERS, DEFAULT_MAP_CONFIG, FALLBACK_STYLE } from '@/config/mapConfig';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -92,19 +93,8 @@ const TechnicalMap: React.FC = () => {
     selectedFarmId: '',
     fieldName: ''
   });
-  const mapLayers = [{
-    id: 'satellite',
-    name: 'Satélite',
-    url: 'https://api.maptiler.com/maps/satellite/style.json?key=MZ7IzlO1sjOVafWQMaNa'
-  }, {
-    id: 'hybrid',
-    name: 'Híbrido',
-    url: 'https://api.maptiler.com/maps/hybrid/style.json?key=MZ7IzlO1sjOVafWQMaNa'
-  }, {
-    id: 'terrain',
-    name: 'Terreno',
-    url: 'https://api.maptiler.com/maps/landscape/style.json?key=MZ7IzlO1sjOVafWQMaNa'
-  }];
+  
+  const mapLayers = MAP_LAYERS;
   const drawingTools = [{
     id: 'freehand',
     name: 'Mão livre',
@@ -209,15 +199,16 @@ const TechnicalMap: React.FC = () => {
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Initialize map with MapTiler style URLs
+    // Initialize map with fallback for invalid API key
+    const selectedLayer = mapLayers.find(l => l.id === currentLayer);
+    
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: mapLayers.find(l => l.id === currentLayer)?.url || mapLayers[0].url,
-      center: [-52.0, -10.0],
-      // Default center on Brazil
-      zoom: 16,
-      pitch: 0,
-      bearing: 0
+      style: selectedLayer?.url || FALLBACK_STYLE,
+      center: DEFAULT_MAP_CONFIG.center,
+      zoom: DEFAULT_MAP_CONFIG.zoom,
+      pitch: DEFAULT_MAP_CONFIG.pitch,
+      bearing: DEFAULT_MAP_CONFIG.bearing
     });
 
     // Add map controls
@@ -236,14 +227,27 @@ const TechnicalMap: React.FC = () => {
     });
     map.current.addControl(geolocateControl, 'top-left');
 
-    // Handle map load errors
+    // Handle map load errors with better error handling
     map.current.on('error', e => {
       console.error('Map loading error:', e);
-      toast({
-        title: "Erro ao carregar o mapa",
-        description: "Verifique a chave da API.",
-        variant: "destructive"
-      });
+      
+      // Try fallback style if MapTiler fails
+      if (map.current && e.error?.status === 403) {
+        console.log('MapTiler API key invalid, switching to fallback...');
+        map.current.setStyle(FALLBACK_STYLE);
+        
+        toast({
+          title: "Usando mapa básico",
+          description: "Configure uma chave MapTiler válida para mapas satélite",
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Erro ao carregar o mapa",
+          description: "Verificando conexão...",
+          variant: "destructive"
+        });
+      }
     });
 
     // Try to get user's location when map loads
