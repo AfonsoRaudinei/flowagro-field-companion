@@ -53,6 +53,10 @@ const TechnicalMap: React.FC = () => {
   const [showDrawingTools, setShowDrawingTools] = useState(false);
   const [selectedTool, setSelectedTool] = useState<string>('');
   const [showEventSelector, setShowEventSelector] = useState(false);
+  const [isDrawingActive, setIsDrawingActive] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [currentDrawingPoints, setCurrentDrawingPoints] = useState<any[]>([]);
+  const [hasOverlap, setHasOverlap] = useState(false);
 
   // Farm info state
   const [selectedCulture, setSelectedCulture] = useState<string>('soja');
@@ -118,7 +122,7 @@ const TechnicalMap: React.FC = () => {
   }, {
     id: 'pivot',
     name: 'Pivô',
-    emoji: '🌀',
+    emoji: '💧',
     icon: Circle
   }, {
     id: 'rectangle',
@@ -414,6 +418,16 @@ const TechnicalMap: React.FC = () => {
       });
     }
   };
+  // Simular detecção de sobreposição
+  const checkOverlapWithExistingShapes = (newPoints: any[]) => {
+    // Simulação simples - considera sobreposição se já existem formas na área
+    const hasNearbyShapes = drawnShapes.some(shape => 
+      shape.points && shape.points.length > 0 && 
+      Math.random() > 0.7 // 30% chance de sobreposição para demonstração
+    );
+    return hasNearbyShapes;
+  };
+
   const handleToolSelect = (toolId: string) => {
     const targetFarm = isConsultor ? selectedProducer : ownFarm;
 
@@ -428,22 +442,72 @@ const TechnicalMap: React.FC = () => {
     }
 
     setSelectedTool(toolId);
-    setShowDrawingTools(false);
 
     // Handle remove tool differently
     if (toolId === 'remove') {
+      setIsDrawingActive(false);
+      setShowInstructions(true);
       if (mapContainer.current) {
         mapContainer.current.style.cursor = 'pointer';
       }
+      
       toast({
         title: "🗑️ Modo remoção ativado",
-        description: "Toque em uma região para removê-la",
+        description: "Toque em uma área para remover",
         variant: "default"
       });
+
+      // Add click listener for removal
+      const handleRemoveClick = (e: any) => {
+        // Simular remoção de forma tocada
+        if (drawnShapes.length > 0) {
+          const shapeToRemove = drawnShapes[Math.floor(Math.random() * drawnShapes.length)];
+          
+          // Primeiro clique: destacar forma para remoção (simulação)
+          const isPendingRemoval = Math.random() > 0.5; // Simular estado pendente
+          if (!isPendingRemoval) {
+            toast({
+              title: "Área selecionada para remoção",
+              description: "Toque novamente para confirmar a exclusão",
+              variant: "default"
+            });
+            // Marcar forma como pendente de remoção (simulação)
+            return;
+          }
+          
+          // Segundo clique: remover forma
+          DrawingService.deleteDrawing(shapeToRemove.id);
+          toast({
+            title: "Área removida",
+            description: "A região foi excluída com sucesso",
+            variant: "default"
+          });
+        } else {
+          toast({
+            title: "Nenhuma área encontrada",
+            description: "Não há áreas para remover nesta localização",
+            variant: "default"
+          });
+        }
+        
+        // Reset removal mode
+        setSelectedTool('');
+        setShowInstructions(false);
+        if (mapContainer.current) {
+          mapContainer.current.style.cursor = 'default';
+          mapContainer.current?.removeEventListener('click', handleRemoveClick);
+        }
+      };
+
+      mapContainer.current?.addEventListener('click', handleRemoveClick);
       return;
     }
 
-    setIsDrawingMode(true);
+    // Ativar modo de desenho para outras ferramentas
+    setIsDrawingActive(true);
+    setShowInstructions(true);
+    setCurrentDrawingPoints([]);
+    setHasOverlap(false);
 
     // Add visual feedback to map container
     if (mapContainer.current) {
@@ -451,16 +515,10 @@ const TechnicalMap: React.FC = () => {
       mapContainer.current.classList.add('drawing-active');
     }
 
-    // Show confirmation toast with visual feedback
-    const toolNames = {
-      freehand: 'Mão livre',
-      polygon: 'Polígono',
-      pivot: 'Pivô',
-      rectangle: 'Retângulo'
-    };
+    // Show instruction message
     toast({
-      title: "🎯 Ferramenta ativada",
-      description: `${toolNames[toolId as keyof typeof toolNames]} - Toque no mapa para começar`,
+      title: "🎯 Modo desenho ativo",
+      description: "Toque no mapa para iniciar a área",
       variant: "default"
     });
 
@@ -469,47 +527,80 @@ const TechnicalMap: React.FC = () => {
       e.preventDefault();
       e.stopPropagation();
 
-      // Simulate drawing start
-      setTimeout(() => {
-        // Remove drawing mode styling
-        if (mapContainer.current) {
-          mapContainer.current.style.cursor = 'default';
-          mapContainer.current.classList.remove('drawing-active');
+      const rect = mapContainer.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // Simular coordenadas geográficas
+      const lat = -15.7942 + (y - rect.height/2) * 0.0001;
+      const lng = -47.8825 + (x - rect.width/2) * 0.0001;
+
+      const newPoint = { x, y, lat, lng };
+      const updatedPoints = [...currentDrawingPoints, newPoint];
+      setCurrentDrawingPoints(updatedPoints);
+
+      // Verificar sobreposição após adicionar ponto
+      if (updatedPoints.length >= 3) {
+        const hasOverlapDetected = checkOverlapWithExistingShapes(updatedPoints);
+        setHasOverlap(hasOverlapDetected);
+        
+        if (hasOverlapDetected) {
+          toast({
+            title: "⚠️ Sobreposição detectada",
+            description: "A área sobrepõe uma região existente",
+            variant: "destructive"
+          });
         }
+      }
 
-        // Initialize form data when showing confirmation
-        const defaultProducerId = isProdutor ? ownFarm?.id || '' : selectedProducer?.id || '';
-        const defaultFarmId = isProdutor ? ownFarm?.id || '' : selectedProducer?.id || '';
-        setConfirmFormData({
-          selectedProducerId: defaultProducerId,
-          selectedFarmId: defaultFarmId,
-          fieldName: ''
-        });
-
-        // Calculate mock area (in a real implementation, this would use actual drawing coordinates)
-        const mockArea = Math.random() * 50000 + 10000; // Mock area between 1-5 hectares
-        const areaHa = Math.round(mockArea / 10000 * 100) / 100;
-        setPendingDrawing({
-          shapeType: toolId,
-          targetFarm,
-          areaM2: mockArea,
-          areaHa: areaHa
-        });
-        setShowDrawingConfirm(true);
-        setIsDrawingMode(false);
-
-        // Remove click listener
-        mapContainer.current?.removeEventListener('click', handleMapDrawClick);
-        toast({
-          title: "✅ Desenho concluído",
-          description: "Configure os dados da área abaixo",
-          variant: "default"
-        });
-      }, 2000);
+      // Finalizar desenho após alguns pontos (simulação)
+      if (updatedPoints.length >= 4 || toolId === 'rectangle' && updatedPoints.length >= 2) {
+        finishDrawing(toolId, updatedPoints, targetFarm);
+      }
     };
 
     // Add click listener to map container
     mapContainer.current?.addEventListener('click', handleMapDrawClick);
+  };
+
+  const finishDrawing = (toolId: string, points: any[], targetFarm: any) => {
+    // Remove drawing mode styling
+    if (mapContainer.current) {
+      mapContainer.current.style.cursor = 'default';
+      mapContainer.current.classList.remove('drawing-active');
+    }
+
+    setIsDrawingActive(false);
+    setShowInstructions(false);
+
+    // Initialize form data when showing confirmation
+    const defaultProducerId = isProdutor ? ownFarm?.id || '' : selectedProducer?.id || '';
+    const defaultFarmId = isProdutor ? ownFarm?.id || '' : selectedProducer?.id || '';
+    setConfirmFormData({
+      selectedProducerId: defaultProducerId,
+      selectedFarmId: defaultFarmId,
+      fieldName: ''
+    });
+
+    // Calculate mock area
+    const mockArea = Math.random() * 50000 + 10000; // Mock area between 1-5 hectares
+    const areaHa = Math.round(mockArea / 10000 * 100) / 100;
+    setPendingDrawing({
+      shapeType: toolId,
+      targetFarm,
+      areaM2: mockArea,
+      areaHa: areaHa
+    });
+    setShowDrawingConfirm(true);
+    setCurrentDrawingPoints([]);
+    
+    toast({
+      title: "✅ Desenho concluído",
+      description: "Configure os dados da área abaixo",
+      variant: "default"
+    });
   };
   const saveDrawing = async (shapeType: string, targetFarm: {
     id: string;
@@ -1074,7 +1165,15 @@ const TechnicalMap: React.FC = () => {
         {/* Top Bar */}
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4">
           <div className="flex items-center space-x-3">
-            
+            {/* Back Button */}
+            <Button
+              onClick={handleBack}
+              className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-border hover:bg-white"
+              variant="ghost"
+              size="sm"
+            >
+              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
+            </Button>
           </div>
 
           {/* Status Card no topo direito */}
@@ -1086,6 +1185,67 @@ const TechnicalMap: React.FC = () => {
           });
         }} />
         </div>
+
+        {/* Instruction Message for Drawing Mode */}
+        {showInstructions && (
+          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30">
+            <Card className="bg-card/95 backdrop-blur-sm border border-border shadow-lg">
+              <div className="px-4 py-2">
+                <div className="text-sm font-medium text-foreground flex items-center space-x-2">
+                  {selectedTool === 'remove' ? (
+                    <>
+                      <span className="text-destructive">🗑️</span>
+                      <span>Toque em uma área para remover</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-primary">🎯</span>
+                      <span>Toque no mapa para iniciar a área</span>
+                    </>
+                  )}
+                </div>
+                {hasOverlap && (
+                  <div className="text-xs text-destructive mt-1 flex items-center space-x-1">
+                    <span>⚠️</span>
+                    <span>Sobreposição detectada</span>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Drawing Points Visualization */}
+        {isDrawingActive && currentDrawingPoints.length > 0 && (
+          <>
+            {/* White dots for vertices */}
+            {currentDrawingPoints.map((point, index) => (
+              <div
+                key={index}
+                className="absolute w-3 h-3 bg-white border-2 border-primary rounded-full shadow-md z-25 pointer-events-none"
+                style={{
+                  left: point.x - 6,
+                  top: point.y - 6,
+                }}
+              />
+            ))}
+            
+            {/* Drawing area with overlap styling */}
+            {currentDrawingPoints.length >= 3 && (
+              <div
+                className={`absolute inset-0 z-20 pointer-events-none`}
+                style={{
+                  background: hasOverlap 
+                    ? 'rgba(239, 68, 68, 0.1)' // Red overlay for overlap
+                    : 'rgba(34, 197, 94, 0.1)', // Green overlay for normal drawing
+                  border: hasOverlap 
+                    ? '2px dashed #ef4444' // Red dashed border for overlap
+                    : '2px solid #ffffff', // White solid border for normal
+                }}
+              />
+            )}
+          </>
+        )}
 
         {/* Card Minha Fazenda - Centro inferior, acima da tab bar */}
         <div className="absolute bottom-20 left-0 right-0 z-30 px-4">
