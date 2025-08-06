@@ -57,6 +57,8 @@ const TechnicalMap: React.FC = () => {
   const [showInstructions, setShowInstructions] = useState(false);
   const [currentDrawingPoints, setCurrentDrawingPoints] = useState<any[]>([]);
   const [hasOverlap, setHasOverlap] = useState(false);
+  const [isPolygonClosed, setIsPolygonClosed] = useState(false);
+  const [mousePosition, setMousePosition] = useState<{x: number, y: number} | null>(null);
 
   // Farm info state
   const [selectedCulture, setSelectedCulture] = useState<string>('soja');
@@ -493,6 +495,7 @@ const TechnicalMap: React.FC = () => {
         // Reset removal mode
         setSelectedTool('');
         setShowInstructions(false);
+        setIsPolygonClosed(false);
         if (mapContainer.current) {
           mapContainer.current.style.cursor = 'default';
           mapContainer.current?.removeEventListener('click', handleRemoveClick);
@@ -508,6 +511,7 @@ const TechnicalMap: React.FC = () => {
     setShowInstructions(true);
     setCurrentDrawingPoints([]);
     setHasOverlap(false);
+    setIsPolygonClosed(false);
 
     // Add visual feedback to map container
     if (mapContainer.current) {
@@ -517,10 +521,23 @@ const TechnicalMap: React.FC = () => {
 
     // Show instruction message
     toast({
-      title: "🎯 Modo desenho ativo",
+      title: "✏️ Modo desenho ativo",
       description: "Toque no mapa para iniciar a área",
       variant: "default"
     });
+
+    // Add mouse move listener for real-time line preview
+    const handleMouseMove = (e: any) => {
+      if (!isDrawingActive) return;
+      
+      const rect = mapContainer.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      setMousePosition({ x, y });
+    };
 
     // Add click listener for drawing
     const handleMapDrawClick = (e: any) => {
@@ -538,6 +555,24 @@ const TechnicalMap: React.FC = () => {
       const lng = -47.8825 + (x - rect.width/2) * 0.0001;
 
       const newPoint = { x, y, lat, lng };
+
+      // Check if clicking on first point to close polygon
+      if (currentDrawingPoints.length >= 3) {
+        const firstPoint = currentDrawingPoints[0];
+        const distance = Math.sqrt(Math.pow(x - firstPoint.x, 2) + Math.pow(y - firstPoint.y, 2));
+        
+        if (distance < 20) { // 20px threshold for closing
+          setIsPolygonClosed(true);
+          finishDrawing(toolId, currentDrawingPoints, targetFarm);
+          toast({
+            title: "✅ Área desenhada com sucesso",
+            description: "Polígono fechado automaticamente",
+            variant: "default"
+          });
+          return;
+        }
+      }
+
       const updatedPoints = [...currentDrawingPoints, newPoint];
       setCurrentDrawingPoints(updatedPoints);
 
@@ -555,25 +590,38 @@ const TechnicalMap: React.FC = () => {
         }
       }
 
-      // Finalizar desenho após alguns pontos (simulação)
-      if (updatedPoints.length >= 4 || toolId === 'rectangle' && updatedPoints.length >= 2) {
+      // For rectangle, auto-close after 4 points
+      if (toolId === 'rectangle' && updatedPoints.length >= 4) {
+        setIsPolygonClosed(true);
         finishDrawing(toolId, updatedPoints, targetFarm);
       }
     };
 
-    // Add click listener to map container
-    mapContainer.current?.addEventListener('click', handleMapDrawClick);
+    // Add event listeners to map container
+    if (mapContainer.current) {
+      mapContainer.current.addEventListener('click', handleMapDrawClick);
+      mapContainer.current.addEventListener('mousemove', handleMouseMove);
+    }
   };
 
   const finishDrawing = (toolId: string, points: any[], targetFarm: any) => {
-    // Remove drawing mode styling
+    // Remove drawing mode styling and event listeners
     if (mapContainer.current) {
       mapContainer.current.style.cursor = 'default';
       mapContainer.current.classList.remove('drawing-active');
+      
+      // Remove event listeners
+      const elements = mapContainer.current.querySelectorAll('*');
+      elements.forEach(el => {
+        el.removeEventListener('click', () => {});
+        el.removeEventListener('mousemove', () => {});
+      });
     }
 
     setIsDrawingActive(false);
     setShowInstructions(false);
+    setMousePosition(null);
+    setIsPolygonClosed(false);
 
     // Initialize form data when showing confirmation
     const defaultProducerId = isProdutor ? ownFarm?.id || '' : selectedProducer?.id || '';
@@ -1197,10 +1245,20 @@ const TechnicalMap: React.FC = () => {
                       <span className="text-destructive">🗑️</span>
                       <span>Toque em uma área para remover</span>
                     </>
+                  ) : isPolygonClosed ? (
+                    <>
+                      <span className="text-green-500">✅</span>
+                      <span>Área desenhada com sucesso</span>
+                    </>
+                  ) : currentDrawingPoints.length === 0 ? (
+                    <>
+                      <span className="text-primary">✏️</span>
+                      <span>Toque no mapa para iniciar a área</span>
+                    </>
                   ) : (
                     <>
-                      <span className="text-primary">🎯</span>
-                      <span>Toque no mapa para iniciar a área</span>
+                      <span className="text-blue-500">🔵</span>
+                      <span>Continue adicionando pontos ou toque no primeiro para fechar</span>
                     </>
                   )}
                 </div>
@@ -1215,32 +1273,72 @@ const TechnicalMap: React.FC = () => {
           </div>
         )}
 
-        {/* Drawing Points Visualization */}
+        {/* Enhanced Drawing Visualization */}
         {isDrawingActive && currentDrawingPoints.length > 0 && (
           <>
-            {/* White dots for vertices */}
+            {/* SVG for drawing lines and area */}
+            <svg className="absolute inset-0 z-20 pointer-events-none" style={{ width: '100%', height: '100%' }}>
+              {/* Area fill */}
+              {currentDrawingPoints.length >= 3 && (
+                <polygon
+                  points={currentDrawingPoints.map(p => `${p.x},${p.y}`).join(' ')}
+                  fill={hasOverlap ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)'}
+                  stroke={hasOverlap ? '#ef4444' : '#3b82f6'}
+                  strokeWidth="2"
+                  strokeDasharray={hasOverlap ? "5,5" : "none"}
+                  opacity="0.8"
+                />
+              )}
+              
+              {/* Connection lines */}
+              {currentDrawingPoints.length > 1 && (
+                <polyline
+                  points={currentDrawingPoints.map(p => `${p.x},${p.y}`).join(' ')}
+                  fill="none"
+                  stroke="#3b82f6"
+                  strokeWidth="2"
+                  opacity="0.8"
+                />
+              )}
+              
+              {/* Real-time line from last point to mouse */}
+              {currentDrawingPoints.length > 0 && mousePosition && !isPolygonClosed && (
+                <line
+                  x1={currentDrawingPoints[currentDrawingPoints.length - 1].x}
+                  y1={currentDrawingPoints[currentDrawingPoints.length - 1].y}
+                  x2={mousePosition.x}
+                  y2={mousePosition.y}
+                  stroke="#3b82f6"
+                  strokeWidth="2"
+                  opacity="0.5"
+                  strokeDasharray="3,3"
+                />
+              )}
+            </svg>
+
+            {/* Vertex points */}
             {currentDrawingPoints.map((point, index) => (
               <div
                 key={index}
-                className="absolute w-3 h-3 bg-white border-2 border-primary rounded-full shadow-md z-25 pointer-events-none"
+                className={`absolute rounded-full shadow-lg z-25 pointer-events-none transition-all duration-200 ${
+                  index === 0 
+                    ? 'w-4 h-4 bg-green-500 border-2 border-white' // First point - green
+                    : 'w-3 h-3 bg-blue-500 border-2 border-white'   // Other points - blue
+                }`}
                 style={{
-                  left: point.x - 6,
-                  top: point.y - 6,
+                  left: point.x - (index === 0 ? 8 : 6),
+                  top: point.y - (index === 0 ? 8 : 6),
                 }}
               />
             ))}
             
-            {/* Drawing area with overlap styling */}
-            {currentDrawingPoints.length >= 3 && (
+            {/* First point hover area for closing polygon */}
+            {currentDrawingPoints.length >= 3 && !isPolygonClosed && (
               <div
-                className={`absolute inset-0 z-20 pointer-events-none`}
+                className="absolute w-8 h-8 rounded-full border-2 border-green-400 bg-green-400/20 z-24 pointer-events-none animate-pulse"
                 style={{
-                  background: hasOverlap 
-                    ? 'rgba(239, 68, 68, 0.1)' // Red overlay for overlap
-                    : 'rgba(34, 197, 94, 0.1)', // Green overlay for normal drawing
-                  border: hasOverlap 
-                    ? '2px dashed #ef4444' // Red dashed border for overlap
-                    : '2px solid #ffffff', // White solid border for normal
+                  left: currentDrawingPoints[0].x - 16,
+                  top: currentDrawingPoints[0].y - 16,
                 }}
               />
             )}
