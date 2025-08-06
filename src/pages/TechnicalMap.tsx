@@ -1070,6 +1070,11 @@ const TechnicalMap: React.FC = () => {
 
         {/* Left Floating Toolbar */}
         <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-2">
+          {/* Trail Button */}
+          <Button onClick={handleTrailToggle} className={`w-10 h-10 rounded-full backdrop-blur-sm shadow-md border border-border hover:bg-white ${isRecordingTrail ? 'bg-red-500/90 text-white' : 'bg-white/90'}`} variant="ghost" size="sm">
+            <Route className="h-4 w-4" />
+          </Button>
+
           {/* Back Button */}
           <Button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-border hover:bg-white" variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 text-muted-foreground" />
@@ -1109,10 +1114,6 @@ const TechnicalMap: React.FC = () => {
             <Camera className="h-6 w-6 text-primary-foreground" />
           </Button>
 
-          {/* PRIORIDADE 2: Trilhas */}
-          <Button onClick={handleTrailToggle} className={`w-12 h-12 rounded-full backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform ${isRecordingTrail ? 'bg-red-500/90 text-white' : 'bg-card/90'}`} variant="ghost" size="sm">
-            <Route className="h-5 w-5" />
-          </Button>
 
           {/* PRIORIDADE 3: Ocorrências */}
           
