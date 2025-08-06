@@ -108,19 +108,28 @@ const TechnicalMap: React.FC = () => {
   const drawingTools = [{
     id: 'freehand',
     name: 'Mão livre',
+    emoji: '✏️',
     icon: Edit3
   }, {
     id: 'polygon',
     name: 'Polígono',
+    emoji: '🔷',
     icon: Pentagon
   }, {
     id: 'pivot',
     name: 'Pivô',
+    emoji: '🌀',
     icon: Circle
   }, {
     id: 'rectangle',
     name: 'Retângulo',
+    emoji: '◼️',
     icon: Square
+  }, {
+    id: 'remove',
+    name: 'Remover',
+    emoji: '🗑️',
+    icon: Trash2
   }];
   const floatingActions = [{
     id: 'camera',
@@ -417,8 +426,23 @@ const TechnicalMap: React.FC = () => {
       });
       return;
     }
+
     setSelectedTool(toolId);
     setShowDrawingTools(false);
+
+    // Handle remove tool differently
+    if (toolId === 'remove') {
+      if (mapContainer.current) {
+        mapContainer.current.style.cursor = 'pointer';
+      }
+      toast({
+        title: "🗑️ Modo remoção ativado",
+        description: "Toque em uma região para removê-la",
+        variant: "default"
+      });
+      return;
+    }
+
     setIsDrawingMode(true);
 
     // Add visual feedback to map container
@@ -1135,12 +1159,23 @@ const TechnicalMap: React.FC = () => {
         {/* Drawing Tools Panel */}
         {showDrawingTools && <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30">
             <Card className="bg-card/95 backdrop-blur-sm border border-border shadow-lg">
-              <div className="p-4 w-48">
+              <div className="p-4 w-56">
                 <h3 className="text-sm font-semibold text-foreground mb-3">Ferramentas de Desenho</h3>
-                <div className="space-y-2">
-                  {drawingTools.map(tool => <Button key={tool.id} onClick={() => handleToolSelect(tool.id)} variant="ghost" size="sm" className="w-full justify-start h-auto py-2" disabled={isDrawingMode}>
-                      <tool.icon className="h-4 w-4 mr-2" />
-                      {tool.name}
+                <div className="space-y-1">
+                  {drawingTools.map(tool => <Button 
+                      key={tool.id} 
+                      onClick={() => handleToolSelect(tool.id)} 
+                      variant="ghost" 
+                      size="sm" 
+                      className={`w-full justify-start h-auto py-3 px-3 ${
+                        selectedTool === tool.id 
+                          ? 'bg-primary/20 border-2 border-primary text-primary hover:bg-primary/30' 
+                          : 'hover:bg-accent/50'
+                      }`} 
+                      disabled={isDrawingMode}
+                    >
+                      <span className="text-lg mr-3">{tool.emoji}</span>
+                      <span className="text-sm">{tool.name}</span>
                     </Button>)}
                 </div>
               </div>
