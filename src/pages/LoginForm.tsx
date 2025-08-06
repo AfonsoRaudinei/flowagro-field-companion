@@ -44,7 +44,7 @@ const LoginForm: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <NavigationHeader
         title="FlowAgro"
-        onBack={() => navigate('/')}
+        onBack={() => navigate('/login-mapa')}
         showBackButton={true}
       />
 
