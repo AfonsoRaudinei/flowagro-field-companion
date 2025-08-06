@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Camera, Mic, Bot, User, MapPin, Settings, MessageSquare, ChevronDown, Smile, MoreHorizontal, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, Camera, Mic, Bot, User, MapPin, Settings, MessageSquare, ChevronDown, Smile, MoreHorizontal, Loader2, Calendar, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -145,17 +145,55 @@ const Dashboard: React.FC = () => {
   const renderChatList = () => <div className="flex-1 bg-background">
       {/* Filter Section */}
       <div className="p-4 bg-card border-b border-border">
-        <Select value={chatFilter} onValueChange={(value: ChatFilter) => setChatFilter(value)}>
-          <SelectTrigger className="w-full h-12">
-            <SelectValue placeholder="Filtrar conversas" />
-          </SelectTrigger>
-          <SelectContent className="bg-card border-border shadow-ios-lg z-50">
-            <SelectItem value="agenda">📅 Agenda</SelectItem>
-            <SelectItem value="producer">👨‍🌾 Produtor</SelectItem>
-            <SelectItem value="ai">🤖 IA</SelectItem>
-            <SelectItem value="live-field">📡 Campo ao Vivo</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex rounded-lg bg-muted p-1">
+          <button
+            onClick={() => setChatFilter('producer')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              chatFilter === 'producer'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <User className="h-4 w-4" />
+            {chatFilter === 'producer' && <span>Produtor</span>}
+          </button>
+          
+          <button
+            onClick={() => setChatFilter('agenda')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              chatFilter === 'agenda'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Calendar className="h-4 w-4" />
+            {chatFilter === 'agenda' && <span>Agenda</span>}
+          </button>
+          
+          <button
+            onClick={() => setChatFilter('ai')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              chatFilter === 'ai'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Bot className="h-4 w-4" />
+            {chatFilter === 'ai' && <span>IA</span>}
+          </button>
+          
+          <button
+            onClick={() => setChatFilter('live-field')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+              chatFilter === 'live-field'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Radio className="h-4 w-4" />
+            {chatFilter === 'live-field' && <span>Campo</span>}
+          </button>
+        </div>
       </div>
 
       {/* Chat Cards */}
