@@ -1164,18 +1164,22 @@ const TechnicalMap: React.FC = () => {
                 <div className="space-y-1">
                   {drawingTools.map(tool => <Button 
                       key={tool.id} 
-                      onClick={() => handleToolSelect(tool.id)} 
-                      variant="ghost" 
+                      onClick={() => {
+                        handleToolSelect(tool.id);
+                        // Keep menu open for visual feedback
+                        setTimeout(() => setShowDrawingTools(false), 200);
+                      }}
+                      variant={selectedTool === tool.id ? "default" : "ghost"}
                       size="sm" 
-                      className={`w-full justify-start h-auto py-3 px-3 ${
+                      className={`w-full justify-start h-auto py-3 px-3 transition-all duration-200 ${
                         selectedTool === tool.id 
-                          ? 'bg-primary/20 border-2 border-primary text-primary hover:bg-primary/30' 
-                          : 'hover:bg-accent/50'
-                      }`} 
-                      disabled={isDrawingMode}
+                          ? 'bg-primary text-primary-foreground shadow-md scale-105' 
+                          : 'hover:bg-accent/70 hover:scale-102'
+                      }`}
                     >
                       <span className="text-lg mr-3">{tool.emoji}</span>
-                      <span className="text-sm">{tool.name}</span>
+                      <span className="text-sm font-medium">{tool.name}</span>
+                      {selectedTool === tool.id && <span className="ml-auto text-xs">●</span>}
                     </Button>)}
                 </div>
               </div>
