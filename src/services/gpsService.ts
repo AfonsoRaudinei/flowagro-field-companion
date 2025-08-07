@@ -12,7 +12,18 @@ export class GPSService {
   static async requestPermissions(): Promise<boolean> {
     try {
       const permissions = await Geolocation.requestPermissions();
-      return permissions.location === 'granted';
+      const granted = permissions.location === 'granted';
+      
+      if (granted) {
+        // Trigger success haptic feedback
+        try {
+          await Haptics.impact({ style: ImpactStyle.Light });
+        } catch (hapticError) {
+          console.warn('Haptics not available:', hapticError);
+        }
+      }
+      
+      return granted;
     } catch (error) {
       console.error('Error requesting GPS permissions:', error);
       return false;

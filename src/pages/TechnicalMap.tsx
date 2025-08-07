@@ -23,6 +23,9 @@ import { UnitService, UnitType } from '@/services/unitService';
 import DrawingControls from '@/components/ui/drawing-controls';
 import FarmInfoCard from '@/components/FarmInfoCard';
 import StatusCard from '@/components/StatusCard';
+import { useGPSState } from '@/hooks/useGPSState';
+import { GPSStatusIndicator } from '@/components/GPSStatusIndicator';
+import { GPSButton } from '@/components/GPSButton';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -78,11 +81,16 @@ const TechnicalMap: React.FC = () => {
   const [importedFiles, setImportedFiles] = useState<ImportedFile[]>([]);
   const [previewFile, setPreviewFile] = useState<ImportedFile | null>(null);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
-  const [isGPSEnabled, setIsGPSEnabled] = useState(false);
   const [showDebugCoords, setShowDebugCoords] = useState(false);
   const [gpsWatchId, setGpsWatchId] = useState<string | null>(null);
   const [currentTrail, setCurrentTrail] = useState<Trail | null>(null);
   const [isRecordingTrail, setIsRecordingTrail] = useState(false);
+
+  // Enhanced GPS state management
+  const { gpsState, checkGPSBeforeAction, getCurrentLocationWithFallback } = useGPSState();
+  
+  // Legacy GPS state for compatibility
+  const isGPSEnabled = gpsState.isEnabled;
   const [drawnShapes, setDrawnShapes] = useState<DrawingShape[]>([]);
   const [selectedShape, setSelectedShape] = useState<DrawingShape | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -369,7 +377,6 @@ const TechnicalMap: React.FC = () => {
       try {
         const location = await GPSService.getCurrentLocation();
         setUserLocation(location);
-        setIsGPSEnabled(true);
         toast({
           title: "GPS ativado",
           description: "Localização disponível",
@@ -1462,12 +1469,24 @@ const TechnicalMap: React.FC = () => {
           <FarmInfoCard />
         </div>
 
+        {/* GPS Status Indicator */}
+        <div className="absolute top-4 left-4 z-10">
+          <GPSStatusIndicator gpsState={gpsState} />
+        </div>
+
         {/* Left Floating Toolbar */}
         <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-2">
           {/* Trail Button */}
-          <Button onClick={handleTrailToggle} className={`w-10 h-10 rounded-full backdrop-blur-sm shadow-md border border-border hover:bg-white ${isRecordingTrail ? 'bg-red-500/90 text-white' : 'bg-white/90'}`} variant="ghost" size="sm">
-            <Route className="h-4 w-4" />
-          </Button>
+          <GPSButton
+            gpsState={gpsState}
+            icon={<Route className="h-4 w-4" />}
+            onClick={handleTrailToggle}
+            requiresGPS={true}
+            tooltip={isRecordingTrail ? "Parar gravação" : "Gravar trilha"}
+            variant={isRecordingTrail ? "destructive" : "ghost"}
+            className={`w-10 h-10 rounded-full backdrop-blur-sm shadow-md border border-border hover:bg-white ${isRecordingTrail ? 'animate-pulse' : 'bg-white/90'}`}
+            size="sm"
+          />
 
           {/* Back Button */}
           
@@ -1491,9 +1510,16 @@ const TechnicalMap: React.FC = () => {
         {/* Right Floating Toolbar - Reorganizado por prioridade */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-3">
           {/* GPS Fix Button */}
-          <Button onClick={handleGPSRecenter} className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform" variant="ghost" size="sm">
-            <Navigation className={`h-5 w-5 ${isGPSEnabled ? 'text-primary' : 'text-muted-foreground'}`} />
-          </Button>
+          <GPSButton
+            gpsState={gpsState}
+            icon={<Navigation className="h-5 w-5" />}
+            onClick={handleGPSRecenter}
+            requiresGPS={true}
+            tooltip="Centralizar no GPS"
+            variant="ghost"
+            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
+            size="sm"
+          />
 
           {/* Zoom In */}
           
@@ -1502,9 +1528,16 @@ const TechnicalMap: React.FC = () => {
           
 
           {/* PRIORIDADE 1: Câmera - Destaque especial */}
-          <Button onClick={handleCameraOpen} className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm shadow-lg border-2 border-primary hover:scale-105 transition-transform" variant="ghost" size="sm">
-            <Camera className="h-6 w-6 text-primary-foreground" />
-          </Button>
+          <GPSButton
+            gpsState={gpsState}
+            icon={<Camera className="h-6 w-6 text-primary-foreground" />}
+            onClick={handleCameraOpen}
+            requiresGPS={false}
+            tooltip="Capturar evento"
+            variant="ghost"
+            className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm shadow-lg border-2 border-primary hover:scale-105 transition-transform"
+            size="sm"
+          />
 
 
           {/* PRIORIDADE 3: Ocorrências */}
