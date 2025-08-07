@@ -32,7 +32,23 @@ export class TrailService {
     try {
       // Check if there's already an active trail
       if (this.currentTrail?.isActive) {
-        throw new Error('Já existe uma trilha ativa. Pare a gravação atual primeiro.');
+        // Make start idempotent: reuse existing trail, ensure watcher and callback
+        this.updateCallback = onUpdate;
+
+        if (!this.watchId) {
+          this.watchId = await GPSService.watchPosition((location) => {
+            this.addPointToTrail({
+              latitude: location.latitude,
+              longitude: location.longitude,
+              timestamp: new Date(),
+              accuracy: location.accuracy
+            });
+          });
+        }
+
+        // Notify current state
+        this.updateCallback?.({ ...this.currentTrail });
+        return this.currentTrail;
       }
 
       // Create new trail

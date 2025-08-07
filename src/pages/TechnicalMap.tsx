@@ -1904,7 +1904,7 @@ const TechnicalMap: React.FC = () => {
           farmId={selectedProducer?.id || ownFarm?.id || ''}
           farmName={selectedProducer?.farm || ownFarm?.name || ''}
           isVisible={showRouteRecorder}
-          onTrailUpdate={setCurrentTrail}
+          onTrailUpdate={(t) => { setCurrentTrail(t); setIsRecordingTrail(true); setShowRouteRecorder(true); }}
           onTrailComplete={handleRouteComplete}
         />
 
