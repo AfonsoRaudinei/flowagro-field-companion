@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
 import maplibregl from 'maplibre-gl';
@@ -18,6 +18,9 @@ import OfflineIndicator from '@/components/ui/offline-indicator';
 import SyncIndicator from '@/components/ui/sync-indicator';
 import ShapeEditControls from '@/components/ui/shape-edit-controls';
 import { DrawingService, DrawingShape } from '@/services/drawingService';
+import { DrawingUndoService, DrawingSession } from '@/services/drawingUndoService';
+import { UnitService, UnitType } from '@/services/unitService';
+import DrawingControls from '@/components/ui/drawing-controls';
 import FarmInfoCard from '@/components/FarmInfoCard';
 import StatusCard from '@/components/StatusCard';
 
@@ -59,6 +62,8 @@ const TechnicalMap: React.FC = () => {
   const [hasOverlap, setHasOverlap] = useState(false);
   const [isPolygonClosed, setIsPolygonClosed] = useState(false);
   const [mousePosition, setMousePosition] = useState<{x: number, y: number} | null>(null);
+  const [currentSession, setCurrentSession] = useState<DrawingSession | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<UnitType>('ha');
 
   // Farm info state
   const [selectedCulture, setSelectedCulture] = useState<string>('soja');
@@ -310,6 +315,28 @@ const TechnicalMap: React.FC = () => {
       }
     };
     loadStoredData();
+    
+    // Recuperar sessão de desenho se existir
+    const recoveredSession = DrawingUndoService.recoverSession();
+    if (recoveredSession) {
+      toast({
+        title: "Desenho recuperado",
+        description: "Desenho em progresso foi recuperado!",
+        variant: "default"
+      });
+      setCurrentDrawingPoints(recoveredSession.currentPoints);
+      setSelectedTool('polygon');
+      setIsDrawingActive(true);
+      setShowInstructions(true);
+    }
+
+    // Listener para mudanças na sessão
+    const handleSessionChange = (session: DrawingSession | null) => {
+      setCurrentSession(session);
+    };
+
+    DrawingUndoService.addListener(handleSessionChange);
+
     return () => {
       // Cleanup GPS watch
       if (gpsWatchId) {
@@ -317,6 +344,7 @@ const TechnicalMap: React.FC = () => {
       }
       // Remove drawing listener
       DrawingService.removeListener(setDrawnShapes);
+      DrawingUndoService.removeListener(handleSessionChange);
       map.current?.remove();
     };
   }, []);
@@ -512,6 +540,16 @@ const TechnicalMap: React.FC = () => {
     setCurrentDrawingPoints([]);
     setHasOverlap(false);
     setIsPolygonClosed(false);
+    
+    // Iniciar nova sessão de desenho
+    const currentFarm = selectedProducer || ownFarm;
+    if (currentFarm) {
+      DrawingUndoService.startSession(
+        currentFarm.id,
+        currentFarm.farm,
+        toolId
+      );
+    }
 
     // Add visual feedback to map container
     if (mapContainer.current) {
@@ -555,6 +593,9 @@ const TechnicalMap: React.FC = () => {
       const lng = -47.8825 + (x - rect.width/2) * 0.0001;
 
       const newPoint = { x, y, lat, lng };
+
+      // Adicionar ponto à sessão
+      DrawingUndoService.addPoint(newPoint);
 
       // Check if clicking on first point to close polygon
       if (currentDrawingPoints.length >= 3) {
@@ -1188,6 +1229,62 @@ const TechnicalMap: React.FC = () => {
       variant: "default"
     });
   };
+
+  // Handlers para undo/rollback
+  const handleUndoLastPoint = () => {
+    const removedPoint = DrawingUndoService.undoLastPoint();
+    if (removedPoint) {
+      const sessionPoints = DrawingUndoService.getSessionPoints();
+      setCurrentDrawingPoints(sessionPoints);
+      toast({
+        title: "Ponto removido",
+        description: "Último ponto foi removido",
+        variant: "default"
+      });
+    }
+  };
+
+  const handleCancelCurrentDrawing = () => {
+    DrawingUndoService.cancelSession();
+    setCurrentDrawingPoints([]);
+    setSelectedTool('');
+    setIsDrawingActive(false);
+    setShowInstructions(false);
+    setIsPolygonClosed(false);
+    setMousePosition(null);
+    
+    if (mapContainer.current) {
+      mapContainer.current.style.cursor = 'default';
+      mapContainer.current.classList.remove('drawing-active');
+    }
+    
+    toast({
+      title: "Desenho cancelado",
+      description: "Desenho foi cancelado",
+      variant: "default"
+    });
+  };
+
+  const handleCompleteDrawing = () => {
+    if (!currentSession) return;
+    
+    const points = DrawingUndoService.getSessionPoints();
+    if (points.length >= 3) {
+      const currentFarm = selectedProducer || ownFarm;
+      if (currentFarm) {
+        finishDrawing('polygon', points, {
+          id: currentFarm.id,
+          farm: currentFarm.farm
+        });
+      }
+    }
+  };
+
+  const calculateCurrentArea = useCallback(() => {
+    if (currentDrawingPoints.length < 3) return 0;
+    // Use private method from DrawingService for area calculation
+    return (DrawingService as any).calculateArea(currentDrawingPoints);
+  }, [currentDrawingPoints]);
   const handleBack = () => {
     // Navigation logic would go here
     navigate('/login-form');
@@ -1343,6 +1440,21 @@ const TechnicalMap: React.FC = () => {
               />
             )}
           </>
+        )}
+
+        {/* Drawing Controls */}
+        {currentSession && (
+          <DrawingControls
+            pointsCount={DrawingUndoService.getPointsCount()}
+            canUndo={DrawingUndoService.canUndo()}
+            onUndo={handleUndoLastPoint}
+            onCancel={handleCancelCurrentDrawing}
+            onSave={handleCompleteDrawing}
+            areaM2={calculateCurrentArea()}
+            selectedUnit={selectedUnit}
+            onUnitChange={setSelectedUnit}
+            isPolygonCloseable={currentDrawingPoints.length >= 3 && isPolygonClosed}
+          />
         )}
 
         {/* Card Minha Fazenda - Centro inferior, acima da tab bar */}

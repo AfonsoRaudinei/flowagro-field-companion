@@ -1,4 +1,5 @@
 import { OfflineStorageService, OfflineDrawing } from './offlineStorageService';
+import { UnitService } from './unitService';
 
 export interface DrawingPoint {
   x: number;
@@ -19,6 +20,7 @@ export interface DrawingShape {
   color?: string;
   areaM2?: number;
   areaHa?: number;
+  areaFormatted?: string[];
 }
 
 export class DrawingService {
@@ -31,6 +33,7 @@ export class DrawingService {
     const area = this.calculateArea(shape.points);
     shape.areaM2 = area;
     shape.areaHa = Math.round(area / 10000 * 100) / 100; // Convert to hectares with 2 decimals
+    shape.areaFormatted = UnitService.getMultipleFormats(area);
 
     const offlineDrawing: OfflineDrawing = {
       id: shape.id,
@@ -100,7 +103,8 @@ export class DrawingService {
           timestamp: drawing.timestamp,
           color: this.getShapeColor(drawing.shapeType),
           areaM2: drawing.areaM2,
-          areaHa: drawing.areaHa
+          areaHa: drawing.areaHa,
+          areaFormatted: drawing.areaM2 ? UnitService.getMultipleFormats(drawing.areaM2) : undefined
         }));
       
       return this.shapes;
