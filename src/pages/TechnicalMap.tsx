@@ -14,6 +14,7 @@ import { CameraService, eventTypes, FieldPhoto, CheckInOut } from '@/services/ca
 import { FileImportService, ImportedFile } from '@/services/fileImportService';
 import { GPSService, UserLocation } from '@/services/gpsService';
 import { TrailService, Trail } from '@/services/trailService';
+import { WaypointService } from '@/services/waypointService';
 import OfflineIndicator from '@/components/ui/offline-indicator';
 import SyncIndicator from '@/components/ui/sync-indicator';
 import ShapeEditControls from '@/components/ui/shape-edit-controls';
@@ -30,6 +31,9 @@ import { GPSStatusIndicator } from '../components/GPSStatusIndicator';
 import { GPSButton } from '../components/GPSButton';
 import SatelliteLayerSelector from '@/components/SatelliteLayerSelector';
 import { satelliteService } from '@/services/satelliteService';
+import { RouteRecorder } from '@/components/RouteRecorder';
+import { RouteHistoryModal } from '@/components/RouteHistoryModal';
+import { RouteViewer } from '@/components/RouteViewer';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -89,6 +93,12 @@ const TechnicalMap: React.FC = () => {
   const [gpsWatchId, setGpsWatchId] = useState<string | null>(null);
   const [currentTrail, setCurrentTrail] = useState<Trail | null>(null);
   const [isRecordingTrail, setIsRecordingTrail] = useState(false);
+  
+  // Route recording state
+  const [showRouteRecorder, setShowRouteRecorder] = useState(false);
+  const [showRouteHistory, setShowRouteHistory] = useState(false);
+  const [selectedViewTrail, setSelectedViewTrail] = useState<Trail | null>(null);
+  const [showRouteViewer, setShowRouteViewer] = useState(false);
 
   // Enhanced GPS state management
   const { gpsState, checkGPSBeforeAction, getCurrentLocationWithFallback } = useGPSState();
@@ -162,8 +172,8 @@ const TechnicalMap: React.FC = () => {
     icon: Camera,
     priority: 1
   }, {
-    id: 'trails',
-    name: 'Trilhas',
+    id: 'routes',
+    name: 'Rotas',
     icon: Route,
     priority: 2
   }, {
@@ -1401,6 +1411,63 @@ const TechnicalMap: React.FC = () => {
     // Navigation logic would go here
     navigate('/login-form');
   };
+
+  const handleRouteComplete = (trail: Trail) => {
+    setCurrentTrail(null);
+    setIsRecordingTrail(false);
+    setShowRouteRecorder(false);
+    
+    // Show route viewer for completed trail
+    setSelectedViewTrail(trail);
+    setShowRouteViewer(true);
+  };
+
+  const handleViewRoute = (trail: Trail) => {
+    setSelectedViewTrail(trail);
+    setShowRouteHistory(false);
+    setShowRouteViewer(true);
+  };
+
+  const handleFloatingAction = async (actionId: string) => {
+    if (!selectedProducer && !ownFarm) {
+      toast({
+        title: "Seleção necessária",
+        description: "Selecione um produtor primeiro",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const farmId = selectedProducer?.id || ownFarm?.id || '';
+    const farmName = selectedProducer?.farm || ownFarm?.name || '';
+
+    if (actionId === 'camera') {
+      // Check GPS and proceed to camera
+      const canProceed = await checkGPSBeforeAction("Para tirar fotos geolocalizadas, o GPS deve estar habilitado.");
+      if (canProceed) {
+        setShowCameraEventSelector(true);
+      }
+    } else if (actionId === 'routes') {
+      // Toggle route recording interface
+      const canProceed = await checkGPSBeforeAction("Para gravar rotas, o GPS deve estar habilitado.");
+      if (canProceed) {
+        setShowRouteRecorder(!showRouteRecorder);
+      }
+    } else if (actionId === 'events') {
+      // Show last 10 photos
+      const photos = await CameraService.getStoredPhotos();
+      const recentPhotos = photos.slice(-10).reverse();
+      let message = recentPhotos.length > 0 
+        ? "Últimos eventos:\n\n" + recentPhotos.map(photo => CameraService.createChatMessage(photo)).join('\n\n')
+        : "Nenhum evento registrado ainda.";
+      
+      if (message.length > 1000) {
+        message = message.substring(0, 1000) + "...";
+      }
+      
+      alert(message);
+    }
+  };
   return <>
       <style>{`
         .drawing-active {
@@ -1831,6 +1898,36 @@ const TechnicalMap: React.FC = () => {
               </div>
             </Card>
           </div>}
+
+        {/* Route Recording Interface */}
+        <RouteRecorder 
+          farmId={selectedProducer?.id || ownFarm?.id || ''}
+          farmName={selectedProducer?.farm || ownFarm?.name || ''}
+          isVisible={showRouteRecorder}
+          onTrailUpdate={setCurrentTrail}
+          onTrailComplete={handleRouteComplete}
+        />
+
+        {/* Route History Modal */}
+        <RouteHistoryModal
+          isOpen={showRouteHistory}
+          onClose={() => setShowRouteHistory(false)}
+          farmId={selectedProducer?.id || ownFarm?.id || ''}
+          onViewRoute={handleViewRoute}
+        />
+
+        {/* Route Viewer Modal */}
+        <RouteViewer
+          trail={selectedViewTrail}
+          isOpen={showRouteViewer}
+          onClose={() => {
+            setShowRouteViewer(false);
+            setSelectedViewTrail(null);
+          }}
+          photos={fieldPhotos.filter(photo => 
+            selectedViewTrail && photo.notes?.includes(selectedViewTrail.id)
+          )}
+        />
 
         {/* Backdrop for closing menus */}
         {(showLayerSelector || showDrawingTools || showCameraEventSelector || showEventForm || showStageEditor) && <div className="absolute inset-0 z-20" onClick={() => {
