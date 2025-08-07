@@ -1457,9 +1457,9 @@ const TechnicalMap: React.FC = () => {
           />
         )}
 
-        {/* Card Minha Fazenda - Centro inferior, acima da tab bar */}
-        <div className="absolute bottom-20 left-0 right-0 z-30 px-4">
-          <FarmInfoCard selectedCulture={selectedCulture} selectedStage={selectedStage} onCultureChange={setSelectedCulture} onStageChange={setSelectedStage} onStagesClick={() => navigate('/phenological-stages')} />
+        {/* Card Minha Fazenda - Canto superior direito */}
+        <div className="absolute top-4 right-4 z-30 w-56">
+          <FarmInfoCard />
         </div>
 
         {/* Left Floating Toolbar */}

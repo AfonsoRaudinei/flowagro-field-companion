@@ -6,23 +6,13 @@ import { Wheat } from 'lucide-react';
 
 interface FarmInfoCardProps {
   className?: string;
-  selectedCulture: string;
-  selectedStage: string;
-  onCultureChange: (culture: string) => void;
-  onStageChange: (stage: string) => void;
-  onStagesClick: () => void;
 }
 
 const FarmInfoCard: React.FC<FarmInfoCardProps> = ({
   className,
-  selectedCulture,
-  selectedStage,
-  onCultureChange,
-  onStageChange,
-  onStagesClick
 }) => {
   const navigate = useNavigate();
-  const { selectedProducer, ownFarm, isProdutor } = useUser();
+  const { selectedProducer, ownFarm, isProdutor, cultureStageData } = useUser();
   
   const getCultureIcon = (culture: string) => {
     switch (culture) {
@@ -49,37 +39,37 @@ const FarmInfoCard: React.FC<FarmInfoCardProps> = ({
   };
 
   const handlePhenologicalStagesClick = () => {
-    navigate('/phenological-stages', { state: { selectedCulture } });
+    navigate('/phenological-stages', { state: { selectedCulture: cultureStageData.selectedCulture } });
   };
 
   const currentProducer = selectedProducer || ownFarm;
 
   return (
-    <Card className={`bg-background/95 backdrop-blur-sm shadow-lg border-0 ${className}`}>
-      <CardContent className="p-4">
+    <Card className={`bg-background/50 backdrop-blur-sm shadow-md border-0 rounded-lg ${className}`}>
+      <CardContent className="p-3">
         {/* Primeira linha - Nome do produtor */}
-        <div className="text-foreground font-light text-left mb-1">
+        <div className="text-foreground font-light text-left mb-1 text-sm">
           {currentProducer?.name || 'José Augusto Miranda'}
         </div>
         
         {/* Segunda linha - Nome da fazenda */}
-        <div className="text-muted-foreground font-light text-left mb-3">
+        <div className="text-muted-foreground font-light text-left mb-2 text-xs">
           {currentProducer?.farm || 'Fazenda São João'}
         </div>
         
         {/* Terceira linha - Cultura e estádio clicável */}
         <div 
-          className="flex items-center gap-2 cursor-pointer hover:bg-accent/50 rounded-md p-1 -m-1 transition-colors"
+          className="flex items-center gap-2 cursor-pointer hover:bg-accent/30 rounded-md p-1 -m-1 transition-colors"
           onClick={handlePhenologicalStagesClick}
         >
-          <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white">
-            {getCultureIcon(selectedCulture)}
+          <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white">
+            {getCultureIcon(cultureStageData.selectedCulture)}
           </div>
-          <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium">
-            {selectedStage?.toUpperCase() || 'V5'}
+          <div className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs font-medium">
+            {cultureStageData.selectedStage?.toUpperCase() || 'V5'}
           </div>
           <div className="text-xs text-muted-foreground ml-1">
-            {getCultureLabel(selectedCulture)}
+            {getCultureLabel(cultureStageData.selectedCulture)}
           </div>
         </div>
       </CardContent>

@@ -1,12 +1,32 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useUser } from '@/contexts/UserContext';
 
 const PhenologicalStages: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { cultureStageData, setCultureStageData } = useUser();
   const [selectedCulture, setSelectedCulture] = useState<'soja' | 'milho'>('soja');
+
+  useEffect(() => {
+    const stateData = location.state as { selectedCulture?: string };
+    if (stateData?.selectedCulture) {
+      setSelectedCulture(stateData.selectedCulture as 'soja' | 'milho');
+    } else {
+      setSelectedCulture(cultureStageData.selectedCulture as 'soja' | 'milho');
+    }
+  }, [location.state, cultureStageData.selectedCulture]);
+
+  const handleStageSelect = (stage: string) => {
+    setCultureStageData({
+      selectedCulture,
+      selectedStage: stage
+    });
+    navigate('/technical-map');
+  };
 
   const sojaStages = {
     vegetativos: [
@@ -61,7 +81,11 @@ const PhenologicalStages: React.FC = () => {
       <h3 className="text-lg font-semibold text-foreground mb-4">{title}</h3>
       <div className="space-y-3">
         {stages.map((stage) => (
-          <Card key={stage.code} className="hover:bg-accent/50 transition-colors cursor-pointer">
+          <Card 
+            key={stage.code} 
+            className="hover:bg-accent/50 transition-colors cursor-pointer"
+            onClick={() => handleStageSelect(stage.code)}
+          >
             <CardContent className="p-4">
               <div className="flex items-start space-x-3">
                 <div className="bg-primary text-primary-foreground rounded-md px-2 py-1 text-sm font-mono font-bold min-w-[3rem] text-center">

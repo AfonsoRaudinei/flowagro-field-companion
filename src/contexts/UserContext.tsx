@@ -16,15 +16,22 @@ export interface UserData {
   zipCode: string;
 }
 
+export interface CultureStageData {
+  selectedCulture: string;
+  selectedStage: string;
+}
+
 interface UserContextType {
   userData: UserData | null;
   selectedProducer: Producer | null;
   linkedProducers: Producer[];
   ownFarm: Producer | null;
+  cultureStageData: CultureStageData;
   setUserData: (data: UserData) => void;
   setSelectedProducer: (producer: Producer | null) => void;
   setLinkedProducers: (producers: Producer[]) => void;
   setOwnFarm: (farm: Producer | null) => void;
+  setCultureStageData: (data: CultureStageData) => void;
   isConsultor: boolean;
   isProdutor: boolean;
 }
@@ -52,6 +59,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [selectedProducer, setSelectedProducer] = useState<Producer | null>(null);
   const [linkedProducers, setLinkedProducers] = useState<Producer[]>(mockLinkedProducers);
   const [ownFarm, setOwnFarm] = useState<Producer | null>(mockOwnFarm);
+  const [cultureStageData, setCultureStageData] = useState<CultureStageData>({
+    selectedCulture: 'soja',
+    selectedStage: 'V5'
+  });
 
   const isConsultor = userData?.profile === 'consultor';
   const isProdutor = userData?.profile === 'produtor';
@@ -63,10 +74,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         selectedProducer,
         linkedProducers,
         ownFarm,
+        cultureStageData,
         setUserData,
         setSelectedProducer,
         setLinkedProducers,
         setOwnFarm,
+        setCultureStageData,
         isConsultor,
         isProdutor,
       }}
