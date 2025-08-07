@@ -106,6 +106,57 @@ const TechnicalMap: React.FC = () => {
   const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const followUserRef = useRef(true);
 
+  // Live route helpers (hoisted)
+  function ensureLiveRouteLayer() {
+    if (!map.current) return;
+    if (!map.current.getSource(liveRouteSourceId)) {
+      map.current.addSource(liveRouteSourceId, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} }
+      } as any);
+    }
+    if (!map.current.getLayer(liveRouteLayerId)) {
+      map.current.addLayer({
+        id: liveRouteLayerId,
+        type: 'line',
+        source: liveRouteSourceId,
+        paint: { 'line-color': '#3b82f6', 'line-width': 4 }
+      });
+    }
+  }
+
+  function updateLiveRouteVisualization(trail: Trail) {
+    if (!map.current) return;
+    ensureLiveRouteLayer();
+    const coords = (trail.points || []).map(p => [p.longitude, p.latitude]) as [number, number][];
+    const src = map.current.getSource(liveRouteSourceId) as maplibregl.GeoJSONSource | undefined;
+    if (src) {
+      src.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: coords }, properties: {} } as any);
+    }
+    const last = coords[coords.length - 1];
+    if (last) {
+      if (!userMarkerRef.current) {
+        const el = document.createElement('div');
+        el.className = 'w-4 h-4 rounded-full bg-primary ring-2 ring-background shadow-md animate-pulse';
+        userMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(last).addTo(map.current);
+      } else {
+        userMarkerRef.current.setLngLat(last);
+      }
+      if (followUserRef.current) {
+        try { map.current.easeTo({ center: last, duration: 800 }); } catch {}
+      }
+    }
+  }
+
+  function clearLiveRouteVisualization() {
+    if (!map.current) return;
+    const src = map.current.getSource(liveRouteSourceId) as maplibregl.GeoJSONSource | undefined;
+    if (src) {
+      src.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} } as any);
+    }
+    if (userMarkerRef.current) { userMarkerRef.current.remove(); userMarkerRef.current = null; }
+  }
+
   // Enhanced GPS state management
   const { gpsState, checkGPSBeforeAction, getCurrentLocationWithFallback } = useGPSState();
   
@@ -463,7 +514,7 @@ const TechnicalMap: React.FC = () => {
     } else {
       clearLiveRouteVisualization();
     }
-  }, [currentTrail, ensureLiveRouteLayer, updateLiveRouteVisualization]);
+  }, [currentTrail]);
 
   const handleGPSRecenter = async () => {
     if (!isGPSEnabled) {
@@ -497,78 +548,6 @@ const TechnicalMap: React.FC = () => {
       });
     }
   };
-  // Live route helpers
-  const ensureLiveRouteLayer = useCallback(() => {
-    if (!map.current) return;
-    if (!map.current.getSource(liveRouteSourceId)) {
-      map.current.addSource(liveRouteSourceId, {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          geometry: { type: 'LineString', coordinates: [] },
-          properties: {}
-        }
-      } as any);
-    }
-    if (!map.current.getLayer(liveRouteLayerId)) {
-      map.current.addLayer({
-        id: liveRouteLayerId,
-        type: 'line',
-        source: liveRouteSourceId,
-        paint: {
-          'line-color': '#3b82f6',
-          'line-width': 4
-        }
-      });
-    }
-  }, []);
-
-  const updateLiveRouteVisualization = useCallback((trail: Trail) => {
-    if (!map.current) return;
-    ensureLiveRouteLayer();
-    const coords = (trail.points || []).map(p => [p.longitude, p.latitude]) as [number, number][];
-    const src = map.current.getSource(liveRouteSourceId) as maplibregl.GeoJSONSource | undefined;
-    if (src) {
-      src.setData({
-        type: 'Feature',
-        geometry: { type: 'LineString', coordinates: coords },
-        properties: {}
-      } as any);
-    }
-
-    // Update or create user marker at last point
-    const last = coords[coords.length - 1];
-    if (last) {
-      if (!userMarkerRef.current) {
-        const el = document.createElement('div');
-        el.className = 'w-4 h-4 rounded-full bg-primary ring-2 ring-background shadow-md animate-pulse';
-        userMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(last).addTo(map.current);
-      } else {
-        userMarkerRef.current.setLngLat(last);
-      }
-      if (followUserRef.current) {
-        try {
-          map.current.easeTo({ center: last, duration: 800 });
-        } catch {}
-      }
-    }
-  }, [ensureLiveRouteLayer]);
-
-  const clearLiveRouteVisualization = useCallback(() => {
-    if (!map.current) return;
-    const src = map.current.getSource(liveRouteSourceId) as maplibregl.GeoJSONSource | undefined;
-    if (src) {
-      src.setData({
-        type: 'Feature',
-        geometry: { type: 'LineString', coordinates: [] },
-        properties: {}
-      } as any);
-    }
-    if (userMarkerRef.current) {
-      userMarkerRef.current.remove();
-      userMarkerRef.current = null;
-    }
-  }, []);
 
   const handleLayerChange = async (layerId: string, options?: { date?: Date }) => {
     if (!map.current) return;
