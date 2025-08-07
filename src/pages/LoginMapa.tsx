@@ -122,7 +122,7 @@ const LoginMapa: React.FC = () => {
 
       {/* Compass */}
       <div className="absolute top-4 right-4 z-10">
-        <div className="bg-card/90 backdrop-blur-sm p-3 rounded-full shadow-ios-md">
+        <div className="backdrop-blur-sm p-3 rounded-full shadow-ios-md mx-0 my-[760px] bg-[#513395]/[0.29]">
           <Compass className="h-6 w-6 text-foreground" />
         </div>
       </div>
