@@ -100,6 +100,12 @@ const TechnicalMap: React.FC = () => {
   const [selectedViewTrail, setSelectedViewTrail] = useState<Trail | null>(null);
   const [showRouteViewer, setShowRouteViewer] = useState(false);
 
+  // Live route/position visualization
+  const liveRouteSourceId = 'live-route-source';
+  const liveRouteLayerId = 'live-route-layer';
+  const userMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const followUserRef = useRef(true);
+
   // Enhanced GPS state management
   const { gpsState, checkGPSBeforeAction, getCurrentLocationWithFallback } = useGPSState();
   
@@ -323,10 +329,19 @@ const TechnicalMap: React.FC = () => {
             console.log('GPS trigger failed, using default location');
           }
         }
-      } catch (error) {
-        console.log('Location unavailable, using default center');
-      }
-    });
+       } catch (error) {
+         console.log('Location unavailable, using default center');
+       }
+       // Prepare live route layer and draw current trail if any
+       try {
+         ensureLiveRouteLayer();
+         if (currentTrail?.points?.length) {
+           updateLiveRouteVisualization(currentTrail);
+         }
+       } catch (e) {
+         console.warn('Live route layer init failed', e);
+       }
+     });
 
     // Initialize GPS and load data
     initializeGPS();
@@ -439,6 +454,17 @@ const TechnicalMap: React.FC = () => {
       });
     }
   };
+  // Sync live route overlay with current trail
+  useEffect(() => {
+    if (!map.current) return;
+    if (currentTrail?.isActive) {
+      ensureLiveRouteLayer();
+      updateLiveRouteVisualization(currentTrail);
+    } else {
+      clearLiveRouteVisualization();
+    }
+  }, [currentTrail, ensureLiveRouteLayer, updateLiveRouteVisualization]);
+
   const handleGPSRecenter = async () => {
     if (!isGPSEnabled) {
       await initializeGPS();
@@ -471,6 +497,79 @@ const TechnicalMap: React.FC = () => {
       });
     }
   };
+  // Live route helpers
+  const ensureLiveRouteLayer = useCallback(() => {
+    if (!map.current) return;
+    if (!map.current.getSource(liveRouteSourceId)) {
+      map.current.addSource(liveRouteSourceId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: [] },
+          properties: {}
+        }
+      } as any);
+    }
+    if (!map.current.getLayer(liveRouteLayerId)) {
+      map.current.addLayer({
+        id: liveRouteLayerId,
+        type: 'line',
+        source: liveRouteSourceId,
+        paint: {
+          'line-color': '#3b82f6',
+          'line-width': 4
+        }
+      });
+    }
+  }, []);
+
+  const updateLiveRouteVisualization = useCallback((trail: Trail) => {
+    if (!map.current) return;
+    ensureLiveRouteLayer();
+    const coords = (trail.points || []).map(p => [p.longitude, p.latitude]) as [number, number][];
+    const src = map.current.getSource(liveRouteSourceId) as maplibregl.GeoJSONSource | undefined;
+    if (src) {
+      src.setData({
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: coords },
+        properties: {}
+      } as any);
+    }
+
+    // Update or create user marker at last point
+    const last = coords[coords.length - 1];
+    if (last) {
+      if (!userMarkerRef.current) {
+        const el = document.createElement('div');
+        el.className = 'w-4 h-4 rounded-full bg-primary ring-2 ring-background shadow-md animate-pulse';
+        userMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(last).addTo(map.current);
+      } else {
+        userMarkerRef.current.setLngLat(last);
+      }
+      if (followUserRef.current) {
+        try {
+          map.current.easeTo({ center: last, duration: 800 });
+        } catch {}
+      }
+    }
+  }, [ensureLiveRouteLayer]);
+
+  const clearLiveRouteVisualization = useCallback(() => {
+    if (!map.current) return;
+    const src = map.current.getSource(liveRouteSourceId) as maplibregl.GeoJSONSource | undefined;
+    if (src) {
+      src.setData({
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: [] },
+        properties: {}
+      } as any);
+    }
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+      userMarkerRef.current = null;
+    }
+  }, []);
+
   const handleLayerChange = async (layerId: string, options?: { date?: Date }) => {
     if (!map.current) return;
     setCurrentLayer(layerId);
@@ -478,15 +577,22 @@ const TechnicalMap: React.FC = () => {
 
     // Handle base layers
     const baseLayer = mapLayers.find(l => l.id === layerId);
-    if (baseLayer) {
-      map.current.setStyle(baseLayer.url);
-      toast({
-        title: "Camada alterada",
-        description: `Visualizando: ${baseLayer.name}`,
-        variant: "default"
-      });
-      return;
-    }
+     if (baseLayer) {
+       map.current.setStyle(baseLayer.url);
+       // Re-add live route layer after style changes
+       map.current.once('style.load', () => {
+         ensureLiveRouteLayer();
+         if (currentTrail?.isActive) {
+           updateLiveRouteVisualization(currentTrail);
+         }
+       });
+       toast({
+         title: "Camada alterada",
+         description: `Visualizando: ${baseLayer.name}`,
+         variant: "default"
+       });
+       return;
+     }
 
     // Handle satellite layers
     if (layerId.includes('ndvi') || layerId.includes('biomassa') || layerId.includes('estresse') || 
@@ -1417,6 +1523,9 @@ const TechnicalMap: React.FC = () => {
     setIsRecordingTrail(false);
     setShowRouteRecorder(false);
     
+    // Clear live visualization
+    clearLiveRouteVisualization();
+    
     // Show route viewer for completed trail
     setSelectedViewTrail(trail);
     setShowRouteViewer(true);
@@ -1904,7 +2013,7 @@ const TechnicalMap: React.FC = () => {
           farmId={selectedProducer?.id || ownFarm?.id || ''}
           farmName={selectedProducer?.farm || ownFarm?.name || ''}
           isVisible={showRouteRecorder}
-          onTrailUpdate={(t) => { setCurrentTrail(t); setIsRecordingTrail(true); setShowRouteRecorder(true); }}
+          onTrailUpdate={(t) => { setCurrentTrail(t); setIsRecordingTrail(true); setShowRouteRecorder(true); updateLiveRouteVisualization(t); }}
           onTrailComplete={handleRouteComplete}
         />
 
