@@ -23,9 +23,9 @@ import { UnitService, UnitType } from '@/services/unitService';
 import DrawingControls from '@/components/ui/drawing-controls';
 import FarmInfoCard from '@/components/FarmInfoCard';
 import StatusCard from '@/components/StatusCard';
-import { useGPSState } from '@/hooks/useGPSState';
-import { GPSStatusIndicator } from '@/components/GPSStatusIndicator';
-import { GPSButton } from '@/components/GPSButton';
+import { useGPSState } from '../hooks/useGPSState';
+import { GPSStatusIndicator } from '../components/GPSStatusIndicator';
+import { GPSButton } from '../components/GPSButton';
 
 // Types for drawing management
 interface DrawingMetadata {
