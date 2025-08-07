@@ -26,6 +26,8 @@ import StatusCard from '@/components/StatusCard';
 import { useGPSState } from '../hooks/useGPSState';
 import { GPSStatusIndicator } from '../components/GPSStatusIndicator';
 import { GPSButton } from '../components/GPSButton';
+import SatelliteLayerSelector from '@/components/SatelliteLayerSelector';
+import { satelliteService } from '@/services/satelliteService';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -96,6 +98,8 @@ const TechnicalMap: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shapeToDelete, setShapeToDelete] = useState<DrawingShape | null>(null);
   const [editingShape, setEditingShape] = useState<DrawingShape | null>(null);
+  const [satelliteOverlays, setSatelliteOverlays] = useState<any[]>([]);
+  const [loadingSatellite, setLoadingSatellite] = useState(false);
   const [pendingDrawing, setPendingDrawing] = useState<{
     shapeType: string;
     targetFarm: {
@@ -439,20 +443,103 @@ const TechnicalMap: React.FC = () => {
       });
     }
   };
-  const handleLayerChange = (layerId: string) => {
+  const handleLayerChange = async (layerId: string, options?: { date?: Date }) => {
     if (!map.current) return;
     setCurrentLayer(layerId);
     setShowLayerSelector(false);
 
-    // Change map style to selected layer url
-    const layer = mapLayers.find(l => l.id === layerId);
-    if (layer) {
-      map.current.setStyle(layer.url);
+    // Handle base layers
+    const baseLayer = mapLayers.find(l => l.id === layerId);
+    if (baseLayer) {
+      map.current.setStyle(baseLayer.url);
       toast({
         title: "Camada alterada",
-        description: `Visualizando: ${layer.name}`,
+        description: `Visualizando: ${baseLayer.name}`,
         variant: "default"
       });
+      return;
+    }
+
+    // Handle satellite layers
+    if (layerId.includes('ndvi') || layerId.includes('biomassa') || layerId.includes('estresse') || 
+        layerId.includes('vigor') || layerId.includes('crescimento') || layerId.includes('fase')) {
+      
+      setLoadingSatellite(true);
+      toast({
+        title: "Carregando dados de satélite...",
+        description: "Aguarde um momento",
+        variant: "default"
+      });
+
+      try {
+        const bounds = map.current.getBounds();
+        const bbox: [number, number, number, number] = [
+          bounds.getWest(),
+          bounds.getSouth(), 
+          bounds.getEast(),
+          bounds.getNorth()
+        ];
+
+        const source = layerId.includes('planet') ? 'planet' : 'sentinel';
+        const layerType = layerId.includes('ndvi') ? 'ndvi' : 'true-color';
+        
+        const imageResponse = await satelliteService.getSatelliteImage({
+          bbox,
+          date: options?.date || new Date(),
+          layerType,
+          source
+        });
+
+        if (imageResponse.status === 'success') {
+          // Clear previous overlays
+          satelliteOverlays.forEach(overlay => {
+            if (map.current?.getLayer(overlay.id)) {
+              map.current.removeLayer(overlay.id);
+              map.current.removeSource(overlay.id);
+            }
+          });
+
+          // Add new overlay
+          const layer = satelliteService.createNDVILayer(imageResponse, bbox);
+          if (layer && map.current) {
+            map.current.addSource(layer.id, layer.source);
+            map.current.addLayer({
+              id: layer.id,
+              type: 'raster',
+              source: layer.id,
+              paint: layer.paint
+            });
+
+            setSatelliteOverlays([layer]);
+            toast({
+              title: "Camada de satélite carregada",
+              description: `${imageResponse.metadata.source} - ${imageResponse.metadata.date}`,
+              variant: "default"
+            });
+          }
+        } else if (imageResponse.status === 'activating') {
+          toast({
+            title: "Ativando imagem",
+            description: "Tente novamente em alguns minutos",
+            variant: "default"
+          });
+        } else {
+          toast({
+            title: "Erro ao carregar imagem",
+            description: imageResponse.error || "Dados não disponíveis",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error('Error loading satellite data:', error);
+        toast({
+          title: "Erro ao carregar dados",
+          description: "Verifique sua conexão",
+          variant: "destructive"
+        });
+      } finally {
+        setLoadingSatellite(false);
+      }
     }
   };
   // Simular detecção de sobreposição
@@ -1544,20 +1631,16 @@ const TechnicalMap: React.FC = () => {
           
         </div>
 
-        {/* Layer Selector Panel */}
-        {showLayerSelector && <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30">
-            <Card className="bg-card/95 backdrop-blur-sm border border-border shadow-lg">
-              <div className="p-4 w-48">
-                <h3 className="text-sm font-semibold text-foreground mb-3">Camadas do Mapa</h3>
-                <div className="space-y-2">
-                  {mapLayers.map(layer => <Button key={layer.id} onClick={() => handleLayerChange(layer.id)} variant={currentLayer === layer.id ? "default" : "ghost"} size="sm" className="w-full justify-start h-auto py-2">
-                      {layer.name}
-                      {currentLayer === layer.id && <span className="ml-auto text-xs">✓</span>}
-                    </Button>)}
-                </div>
-              </div>
-            </Card>
-          </div>}
+        {/* Satellite Layer Selector Panel */}
+        {showLayerSelector && (
+          <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30">
+            <SatelliteLayerSelector
+              onLayerChange={handleLayerChange}
+              currentLayer={currentLayer}
+              onClose={() => setShowLayerSelector(false)}
+            />
+          </div>
+        )}
 
         {/* Drawing Tools Panel */}
         {showDrawingTools && <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30">
