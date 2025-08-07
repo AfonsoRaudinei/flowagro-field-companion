@@ -21,7 +21,7 @@ const LoginMapa: React.FC = () => {
         sources: {
           'satellite': {
             type: 'raster',
-            tiles: ['https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=YOUR_MAPTILER_KEY'],
+            tiles: ['https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=TomRDHESnrtpittgnpuf'],
             tileSize: 256,
             attribution: '© MapTiler © OpenStreetMap contributors'
           }

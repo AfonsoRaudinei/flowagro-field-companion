@@ -118,15 +118,15 @@ const TechnicalMap: React.FC = () => {
   const mapLayers = [{
     id: 'satellite',
     name: 'Satélite',
-    url: 'https://api.maptiler.com/maps/satellite/style.json?key=MZ7IzlO1sjOVafWQMaNa'
+    url: 'https://api.maptiler.com/maps/satellite/style.json?key=TomRDHESnrtpittgnpuf'
   }, {
     id: 'hybrid',
     name: 'Híbrido',
-    url: 'https://api.maptiler.com/maps/hybrid/style.json?key=MZ7IzlO1sjOVafWQMaNa'
+    url: 'https://api.maptiler.com/maps/hybrid/style.json?key=TomRDHESnrtpittgnpuf'
   }, {
     id: 'terrain',
     name: 'Terreno',
-    url: 'https://api.maptiler.com/maps/landscape/style.json?key=MZ7IzlO1sjOVafWQMaNa'
+    url: 'https://api.maptiler.com/maps/landscape/style.json?key=TomRDHESnrtpittgnpuf'
   }];
   const drawingTools = [{
     id: 'freehand',
