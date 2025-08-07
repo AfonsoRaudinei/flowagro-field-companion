@@ -71,13 +71,28 @@ export class OfflineStorageService {
   private static DB_NAME = 'FlowAgroOfflineDB';
   private static DB_VERSION = 1;
   private static STORE_NAME = 'offlineData';
+  private static isInitialized = false;
 
   static async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      console.log('OfflineStorageService already initialized');
+      return;
+    }
+
+    console.log('Initializing OfflineStorageService...');
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
 
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve();
+      request.onerror = () => {
+        console.error('Failed to initialize IndexedDB:', request.error);
+        reject(request.error);
+      };
+      
+      request.onsuccess = () => {
+        console.log('OfflineStorageService initialized successfully');
+        this.isInitialized = true;
+        resolve();
+      };
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
@@ -87,9 +102,16 @@ export class OfflineStorageService {
           store.createIndex('farmId', 'farmId', { unique: false });
           store.createIndex('type', 'type', { unique: false });
           store.createIndex('syncStatus', 'syncStatus', { unique: false });
+          console.log('Object store and indexes created');
         }
       };
     });
+  }
+
+  static async ensureInitialized(): Promise<void> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
   }
 
   private static async getDB(): Promise<IDBDatabase> {
@@ -101,6 +123,7 @@ export class OfflineStorageService {
   }
 
   static async save(data: OfflineData): Promise<void> {
+    await this.ensureInitialized();
     const db = await this.getDB();
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([this.STORE_NAME], 'readwrite');

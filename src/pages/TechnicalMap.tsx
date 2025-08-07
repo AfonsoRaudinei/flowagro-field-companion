@@ -21,6 +21,8 @@ import { DrawingService, DrawingShape } from '@/services/drawingService';
 import { DrawingUndoService, DrawingSession } from '@/services/drawingUndoService';
 import { UnitService, UnitType } from '@/services/unitService';
 import DrawingControls from '@/components/ui/drawing-controls';
+import DrawingToolsPanel from '@/components/ui/drawing-tools-panel';
+import { OfflineStorageService } from '@/services/offlineStorageService';
 import FarmInfoCard from '@/components/FarmInfoCard';
 import StatusCard from '@/components/StatusCard';
 import { useGPSState } from '../hooks/useGPSState';
@@ -240,6 +242,22 @@ const TechnicalMap: React.FC = () => {
   };
   useEffect(() => {
     if (!mapContainer.current) return;
+
+    // Initialize OfflineStorageService first
+    const initializeStorage = async () => {
+      try {
+        await OfflineStorageService.ensureInitialized();
+        console.log('OfflineStorage initialized successfully in TechnicalMap');
+      } catch (error) {
+        console.error('Failed to initialize OfflineStorage:', error);
+        toast({
+          title: "Erro de inicialização",
+          description: "Falha ao inicializar armazenamento offline",
+          variant: "destructive"
+        });
+      }
+    };
+    initializeStorage();
 
     // Initialize map with MapTiler style URLs
     map.current = new maplibregl.Map({
@@ -1588,10 +1606,6 @@ const TechnicalMap: React.FC = () => {
             <Edit3 className={`h-4 w-4 ${showDrawingTools ? 'text-primary' : 'text-muted-foreground'}`} />
           </Button>
 
-          {/* Import Button */}
-          <Button onClick={handleFileImport} className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-border hover:bg-white" variant="ghost" size="sm">
-            <Upload className="h-4 w-4 text-muted-foreground" />
-          </Button>
         </div>
 
         {/* Right Floating Toolbar - Reorganizado por prioridade */}
@@ -1643,34 +1657,26 @@ const TechnicalMap: React.FC = () => {
         )}
 
         {/* Drawing Tools Panel */}
-        {showDrawingTools && <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30">
-            <Card className="bg-card/95 backdrop-blur-sm border border-border shadow-lg">
-              <div className="p-4 w-56">
-                <h3 className="text-sm font-semibold text-foreground mb-3">Ferramentas de Desenho</h3>
-                <div className="space-y-1">
-                  {drawingTools.map(tool => <Button 
-                      key={tool.id} 
-                      onClick={() => {
-                        handleToolSelect(tool.id);
-                        // Keep menu open for visual feedback
-                        setTimeout(() => setShowDrawingTools(false), 200);
-                      }}
-                      variant={selectedTool === tool.id ? "default" : "ghost"}
-                      size="sm" 
-                      className={`w-full justify-start h-auto py-3 px-3 transition-all duration-200 ${
-                        selectedTool === tool.id 
-                          ? 'bg-primary text-primary-foreground shadow-md scale-105' 
-                          : 'hover:bg-accent/70 hover:scale-102'
-                      }`}
-                    >
-                      <span className="text-lg mr-3">{tool.emoji}</span>
-                      <span className="text-sm font-medium">{tool.name}</span>
-                      {selectedTool === tool.id && <span className="ml-auto text-xs">●</span>}
-                    </Button>)}
-                </div>
-              </div>
-            </Card>
-          </div>}
+        {showDrawingTools && (
+          <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30">
+            <DrawingToolsPanel
+              selectedTool={selectedTool}
+              onToolSelect={(toolId) => {
+                handleToolSelect(toolId);
+                setTimeout(() => setShowDrawingTools(false), 200);
+              }}
+              onRemoveSelected={() => {
+                if (selectedShape) {
+                  handleDeleteShape();
+                }
+                setShowDrawingTools(false);
+              }}
+              onImportKML={handleFileImport}
+              hasSelectedShape={!!selectedShape}
+              className="w-72"
+            />
+          </div>
+        )}
 
         {/* Drawing Confirmation Dialog */}
         {showDrawingConfirm && pendingDrawing && <div className="absolute inset-0 z-40 bg-black/50 flex items-center justify-center p-4">
