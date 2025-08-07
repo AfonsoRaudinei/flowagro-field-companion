@@ -3,17 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { useUser } from '@/contexts/UserContext';
 import { Wheat } from 'lucide-react';
-
 interface FarmInfoCardProps {
   className?: string;
 }
-
 const FarmInfoCard: React.FC<FarmInfoCardProps> = ({
-  className,
+  className
 }) => {
   const navigate = useNavigate();
-  const { selectedProducer, ownFarm, isProdutor, cultureStageData } = useUser();
-  
+  const {
+    selectedProducer,
+    ownFarm,
+    isProdutor,
+    cultureStageData
+  } = useUser();
   const getCultureIcon = (culture: string) => {
     switch (culture) {
       case 'soja':
@@ -24,7 +26,6 @@ const FarmInfoCard: React.FC<FarmInfoCardProps> = ({
         return <Wheat className="w-4 h-4" />;
     }
   };
-
   const getCultureLabel = (culture: string) => {
     switch (culture) {
       case 'soja':
@@ -37,16 +38,16 @@ const FarmInfoCard: React.FC<FarmInfoCardProps> = ({
         return 'Soja';
     }
   };
-
   const handlePhenologicalStagesClick = () => {
-    navigate('/phenological-stages', { state: { selectedCulture: cultureStageData.selectedCulture } });
+    navigate('/phenological-stages', {
+      state: {
+        selectedCulture: cultureStageData.selectedCulture
+      }
+    });
   };
-
   const currentProducer = selectedProducer || ownFarm;
-
-  return (
-    <Card className={`bg-background/50 backdrop-blur-sm shadow-md border-0 rounded-lg ${className}`}>
-      <CardContent className="p-3">
+  return <Card className={`bg-background/50 backdrop-blur-sm shadow-md border-0 rounded-lg ${className}`}>
+      <CardContent className="p-3 mx-[47px] my-[44px]">
         {/* Primeira linha - Nome do produtor */}
         <div className="text-foreground font-light text-left mb-1 text-sm">
           {currentProducer?.name || 'José Augusto Miranda'}
@@ -58,10 +59,7 @@ const FarmInfoCard: React.FC<FarmInfoCardProps> = ({
         </div>
         
         {/* Terceira linha - Cultura e estádio clicável */}
-        <div 
-          className="flex items-center gap-2 cursor-pointer hover:bg-accent/30 rounded-md p-1 -m-1 transition-colors"
-          onClick={handlePhenologicalStagesClick}
-        >
+        <div className="flex items-center gap-2 cursor-pointer hover:bg-accent/30 rounded-md p-1 -m-1 transition-colors" onClick={handlePhenologicalStagesClick}>
           <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white">
             {getCultureIcon(cultureStageData.selectedCulture)}
           </div>
@@ -73,8 +71,6 @@ const FarmInfoCard: React.FC<FarmInfoCardProps> = ({
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default FarmInfoCard;
