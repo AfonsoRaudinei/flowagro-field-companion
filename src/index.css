@@ -133,3 +133,17 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Grok-style horizontal scroll */
+@layer utilities {
+  .no-scrollbar {
+    /* Firefox */
+    scrollbar-width: none;
+    /* Safari and Chrome */
+    -ms-overflow-style: none;
+  }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
