@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Camera, Mic, User, MapPin, Settings, MessageSquare, ChevronDown, Smile, MoreHorizontal, Loader2, Calendar, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,8 +15,11 @@ import { QuickActionsBar } from '@/components/QuickActionsBar';
 import useVoiceRecorder from '@/hooks/useVoiceRecorder';
 import { CameraService } from '@/services/cameraService';
 import { IALudmilaIcon } from '@/components/icons/IALudmilaIcon';
+import { supabase as sb } from '@/integrations/supabase/client';
+
 type ChatFilter = 'agenda' | 'producer' | 'ai' | 'live-field';
 type ViewMode = 'list' | 'conversation';
+
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const {
@@ -32,6 +35,7 @@ const Dashboard: React.FC = () => {
   // Tipos e estados de chat
   type Sender = 'producer' | 'consultant' | 'user' | 'ai' | 'system';
   type MessageType = 'text' | 'image' | 'audio' | 'ndvi' | 'weather' | 'news' | 'finance' | 'defensivo' | 'system';
+  type SourceType = 'local' | 'external';
 
   interface ChatMessage {
     id: number;
@@ -42,6 +46,7 @@ const Dashboard: React.FC = () => {
     thumb?: string;
     timestamp: string;
     avatar?: string;
+    source?: SourceType; // 'local' | 'external' para IA
   }
 
   interface ProducerThread {
@@ -142,6 +147,13 @@ const Dashboard: React.FC = () => {
     { id: 4, sender: 'consultant', type: 'text', message: 'Pelas fotos, parece ser deficiência de potássio. Vou preparar um plano de adubação.', timestamp: '09:30', avatar: '/api/placeholder/40/40' }
   ];
   const [prodMessages, setProdMessages] = useState<ChatMessage[]>(initialProducerMessages);
+
+  // Ref para auto-scroll no final da lista de mensagens
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [isAiTyping /* indicador */, aiMessages, prodMessages /* rolar ao mudar mensagens */]);
+
   const handleChatSelect = (chat: any) => {
     setSelectedChat(chat);
     setViewMode('conversation');
@@ -150,6 +162,7 @@ const Dashboard: React.FC = () => {
     setViewMode('list');
     setSelectedChat(null);
   };
+
   const handleAiChatStart = () => {
     setSelectedChat({
       id: 'ai-assistant',
@@ -159,37 +172,74 @@ const Dashboard: React.FC = () => {
     });
     setViewMode('conversation');
   };
+
   const handleSendAiMessage = async () => {
     if (!message.trim()) return;
+
+    const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const userMessage = {
       id: Date.now(),
-      sender: 'user',
+      sender: 'user' as const,
       message: message.trim(),
-      timestamp: new Date().toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      type: 'user'
+      timestamp: now,
+      type: 'text' as const,
     };
+
+    // Adiciona a mensagem do usuário e limpa input
     setAiMessages(prev => [...prev, userMessage]);
     setMessage('');
     setIsAiTyping(true);
 
-    // Simulate AI response delay
-    setTimeout(() => {
-      const aiResponse = {
-        id: Date.now() + 1,
-        sender: 'ai',
-        message: 'Isso parece ser sintoma de deficiência de potássio. Recomendo avaliação com análise de solo.',
-        timestamp: new Date().toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        type: 'ai'
-      };
-      setAiMessages(prev => [...prev, aiResponse]);
+    try {
+      const { data, error } = await sb.functions.invoke('ai-chat', {
+        body: { message: userMessage.message },
+      });
+
+      if (error) {
+        console.error('ai-chat error:', error);
+        // Fallback: mensagem de erro no chat
+        setAiMessages(prev => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            sender: 'ai',
+            type: 'text',
+            message: 'Não foi possível responder no momento.',
+            timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+        return;
+      }
+
+      const answer: string | undefined = data?.answer;
+      const source: SourceType | undefined = data?.source;
+
+      setAiMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 2,
+          sender: 'ai',
+          type: 'text',
+          message: answer || 'Não foi possível responder no momento.',
+          source: source,
+          timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } catch (e) {
+      console.error('invoke(ai-chat) exception:', e);
+      setAiMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 3,
+          sender: 'ai',
+          type: 'text',
+          message: 'Não foi possível responder no momento.',
+          timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } finally {
       setIsAiTyping(false);
-    }, 2000);
+    }
   };
 
   const quickTopics = ['Pragas','Adubação','Doenças','Irrigação','Solo'];
@@ -503,14 +553,20 @@ const Dashboard: React.FC = () => {
                         <p className="text-[11px] text-muted-foreground mt-1">NDVI • {selectedFarm}{selectedTalhao ? ` • ${selectedTalhao}` : ''}</p>
                       </div>
                     ) : (
-                      <p className="text-sm">{msg.message}</p>
+                      <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
                     )}
                   </div>
                   <p className={`text-xs mt-1 ${isAiChat && msg.sender === 'user' || !isAiChat && msg.sender === 'consultant' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                     {msg.timestamp}
                   </p>
+                  {/* Badge de fonte externa quando vier do Perplexity */}
+                  {isAiChat && msg.sender === 'ai' && msg.source === 'external' && (
+                    <div className="mt-1">
+                      <Badge variant="secondary" className="text-[10px]">Fonte externa</Badge>
+                    </div>
+                  )}
                 </div>
-                
+
                 {(isAiChat && msg.sender === 'user' || !isAiChat && msg.sender === 'consultant') && <Avatar className="h-8 w-8 flex-shrink-0">
                     <AvatarFallback className="bg-secondary/10 text-secondary text-xs">
                       EU
@@ -520,7 +576,8 @@ const Dashboard: React.FC = () => {
             </div>)}
 
           {/* AI Typing Indicator */}
-          {isAiTyping && <div className="flex justify-start">
+          {isAiTyping && (
+            <div className="flex justify-start">
               <div className="flex items-end space-x-2 max-w-[80%]">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -534,7 +591,11 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>}
+            </div>
+          )}
+
+          {/* âncora para auto-scroll */}
+          <div ref={messagesEndRef} />
         </div>
 
         {isAiChat && (
@@ -586,6 +647,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>;
   };
+
   return <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
@@ -599,4 +661,5 @@ const Dashboard: React.FC = () => {
       {viewMode === 'list' ? renderChatList() : renderConversation()}
     </div>;
 };
+
 export default Dashboard;
