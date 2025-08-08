@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Camera, Mic, User, MapPin, Settings, MessageSquare, ChevronDown, Smile, MoreHorizontal, Loader2, Calendar, Radio } from 'lucide-react';
+import { ArrowLeft, Send, Camera, Mic, User, MapPin, Settings, MessageSquare, ChevronDown, Smile, MoreHorizontal, Loader2, Calendar, Radio, Globe, Database, Package, Leaf, Mountain, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -559,10 +559,31 @@ const Dashboard: React.FC = () => {
                   <p className={`text-xs mt-1 ${isAiChat && msg.sender === 'user' || !isAiChat && msg.sender === 'consultant' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                     {msg.timestamp}
                   </p>
-                  {/* Badge de fonte externa quando vier do Perplexity */}
-                  {isAiChat && msg.sender === 'ai' && msg.source === 'external' && (
+                  {/* Badges para diferentes fontes */}
+                  {isAiChat && msg.sender === 'ai' && msg.source && (
                     <div className="mt-1">
-                      <Badge variant="secondary" className="text-[10px]">Fonte externa</Badge>
+                      {(() => {
+                        const sourceLabels = {
+                          'local': { label: 'Base local', color: 'bg-green-100 text-green-800', icon: Database },
+                          'agro-responde': { label: 'Agro Responde', color: 'bg-blue-100 text-blue-800', icon: Globe },
+                          'clima-embrapa': { label: 'Embrapa Clima', color: 'bg-sky-100 text-sky-800', icon: Cloud },
+                          'produtos': { label: 'Produtos', color: 'bg-purple-100 text-purple-800', icon: Package },
+                          'biologicos': { label: 'Biológicos', color: 'bg-emerald-100 text-emerald-800', icon: Leaf },
+                          'smart-solo': { label: 'Smart Solo', color: 'bg-amber-100 text-amber-800', icon: Mountain }
+                        };
+
+                        const sourceInfo = sourceLabels[msg.source as keyof typeof sourceLabels];
+                        if (sourceInfo) {
+                          const IconComponent = sourceInfo.icon;
+                          return (
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${sourceInfo.color}`}>
+                              <IconComponent className="w-3 h-3" />
+                              {sourceInfo.label}
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   )}
                 </div>
