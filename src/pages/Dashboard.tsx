@@ -189,6 +189,82 @@ const Dashboard: React.FC = () => {
       setIsAiTyping(false);
     }, 2000);
   };
+
+  // Pin toggle
+  const handleTogglePin = (id: ProducerThread['id']) => {
+    setProducerThreads(prev => prev.map(t => (t.id === id ? { ...t, pinned: !t.pinned } : t)));
+  };
+
+  // Voice recorder
+  const { isRecording, audioUrl, start, stop, reset } = useVoiceRecorder();
+  useEffect(() => {
+    if (audioUrl) {
+      setProdMessages(prev => [
+        ...prev,
+        {
+          id: Date.now(),
+          sender: 'user',
+          type: 'audio',
+          url: audioUrl,
+          timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    }
+  }, [audioUrl]);
+
+  const onRecordClick = async () => {
+    try {
+      if (!isRecording) {
+        await start();
+        toast({ title: 'Gravando…', description: 'Toque novamente para parar.' });
+      } else {
+        await stop();
+        toast({ title: 'Gravação concluída', description: 'Áudio adicionado à conversa.' });
+      }
+    } catch (e: any) {
+      toast({ title: 'Erro ao gravar', description: e?.message ?? 'Permita o uso do microfone', variant: 'destructive' });
+    }
+  };
+
+  // Quick actions
+  const addSystemMessage = (text: string, type: MessageType = 'system', url?: string) => {
+    setProdMessages(prev => [
+      ...prev,
+      {
+        id: Date.now(),
+        sender: 'system',
+        type,
+        message: text,
+        url,
+        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
+  };
+
+  const handleWeather = () => {
+    addSystemMessage(`Clima para ${selectedFarm}${selectedTalhao ? ' • ' + selectedTalhao : ''}: ☀️ 30°C, vento 8km/h, 10% chuva`, 'weather');
+  };
+  const handleNews = () => {
+    addSystemMessage('AgroNews: 1) Safra de soja em alta 2) Exportações crescem 3) Insumos com leve queda', 'news');
+  };
+  const handleDollar = () => {
+    addSystemMessage('Dólar hoje: R$ 5,12 (▲ 0,20%)', 'finance');
+  };
+  const handleDefensivos = () => {
+    addSystemMessage('Aplicações da semana: 1) Fungicida x 2) Inseticida y 3) Nutrição foliar z', 'defensivo');
+  };
+  const handleNdvi = () => {
+    addSystemMessage('NDVI gerado para a área selecionada', 'ndvi', '/placeholder.svg');
+  };
+  const handleAttachImage = (file: File) => {
+    const url = URL.createObjectURL(file);
+    setProdMessages(prev => [
+      ...prev,
+      { id: Date.now(), sender: 'user', type: 'image', url, timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) },
+    ]);
+    toast({ title: 'Imagem anexada', description: 'Pré-visualização adicionada ao chat.' });
+  };
+
   const renderChatList = () => <div className="flex-1 bg-background">
       {/* Filter Section */}
       <div className="p-4 bg-card border-b border-border">
@@ -245,49 +321,23 @@ const Dashboard: React.FC = () => {
 
       {/* Chat Cards */}
       <div className="flex-1 overflow-y-auto">
-        {chatFilter === 'producer' && <div className="p-2">
-            {producerChats.map(chat => <Card key={chat.id} className="mb-2 p-4 cursor-pointer hover:bg-accent/50 transition-colors shadow-ios-sm" onClick={() => handleChatSelect(chat)}>
-                <div className="flex items-start space-x-3">
-                  {/* Avatar */}
-                  <Avatar className="h-12 w-12 flex-shrink-0">
-                    <AvatarImage src={chat.avatar} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {chat.name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <h4 className="font-semibold text-foreground truncate">
-                        {chat.name}
-                      </h4>
-                      <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
-                        <span className="text-xs text-muted-foreground">
-                          {chat.timestamp}
-                        </span>
-                        {chat.unreadCount > 0 && <Badge className="bg-primary text-primary-foreground min-w-[20px] h-5 text-xs flex items-center justify-center">
-                            {chat.unreadCount}
-                          </Badge>}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-sm text-muted-foreground truncate flex-1">
-                        {chat.lastMessage}
-                      </p>
-                      
-                      {/* Media indicators */}
-                      <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
-                        {chat.hasMedia && <Camera className="h-4 w-4 text-muted-foreground" />}
-                        {chat.hasVoice && <Mic className="h-4 w-4 text-muted-foreground" />}
-                        {chat.hasEmoji && <Smile className="h-4 w-4 text-muted-foreground" />}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>)}
-          </div>}
+        {chatFilter === 'producer' && (
+            sortedThreads.length === 0 ? (
+              <div className="p-4 text-sm text-muted-foreground">Nenhuma conversa</div>
+            ) : (
+              <div className="p-2">
+                {sortedThreads.map((chat) => (
+                  <ProducerChatCard
+                    key={chat.id}
+                    chat={chat}
+                    onClick={handleChatSelect}
+                    onTogglePin={handleTogglePin}
+                  />
+                ))}
+              </div>
+            )
+          )}
+        
         
         {chatFilter === 'ai' && <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center">
@@ -326,7 +376,7 @@ const Dashboard: React.FC = () => {
     </div>;
   const renderConversation = () => {
     const isAiChat = selectedChat?.type === 'ai';
-    const messages = isAiChat ? aiMessages : conversationMessages;
+    const messages = isAiChat ? aiMessages : prodMessages;
     return <div className="flex-1 flex flex-col bg-background">
         {/* Conversation Header */}
         <div className="p-4 bg-card border-b border-border">
@@ -369,6 +419,25 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Quick Actions (apenas produtor) */}
+        {!isAiChat && (
+          <QuickActionsBar
+            onWeather={handleWeather}
+            onNews={handleNews}
+            onDollar={handleDollar}
+            onDefensivos={handleDefensivos}
+            onNdvi={handleNdvi}
+            onAttachImage={handleAttachImage}
+            onRecordClick={onRecordClick}
+            farms={farms}
+            talhoes={talhoes}
+            selectedFarm={selectedFarm}
+            selectedTalhao={selectedTalhao}
+            onSelectFarm={setSelectedFarm}
+            onSelectTalhao={setSelectedTalhao}
+          />
+        )}
+
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && isAiChat && <div className="text-center py-8">
@@ -395,7 +464,20 @@ const Dashboard: React.FC = () => {
                   </Avatar>}
                 
                 <div className={`rounded-2xl px-4 py-2 shadow-ios-sm ${isAiChat && msg.sender === 'user' || !isAiChat && msg.sender === 'consultant' ? 'bg-primary text-primary-foreground rounded-br-sm' : isAiChat && msg.sender === 'ai' ? 'bg-primary/5 border border-primary/20 rounded-bl-sm' : 'bg-card border border-border rounded-bl-sm'}`}>
-                  <p className="text-sm">{msg.message}</p>
+                  <div className="text-sm">
+                    {msg.type === 'image' ? (
+                      <img src={msg.url} alt="Imagem enviada" className="rounded-md max-h-48" />
+                    ) : msg.type === 'audio' ? (
+                      <audio controls src={msg.url} className="w-56" />
+                    ) : msg.type === 'ndvi' ? (
+                      <div>
+                        <img src={msg.url ?? '/placeholder.svg'} alt="NDVI da área" className="rounded-md max-h-48" />
+                        <p className="text-[11px] text-muted-foreground mt-1">NDVI • {selectedFarm}{selectedTalhao ? ` • ${selectedTalhao}` : ''}</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm">{msg.message}</p>
+                    )}
+                  </div>
                   <p className={`text-xs mt-1 ${isAiChat && msg.sender === 'user' || !isAiChat && msg.sender === 'consultant' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                     {msg.timestamp}
                   </p>
