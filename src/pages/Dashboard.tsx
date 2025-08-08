@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, Camera, Mic, Bot, User, MapPin, Settings, MessageSquare, ChevronDown, Smile, MoreHorizontal, Loader2, Calendar, Radio } from 'lucide-react';
+import { ArrowLeft, Send, Camera, Mic, User, MapPin, Settings, MessageSquare, ChevronDown, Smile, MoreHorizontal, Loader2, Calendar, Radio } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import ProducerChatCard from '@/components/ProducerChatCard';
 import { QuickActionsBar } from '@/components/QuickActionsBar';
 import useVoiceRecorder from '@/hooks/useVoiceRecorder';
 import { CameraService } from '@/services/cameraService';
+import { IALudmilaIcon } from '@/components/icons/IALudmilaIcon';
 type ChatFilter = 'agenda' | 'producer' | 'ai' | 'live-field';
 type ViewMode = 'list' | 'conversation';
 const Dashboard: React.FC = () => {
@@ -152,7 +153,7 @@ const Dashboard: React.FC = () => {
   const handleAiChatStart = () => {
     setSelectedChat({
       id: 'ai-assistant',
-      name: 'Assistente IA FlowAgro',
+      name: 'I.A ludmila',
       type: 'ai',
       avatar: null
     });
@@ -330,7 +331,7 @@ const Dashboard: React.FC = () => {
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Bot className="h-4 w-4" />
+            <IALudmilaIcon className="h-4 w-4" />
             {chatFilter === 'ai' && <span>IA</span>}
           </button>
           
@@ -371,16 +372,16 @@ const Dashboard: React.FC = () => {
         {chatFilter === 'ai' && <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Bot className="h-8 w-8 text-primary" />
+                <IALudmilaIcon className="h-8 w-8 text-primary" />
               </div>
               <h3 className="font-semibold text-foreground mb-2">
-                Assistente IA FlowAgro
+                I.A ludmila
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Tire suas dúvidas técnicas sobre cultivos, pragas, doenças e muito mais
               </p>
               <Button onClick={handleAiChatStart} className="bg-primary hover:bg-primary/90">
-                <Bot className="h-4 w-4 mr-2" />
+                <IALudmilaIcon className="h-4 w-4 mr-2" />
                 Iniciar Conversa
               </Button>
             </div>
@@ -406,9 +407,9 @@ const Dashboard: React.FC = () => {
   const renderConversation = () => {
     const isAiChat = selectedChat?.type === 'ai';
     const messages = isAiChat ? aiMessages : prodMessages;
-    return <div className="flex-1 flex flex-col bg-background">
+    return <div className="flex-1 min-h-0 flex flex-col bg-background">
         {/* Conversation Header */}
-        <div className="p-4 bg-card border-b border-border">
+        <div className="sticky top-0 z-30 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b shadow-sm p-4">
           <div className="flex items-center space-x-3">
             <Button onClick={handleBackToList} variant="ghost" size="icon" className="h-9 w-9">
               <ArrowLeft className="h-5 w-5" />
@@ -416,7 +417,7 @@ const Dashboard: React.FC = () => {
             
             <Avatar className="h-10 w-10">
               {isAiChat ? <AvatarFallback className="bg-primary/10 text-primary">
-                  <Bot className="h-5 w-5" />
+                  <IALudmilaIcon className="h-5 w-5" />
                 </AvatarFallback> : <>
                   <AvatarImage src={selectedChat?.avatar} />
                   <AvatarFallback className="bg-primary/10 text-primary">
@@ -430,9 +431,7 @@ const Dashboard: React.FC = () => {
                 <h3 className="font-semibold text-foreground">
                   {selectedChat?.name}
                 </h3>
-                {isAiChat && <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
-                    IA
-                  </Badge>}
+                {isAiChat && <Badge className="text-xs rounded-full bg-success text-success-foreground border-transparent">IA</Badge>}
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-success rounded-full"></div>
@@ -470,7 +469,7 @@ const Dashboard: React.FC = () => {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && isAiChat && <div className="text-center py-8">
-              <Bot className="h-12 w-12 text-primary mx-auto mb-4" />
+              <IALudmilaIcon className="h-12 w-12 text-primary mx-auto mb-4" />
               <h3 className="font-semibold text-foreground mb-2">
                 Olá! Sou seu assistente técnico
               </h3>
@@ -483,7 +482,7 @@ const Dashboard: React.FC = () => {
               <div className="flex items-end space-x-2 max-w-[80%]">
                 {(isAiChat && msg.sender === 'ai' || !isAiChat && msg.sender === 'producer') && <Avatar className="h-8 w-8 flex-shrink-0">
                     {isAiChat ? <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                        <Bot className="h-4 w-4" />
+                        <IALudmilaIcon className="h-4 w-4" />
                       </AvatarFallback> : <>
                         <AvatarImage src={msg.avatar} />
                         <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -525,7 +524,7 @@ const Dashboard: React.FC = () => {
               <div className="flex items-end space-x-2 max-w-[80%]">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    <Bot className="h-4 w-4" />
+                    <IALudmilaIcon className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl rounded-bl-sm px-4 py-3">
