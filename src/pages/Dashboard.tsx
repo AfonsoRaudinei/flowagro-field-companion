@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import SyncIndicator from '@/components/ui/sync-indicator';
 import { useToast } from '@/hooks/use-toast';
+import ProducerChatCard from '@/components/ProducerChatCard';
+import { QuickActionsBar } from '@/components/QuickActionsBar';
+import useVoiceRecorder from '@/hooks/useVoiceRecorder';
 type ChatFilter = 'agenda' | 'producer' | 'ai' | 'live-field';
 type ViewMode = 'list' | 'conversation';
 const Dashboard: React.FC = () => {
@@ -24,75 +27,119 @@ const Dashboard: React.FC = () => {
   const [aiMessages, setAiMessages] = useState<any[]>([]);
   const [isAiTyping, setIsAiTyping] = useState(false);
 
-  // Mock producer chats data
-  const producerChats = [{
-    id: 1,
-    name: 'João Silva',
-    avatar: '/api/placeholder/40/40',
-    lastMessage: 'As análises do solo chegaram. Quando podemos revisar?',
-    timestamp: '14:30',
-    unreadCount: 2,
-    hasMedia: true,
-    hasVoice: false,
-    hasEmoji: true
-  }, {
-    id: 2,
-    name: 'Maria Santos',
-    avatar: '/api/placeholder/40/40',
-    lastMessage: 'Obrigada pelas recomendações de irrigação!',
-    timestamp: '12:15',
-    unreadCount: 0,
-    hasMedia: false,
-    hasVoice: true,
-    hasEmoji: false
-  }, {
-    id: 3,
-    name: 'Carlos Oliveira',
-    avatar: '/api/placeholder/40/40',
-    lastMessage: 'Precisamos discutir o controle de pragas urgente',
-    timestamp: 'Ontem',
-    unreadCount: 5,
-    hasMedia: true,
-    hasVoice: false,
-    hasEmoji: false
-  }, {
-    id: 4,
-    name: 'Ana Costa',
-    avatar: '/api/placeholder/40/40',
-    lastMessage: 'Os resultados da safra estão excelentes! 📈',
-    timestamp: 'Ontem',
-    unreadCount: 1,
-    hasMedia: false,
-    hasVoice: false,
-    hasEmoji: true
-  }];
+  // Tipos e estados de chat
+  type Sender = 'producer' | 'consultant' | 'user' | 'ai' | 'system';
+  type MessageType = 'text' | 'image' | 'audio' | 'ndvi' | 'weather' | 'news' | 'finance' | 'defensivo' | 'system';
 
-  // Mock conversation messages
-  const conversationMessages = [{
-    id: 1,
-    sender: 'producer',
-    message: 'Bom dia! Estou vendo algumas manchas amarelas na plantação.',
-    timestamp: '09:15',
-    avatar: '/api/placeholder/40/40'
-  }, {
-    id: 2,
-    sender: 'consultant',
-    message: 'Bom dia João! Pode me enviar algumas fotos das manchas?',
-    timestamp: '09:18',
-    avatar: '/api/placeholder/40/40'
-  }, {
-    id: 3,
-    sender: 'producer',
-    message: 'Claro! Segue as fotos:',
-    timestamp: '09:22',
-    avatar: '/api/placeholder/40/40'
-  }, {
-    id: 4,
-    sender: 'consultant',
-    message: 'Pelas fotos, parece ser deficiência de potássio. Vou preparar um plano de adubação.',
-    timestamp: '09:30',
-    avatar: '/api/placeholder/40/40'
-  }];
+  interface ChatMessage {
+    id: number;
+    sender: Sender;
+    type?: MessageType;
+    message?: string;
+    url?: string;
+    thumb?: string;
+    timestamp: string;
+    avatar?: string;
+  }
+
+  interface ProducerThread {
+    id: number | string;
+    name: string;
+    farmName: string;
+    location: string; // cidade/UF
+    lastMessage: string;
+    timestamp: string;
+    unreadCount: number;
+    hasMedia?: boolean;
+    hasVoice?: boolean;
+    hasEmoji?: boolean;
+    pinned?: boolean;
+    avatar?: string | null;
+  }
+
+  const [farms] = useState<string[]>(['Fazenda Primavera', 'Fazenda Aurora']);
+  const [talhoes] = useState<string[]>(['Talhão 1', 'Talhão 2', 'Talhão 3']);
+  const [selectedFarm, setSelectedFarm] = useState<string | undefined>('Fazenda Primavera');
+  const [selectedTalhao, setSelectedTalhao] = useState<string | undefined>('Talhão 1');
+
+  // Threads de produtores (cards)
+  const [producerThreads, setProducerThreads] = useState<ProducerThread[]>([
+    {
+      id: 1,
+      name: 'João Silva',
+      farmName: 'Fazenda Primavera',
+      location: 'Sorriso/MT',
+      lastMessage: 'As análises do solo chegaram. Quando podemos revisar?',
+      timestamp: '14:30',
+      unreadCount: 2,
+      hasMedia: true,
+      hasVoice: false,
+      hasEmoji: true,
+      pinned: true,
+      avatar: '/api/placeholder/40/40'
+    },
+    {
+      id: 2,
+      name: 'Maria Santos',
+      farmName: 'Fazenda Aurora',
+      location: 'Rio Verde/GO',
+      lastMessage: 'Obrigada pelas recomendações de irrigação!',
+      timestamp: '12:15',
+      unreadCount: 0,
+      hasMedia: false,
+      hasVoice: true,
+      hasEmoji: false,
+      pinned: false,
+      avatar: '/api/placeholder/40/40'
+    },
+    {
+      id: 3,
+      name: 'Carlos Oliveira',
+      farmName: 'Fazenda Horizonte',
+      location: 'Londrina/PR',
+      lastMessage: 'Precisamos discutir o controle de pragas urgente',
+      timestamp: 'Ontem',
+      unreadCount: 5,
+      hasMedia: true,
+      hasVoice: false,
+      hasEmoji: false,
+      pinned: false,
+      avatar: '/api/placeholder/40/40'
+    },
+    {
+      id: 4,
+      name: 'Ana Costa',
+      farmName: 'Fazenda Vale Verde',
+      location: 'Campo Verde/MT',
+      lastMessage: 'Os resultados da safra estão excelentes! 📈',
+      timestamp: 'Ontem',
+      unreadCount: 1,
+      hasMedia: false,
+      hasVoice: false,
+      hasEmoji: true,
+      pinned: false,
+      avatar: '/api/placeholder/40/40'
+    }
+  ]);
+
+  const sortedThreads = React.useMemo(() => {
+    const score = (t: ProducerThread) => (t.pinned && t.unreadCount > 0 ? 3 : t.unreadCount > 0 ? 2 : t.pinned ? 1 : 0);
+    return [...producerThreads].sort((a, b) => {
+      const sA = score(a);
+      const sB = score(b);
+      if (sA !== sB) return sB - sA;
+      return 0; // fallback simples
+    });
+  }, [producerThreads]);
+
+  // Mensagens da conversa de produtor (mock)
+  const initialProducerMessages: ChatMessage[] = [
+    { id: 1, sender: 'producer', type: 'text', message: 'Bom dia! Estou vendo algumas manchas amarelas na plantação.', timestamp: '09:15', avatar: '/api/placeholder/40/40' },
+    { id: 2, sender: 'consultant', type: 'text', message: 'Bom dia João! Pode me enviar algumas fotos das manchas?', timestamp: '09:18', avatar: '/api/placeholder/40/40' },
+    { id: 3, sender: 'producer', type: 'text', message: 'Claro! Segue as fotos:', timestamp: '09:22', avatar: '/api/placeholder/40/40' },
+    { id: 4, sender: 'consultant', type: 'text', message: 'Pelas fotos, parece ser deficiência de potássio. Vou preparar um plano de adubação.', timestamp: '09:30', avatar: '/api/placeholder/40/40' }
+  ];
+  const [prodMessages, setProdMessages] = useState<ChatMessage[]>(initialProducerMessages);
   const handleChatSelect = (chat: any) => {
     setSelectedChat(chat);
     setViewMode('conversation');
