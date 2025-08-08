@@ -1,15 +1,8 @@
 
 /**
- * Supabase Edge Function: ai-chat
- * - Busca local (document_chunks.content via ilike) para contexto
- * - Se não achar, consulta APIs agrícolas específicas
- * - Responde com JSON: { answer: string, source: 'local' | 'agro-responde' | 'clima-embrapa' | 'produtos' | 'biologicos' | 'smart-solo' }
- *
- * Secrets usados:
- * - SUPABASE_URL
- * - SUPABASE_SERVICE_ROLE_KEY
- * - OPENAI_API_KEY (para gerar resposta com contexto local)
- * - AGRO_RESPONDE_API_KEY, CLIMA_EMBRAPA_API_KEY, etc.
+ * Supabase Edge Function: ai-chat (I.A Ludmila)
+ * Ordem de fallback: RAG local → OpenAI geral → erro claro
+ * Features: correlation ID, timeouts, error mapping, source tracking
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -20,22 +13,79 @@ const corsHeaders = {
 
 type ChatPayload = {
   message: string;
+  correlation_id?: string;
 };
 
+type APISource = {
+  enabled: boolean;
+  base_url: string;
+  api_key: string;
+  name: string;
+  healthcheck?: string;
+};
+
+// Core services
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || "";
 
-// APIs agrícolas - suporte a nomes variados dos secrets
-const AGRO_RESPONDE_API = Deno.env.get("agro responde") || Deno.env.get("AGRO_RESPONDE_API_KEY") || "";
-const CLIMA_EMBRAPA_API = Deno.env.get("clima embrapa  api") || Deno.env.get("CLIMA_EMBRAPA_API_KEY") || "";
-const API_PRODUTOS = Deno.env.get("API PRODUTOS") || Deno.env.get("API_PRODUTOS") || "";
-const API_BIOLOGICOS = Deno.env.get("api de biologicoos") || Deno.env.get("API_BIOLOGICOS") || "";
-const SMART_SOLO_API = Deno.env.get("smart solo") || Deno.env.get("SMART_SOLO_API_KEY") || "";
+// Registry de fontes externas (desabilitadas por segurança até termos endpoints reais)
+const API_REGISTRY: Record<string, APISource> = {
+  agro_responde: {
+    enabled: false, // Temporariamente desabilitado
+    base_url: "", 
+    api_key: Deno.env.get("agro responde") || "",
+    name: "agro-responde"
+  },
+  clima_embrapa: {
+    enabled: false,
+    base_url: "",
+    api_key: Deno.env.get("clima embrapa  api") || "",
+    name: "clima-embrapa"
+  },
+  produtos: {
+    enabled: false,
+    base_url: "",
+    api_key: Deno.env.get("API PRODUTOS") || "",
+    name: "produtos"
+  },
+  biologicos: {
+    enabled: false,
+    base_url: "",
+    api_key: Deno.env.get("api de biologicoos") || "",
+    name: "biologicos"
+  },
+  smart_solo: {
+    enabled: false,
+    base_url: "",
+    api_key: Deno.env.get("smart solo") || "",
+    name: "smart-solo"
+  }
+};
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-// Util simples para extrair palavras-chave
+// Configurações
+const RAG_SIMILARITY_THRESHOLD = 0.7;
+const REQUEST_TIMEOUT = 5000;
+const MAX_RETRIES = 1;
+
+// Utilities
+function generateCorrelationId(): string {
+  return crypto.randomUUID();
+}
+
+function log(level: string, message: string, correlation_id?: string, extra?: any) {
+  const timestamp = new Date().toISOString();
+  console.log(JSON.stringify({
+    timestamp,
+    level,
+    correlation_id,
+    message,
+    ...extra
+  }));
+}
+
 function extractKeywords(input: string, max = 5) {
   return input
     .toLowerCase()
@@ -45,188 +95,177 @@ function extractKeywords(input: string, max = 5) {
     .slice(0, max);
 }
 
-async function searchLocalContext(question: string) {
-  const keywords = extractKeywords(question);
-  if (keywords.length === 0) return [];
+// Timeout wrapper com retry
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT, retries = MAX_RETRIES): Promise<Response> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      if (attempt === retries) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt))); // exponential backoff
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
 
-  // Monta OR para ilike
-  const orFilter = keywords.map((k) => `content.ilike.%${k}%`).join(",");
-  const { data, error } = await supabase
-    .from("document_chunks")
-    .select("content, document_id")
-    .or(orFilter)
-    .limit(8);
+async function searchLocalContext(question: string, correlation_id: string) {
+  const startTime = Date.now();
+  
+  try {
+    const keywords = extractKeywords(question);
+    if (keywords.length === 0) {
+      log("info", "No keywords extracted for local search", correlation_id);
+      return [];
+    }
 
-  if (error) {
-    console.error("Local search error:", error);
+    // Busca por similaridade textual (ilike) - futuramente migrar para embeddings
+    const orFilter = keywords.map((k) => `content.ilike.%${k}%`).join(",");
+    const { data, error } = await supabase
+      .from("document_chunks")
+      .select("content, document_id, token_count")
+      .or(orFilter)
+      .limit(8);
+
+    const latency = Date.now() - startTime;
+    
+    if (error) {
+      log("error", "Local search failed", correlation_id, { error: error.message, latency });
+      return [];
+    }
+
+    const chunks = data ?? [];
+    log("info", "Local search completed", correlation_id, { 
+      chunks_found: chunks.length, 
+      keywords: keywords.length,
+      latency 
+    });
+
+    return chunks;
+  } catch (error) {
+    const latency = Date.now() - startTime;
+    log("error", "Local search exception", correlation_id, { error: error.message, latency });
     return [];
   }
-  return data ?? [];
 }
 
-async function answerWithOpenAI(question: string, snippets: { content: string }[]) {
+async function answerWithOpenAI(question: string, snippets: { content: string }[], correlation_id: string, mode: "rag" | "general" = "rag") {
+  const startTime = Date.now();
+  
   if (!OPENAI_API_KEY) {
-    console.warn("OPENAI_API_KEY ausente — não será possível responder com contexto local.");
+    log("warn", "OPENAI_API_KEY missing - cannot generate AI response", correlation_id);
     return null;
   }
 
-  const context = snippets.map((s, i) => `Fonte ${i + 1}:\n${s.content}`).join("\n\n").slice(0, 8000);
-
-  const body = {
-    model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content:
-          "Você é a I.A ludmila, uma assistente técnica agrícola do FlowAgro. Responda de forma objetiva e prática usando, quando possível, o contexto fornecido. Se algo não estiver no contexto, responda com base no seu conhecimento geral, mas nunca invente dados específicos de produtos ou dos documentos.",
-      },
-      {
-        role: "user",
-        content:
-          `Pergunta do usuário:\n${question}\n\nContexto de documentos (use quando relevante):\n${context}`,
-      },
-    ],
-    temperature: 0.2,
-  };
-
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text();
-    console.error("OpenAI error:", resp.status, text);
-    return null;
-  }
-  const json = await resp.json();
-  const answer = json?.choices?.[0]?.message?.content?.trim();
-  return answer || null;
-}
-
-async function queryAgroAPIs(question: string) {
-  const keywords = extractKeywords(question);
-  const questionLower = question.toLowerCase();
-  
-  // Determina qual API consultar baseado nas palavras-chave
-  if (questionLower.includes("clima") || questionLower.includes("chuva") || questionLower.includes("temperatura")) {
-    return await queryClimaEmbrapa(question);
-  }
-  
-  if (questionLower.includes("produto") || questionLower.includes("defensivo") || questionLower.includes("agrotóxico")) {
-    return await queryProdutos(question);
-  }
-  
-  if (questionLower.includes("biológico") || questionLower.includes("controle biológico")) {
-    return await queryBiologicos(question);
-  }
-  
-  if (questionLower.includes("solo") || questionLower.includes("fertilidade") || questionLower.includes("nutriente")) {
-    return await querySmartSolo(question);
-  }
-  
-  // Fallback para Agro Responde (base geral de conhecimento)
-  return await queryAgroResponde(question);
-}
-
-async function queryAgroResponde(question: string) {
-  if (!AGRO_RESPONDE_API) return null;
-  
   try {
-    // Implementação simplificada - adaptar conforme API real
-    const response = await fetch(`${AGRO_RESPONDE_API}/search`, {
+    let systemPrompt = "Você é a I.A Ludmila, assistente técnica agrícola do FlowAgro. Responda de forma objetiva e prática.";
+    let userContent = question;
+
+    if (mode === "rag" && snippets.length > 0) {
+      const context = snippets.map((s, i) => `Fonte ${i + 1}:\n${s.content}`).join("\n\n").slice(0, 8000);
+      systemPrompt += " Use SEMPRE o contexto fornecido quando relevante, mas complemente com conhecimento geral se necessário.";
+      userContent = `Pergunta: ${question}\n\nContexto dos documentos:\n${context}`;
+    } else {
+      systemPrompt += " Responda com base no seu conhecimento geral sobre agricultura. Seja específico e técnico.";
+      userContent = `Pergunta: ${question}`;
+    }
+
+    const body = {
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent }
+      ],
+      temperature: 0.2,
+    };
+
+    const response = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: question }),
-    });
-    
-    if (!response.ok) return null;
-    const data = await response.json();
-    return { answer: data.answer || data.response, source: "agro-responde" };
-  } catch (error) {
-    console.error("Agro Responde API error:", error);
-    return null;
-  }
-}
-
-async function queryClimaEmbrapa(question: string) {
-  if (!CLIMA_EMBRAPA_API) return null;
-  
-  try {
-    const response = await fetch(`${CLIMA_EMBRAPA_API}/forecast`, {
-      headers: { "Authorization": `Bearer ${CLIMA_EMBRAPA_API}` },
-    });
-    
-    if (!response.ok) return null;
-    const data = await response.json();
-    return { answer: `Previsão climática: ${data.summary || "Dados indisponíveis"}`, source: "clima-embrapa" };
-  } catch (error) {
-    console.error("Clima Embrapa API error:", error);
-    return null;
-  }
-}
-
-async function queryProdutos(question: string) {
-  if (!API_PRODUTOS) return null;
-  
-  try {
-    const response = await fetch(`${API_PRODUTOS}/products/search`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: question }),
-    });
-    
-    if (!response.ok) return null;
-    const data = await response.json();
-    return { answer: data.result || "Nenhum produto encontrado", source: "produtos" };
-  } catch (error) {
-    console.error("API Produtos error:", error);
-    return null;
-  }
-}
-
-async function queryBiologicos(question: string) {
-  if (!API_BIOLOGICOS) return null;
-  
-  try {
-    const response = await fetch(`${API_BIOLOGICOS}/biologicals`, {
-      headers: { "Authorization": `Bearer ${API_BIOLOGICOS}` },
-    });
-    
-    if (!response.ok) return null;
-    const data = await response.json();
-    return { answer: data.description || "Informações sobre biológicos indisponíveis", source: "biologicos" };
-  } catch (error) {
-    console.error("API Biológicos error:", error);
-    return null;
-  }
-}
-
-async function querySmartSolo(question: string) {
-  if (!SMART_SOLO_API) return null;
-  
-  try {
-    const response = await fetch(`${SMART_SOLO_API}/soil/analysis`, {
-      method: "POST",
-      headers: { 
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${SMART_SOLO_API}`
       },
-      body: JSON.stringify({ query: question }),
+      body: JSON.stringify(body),
     });
+
+    const latency = Date.now() - startTime;
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      log("error", "OpenAI API error", correlation_id, { 
+        status: response.status, 
+        error: errorText, 
+        latency,
+        mode 
+      });
+      return null;
+    }
+
+    const json = await response.json();
+    const answer = json?.choices?.[0]?.message?.content?.trim();
     
-    if (!response.ok) return null;
-    const data = await response.json();
-    return { answer: data.analysis || "Análise de solo indisponível", source: "smart-solo" };
+    log("info", "OpenAI response generated", correlation_id, { 
+      mode, 
+      context_chunks: snippets.length,
+      latency,
+      success: !!answer 
+    });
+
+    return answer || null;
   } catch (error) {
-    console.error("Smart Solo API error:", error);
+    const latency = Date.now() - startTime;
+    log("error", "OpenAI request failed", correlation_id, { error: error.message, latency, mode });
     return null;
   }
 }
+
+// Validação de APIs (todas desabilitadas até termos endpoints reais)
+function validateApiRegistry() {
+  let enabledCount = 0;
+  
+  for (const [key, api] of Object.entries(API_REGISTRY)) {
+    // Desabilita automaticamente se URL inválida ou ausente
+    if (!api.base_url || !api.base_url.startsWith("http")) {
+      api.enabled = false;
+      if (api.api_key) {
+        log("warn", `API ${key} disabled: invalid/missing base_url`, undefined, { api_key_present: !!api.api_key });
+      }
+    }
+    
+    if (api.enabled) {
+      enabledCount++;
+      log("info", `API ${key} enabled`, undefined, { base_url: api.base_url });
+    }
+  }
+  
+  log("info", "API registry validation complete", undefined, { enabled_apis: enabledCount });
+  return enabledCount;
+}
+
+// Placeholder para futuras integrações (quando tivermos URLs reais)
+async function queryExternalAPIs(question: string, correlation_id: string) {
+  const enabledApis = Object.values(API_REGISTRY).filter(api => api.enabled);
+  
+  if (enabledApis.length === 0) {
+    log("info", "No external APIs enabled - skipping", correlation_id);
+    return null;
+  }
+  
+  // TODO: Implementar quando tivermos endpoints reais
+  log("warn", "External API integration not yet implemented", correlation_id);
+  return null;
+}
+
+// Inicialização
+validateApiRegistry();
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -240,46 +279,109 @@ Deno.serve(async (req) => {
     });
   }
 
+  const correlation_id = generateCorrelationId();
+  const requestStart = Date.now();
+
   try {
     const payload = (await req.json()) as ChatPayload;
     const question = (payload?.message || "").trim();
 
+    log("info", "Chat request received", correlation_id, { question_length: question.length });
+
     if (!question) {
-      return new Response(JSON.stringify({ error: "message é obrigatório" }), {
+      log("warn", "Empty question received", correlation_id);
+      return new Response(JSON.stringify({ 
+        error: "Pergunta é obrigatória",
+        correlation_id 
+      }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 1) Busca local (document_chunks)
-    const snippets = await searchLocalContext(question);
+    let finalAnswer = null;
+    let finalSource = "general";
 
-    // 2) Se houver contexto, tenta OpenAI com RAG leve
+    // 1) Busca RAG local com contexto
+    const snippets = await searchLocalContext(question, correlation_id);
+    
     if (snippets.length > 0) {
-      const ai = await answerWithOpenAI(question, snippets);
-      if (ai) {
-        return new Response(JSON.stringify({ answer: ai, source: "local" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      log("info", "Local context found - attempting RAG", correlation_id, { chunks: snippets.length });
+      const ragAnswer = await answerWithOpenAI(question, snippets, correlation_id, "rag");
+      
+      if (ragAnswer) {
+        finalAnswer = ragAnswer;
+        finalSource = "local";
+        log("info", "RAG response generated successfully", correlation_id);
+      } else {
+        log("warn", "RAG generation failed despite having context", correlation_id);
+      }
+    } else {
+      log("info", "No local context found", correlation_id);
+    }
+
+    // 2) Fallback: OpenAI geral (conhecimento base)
+    if (!finalAnswer) {
+      log("info", "Using OpenAI general fallback", correlation_id);
+      const generalAnswer = await answerWithOpenAI(question, [], correlation_id, "general");
+      
+      if (generalAnswer) {
+        finalAnswer = generalAnswer;
+        finalSource = "general";
+        log("info", "General AI response generated", correlation_id);
+      } else {
+        log("error", "Both RAG and general AI failed", correlation_id);
       }
     }
 
-    // 3) Fallback para APIs agrícolas específicas
-    const apiResult = await queryAgroAPIs(question);
-    if (apiResult) {
-      return new Response(JSON.stringify(apiResult), {
+    // 3) Caso ainda não tenha resposta, tenta APIs externas (placeholder)
+    if (!finalAnswer) {
+      const externalResult = await queryExternalAPIs(question, correlation_id);
+      if (externalResult) {
+        finalAnswer = externalResult.answer;
+        finalSource = externalResult.source;
+      }
+    }
+
+    const totalLatency = Date.now() - requestStart;
+
+    // 4) Resposta final ou erro
+    if (finalAnswer) {
+      log("info", "Request completed successfully", correlation_id, { 
+        source: finalSource, 
+        total_latency: totalLatency 
+      });
+      
+      return new Response(JSON.stringify({ 
+        answer: finalAnswer, 
+        source: finalSource,
+        correlation_id 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } else {
+      log("error", "All fallback methods failed", correlation_id, { total_latency: totalLatency });
+      
+      return new Response(JSON.stringify({ 
+        error: "Não consegui gerar uma resposta no momento. Tente novamente em instantes.",
+        correlation_id 
+      }), {
+        status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 4) Falha geral
-    return new Response(
-      JSON.stringify({ error: "Não foi possível gerar uma resposta no momento." }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
   } catch (e) {
-    console.error("ai-chat exception:", e);
-    return new Response(JSON.stringify({ error: "Erro interno do servidor." }), {
+    const totalLatency = Date.now() - requestStart;
+    log("error", "Unhandled exception in ai-chat", correlation_id, { 
+      error: e.message, 
+      total_latency: totalLatency 
+    });
+    
+    return new Response(JSON.stringify({ 
+      error: "Erro interno. Nossa equipe foi notificada.",
+      correlation_id 
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

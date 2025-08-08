@@ -173,6 +173,21 @@ const Dashboard: React.FC = () => {
     setViewMode('conversation');
   };
 
+  const getSourceLabel = (source: string) => {
+    const labels = {
+      'local': 'Documentos Técnicos',
+      'general': 'Conhecimento Geral',
+      'agro-responde': 'Agro Responde',
+      'clima-embrapa': 'Embrapa Clima',
+      'produtos': 'Base de Produtos',
+      'biologicos': 'Controle Biológico',
+      'smart-solo': 'Smart Solo',
+      'external': 'Fonte Externa',
+      'error': 'Sistema'
+    };
+    return labels[source as keyof typeof labels] || 'Fonte Externa';
+  };
+
   const handleSendAiMessage = async () => {
     if (!message.trim()) return;
 
@@ -192,27 +207,37 @@ const Dashboard: React.FC = () => {
 
     try {
       const { data, error } = await sb.functions.invoke('ai-chat', {
-        body: { message: userMessage.message },
+        body: { 
+          message: userMessage.message,
+          correlation_id: crypto.randomUUID()
+        },
       });
 
       if (error) {
         console.error('ai-chat error:', error);
-        // Fallback: mensagem de erro no chat
         setAiMessages(prev => [
           ...prev,
           {
             id: Date.now() + 1,
             sender: 'ai',
             type: 'text',
-            message: 'Não foi possível responder no momento.',
+            message: 'Desculpe, houve um problema temporário. Nossa I.A está sendo melhorada constantemente. Tente novamente em instantes.',
+            source: 'error',
             timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
           },
         ]);
+        
+        toast({
+          title: "Erro temporário",
+          description: "Tente novamente em alguns instantes",
+          variant: "destructive",
+          duration: 4000,
+        });
         return;
       }
 
       const answer: string | undefined = data?.answer;
-      const source: SourceType | undefined = data?.source;
+      const source: SourceType | undefined = data?.source || 'general';
 
       setAiMessages(prev => [
         ...prev,
@@ -225,6 +250,15 @@ const Dashboard: React.FC = () => {
           timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
+
+      // Toast sutil quando resposta vier de fonte externa
+      if (source && !['local', 'general'].includes(source)) {
+        toast({
+          title: "Fonte externa consultada",
+          description: `Resposta baseada em ${getSourceLabel(source)}`,
+          duration: 3000,
+        });
+      }
     } catch (e) {
       console.error('invoke(ai-chat) exception:', e);
       setAiMessages(prev => [
@@ -233,10 +267,18 @@ const Dashboard: React.FC = () => {
           id: Date.now() + 3,
           sender: 'ai',
           type: 'text',
-          message: 'Não foi possível responder no momento.',
+          message: 'Desculpe, houve um problema temporário. Tente novamente em instantes.',
+          source: 'error',
           timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
+      
+      toast({
+        title: "Erro de conexão",
+        description: "Verifique sua internet e tente novamente",
+        variant: "destructive",
+        duration: 4000,
+      });
     } finally {
       setIsAiTyping(false);
     }
@@ -541,7 +583,7 @@ const Dashboard: React.FC = () => {
                       </>}
                   </Avatar>}
                 
-                <div className={`rounded-2xl px-4 py-2 shadow-ios-sm ${isAiChat && msg.sender === 'user' || !isAiChat && msg.sender === 'consultant' ? 'bg-primary text-primary-foreground rounded-br-sm' : isAiChat && msg.sender === 'ai' ? 'bg-primary/5 border border-primary/20 rounded-bl-sm' : 'bg-card border border-border rounded-bl-sm'}`}>
+                <div className={`rounded-2xl px-4 py-2 shadow-sm transition-all duration-300 hover:shadow-md ${isAiChat && msg.sender === 'user' || !isAiChat && msg.sender === 'consultant' ? 'bg-primary text-primary-foreground rounded-br-sm' : isAiChat && msg.sender === 'ai' ? 'bg-primary/5 border border-primary/20 rounded-bl-sm' : 'bg-card border border-border rounded-bl-sm'}`}>
                   <div className="text-sm">
                     {msg.type === 'image' ? (
                       <img src={msg.url} alt="Imagem enviada" className="rounded-md max-h-48" />
@@ -553,37 +595,26 @@ const Dashboard: React.FC = () => {
                         <p className="text-[11px] text-muted-foreground mt-1">NDVI • {selectedFarm}{selectedTalhao ? ` • ${selectedTalhao}` : ''}</p>
                       </div>
                     ) : (
-                      <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.message}</p>
                     )}
                   </div>
-                  <p className={`text-xs mt-1 ${isAiChat && msg.sender === 'user' || !isAiChat && msg.sender === 'consultant' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                  <p className={`text-xs mt-2 opacity-70 ${isAiChat && msg.sender === 'user' || !isAiChat && msg.sender === 'consultant' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                     {msg.timestamp}
                   </p>
-                  {/* Badges para diferentes fontes */}
+                   {/* Source badges with improved styling */}
                   {isAiChat && msg.sender === 'ai' && msg.source && (
-                    <div className="mt-1">
-                      {(() => {
-                        const sourceLabels = {
-                          'local': { label: 'Base local', color: 'bg-green-100 text-green-800', icon: Database },
-                          'agro-responde': { label: 'Agro Responde', color: 'bg-blue-100 text-blue-800', icon: Globe },
-                          'clima-embrapa': { label: 'Embrapa Clima', color: 'bg-sky-100 text-sky-800', icon: Cloud },
-                          'produtos': { label: 'Produtos', color: 'bg-purple-100 text-purple-800', icon: Package },
-                          'biologicos': { label: 'Biológicos', color: 'bg-emerald-100 text-emerald-800', icon: Leaf },
-                          'smart-solo': { label: 'Smart Solo', color: 'bg-amber-100 text-amber-800', icon: Mountain }
-                        };
-
-                        const sourceInfo = sourceLabels[msg.source as keyof typeof sourceLabels];
-                        if (sourceInfo) {
-                          const IconComponent = sourceInfo.icon;
-                          return (
-                            <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${sourceInfo.color}`}>
-                              <IconComponent className="w-3 h-3" />
-                              {sourceInfo.label}
-                            </span>
-                          );
+                    <div className="mt-3 pt-2 border-t border-border/30">
+                      <Badge 
+                        variant={
+                          msg.source === 'local' ? 'default' : 
+                          msg.source === 'general' ? 'secondary' : 
+                          msg.source === 'error' ? 'destructive' : 
+                          'outline'
                         }
-                        return null;
-                      })()}
+                        className="text-xs font-medium"
+                      >
+                        {getSourceLabel(msg.source)}
+                      </Badge>
                     </div>
                   )}
                 </div>
@@ -596,7 +627,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>)}
 
-          {/* AI Typing Indicator */}
+          {/* Enhanced AI Typing Indicator */}
           {isAiTyping && (
             <div className="flex justify-start">
               <div className="flex items-end space-x-2 max-w-[80%]">
@@ -605,10 +636,14 @@ const Dashboard: React.FC = () => {
                     <IALudmilaIcon className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
-                <div className="bg-primary/5 border border-primary/20 rounded-2xl rounded-bl-sm px-4 py-3">
-                  <div className="flex items-center space-x-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground">IA está respondendo...</span>
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm animate-in slide-in-from-left-5 duration-300">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                    <span className="text-sm text-muted-foreground font-medium">I.A Ludmila está pensando...</span>
                   </div>
                 </div>
               </div>
