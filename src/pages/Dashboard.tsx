@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import ProducerChatCard from '@/components/ProducerChatCard';
 import { QuickActionsBar } from '@/components/QuickActionsBar';
 import useVoiceRecorder from '@/hooks/useVoiceRecorder';
+import { CameraService } from '@/services/cameraService';
 type ChatFilter = 'agenda' | 'producer' | 'ai' | 'live-field';
 type ViewMode = 'list' | 'conversation';
 const Dashboard: React.FC = () => {
@@ -188,6 +189,34 @@ const Dashboard: React.FC = () => {
       setAiMessages(prev => [...prev, aiResponse]);
       setIsAiTyping(false);
     }, 2000);
+  };
+
+  const quickTopics = ['Pragas','Adubação','Doenças','Irrigação','Solo'];
+
+  const handleQuickAsk = (topic: string) => {
+    setMessage(topic);
+    setTimeout(() => handleSendAiMessage(), 0);
+  };
+
+  const handleAiPhotoClick = async () => {
+    try {
+      const dataUrl = await CameraService.takePhoto();
+      const now = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      setAiMessages(prev => [
+        ...prev,
+        { id: Date.now(), sender: 'user', type: 'image', url: dataUrl, timestamp: now },
+      ]);
+      setIsAiTyping(true);
+      setTimeout(() => {
+        setAiMessages(prev => [
+          ...prev,
+          { id: Date.now() + 1, sender: 'ai', type: 'ai', message: 'Recebi a imagem. A análise com Google Vision será ativada em breve.', timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) },
+        ]);
+        setIsAiTyping(false);
+      }, 1000);
+    } catch (e: any) {
+      toast({ title: 'Câmera', description: e?.message ?? 'Não foi possível capturar a foto.', variant: 'destructive' });
+    }
   };
 
   // Pin toggle
@@ -508,6 +537,24 @@ const Dashboard: React.FC = () => {
               </div>
             </div>}
         </div>
+
+        {isAiChat && (
+          <div className="px-4 pt-2 -mb-2 overflow-x-auto no-scrollbar">
+            <div className="flex gap-2">
+              {quickTopics.map((t) => (
+                <Button key={t} size="sm" variant="secondary" className="rounded-full" onClick={() => handleQuickAsk(t)}>
+                  {t}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isAiChat && (
+          <Button onClick={handleAiPhotoClick} size="icon" className="fixed bottom-24 right-4 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-ios-lg">
+            <Camera className="h-6 w-6" />
+          </Button>
+        )}
 
         {/* Message Input */}
         <div className="p-4 bg-card border-t border-border">

@@ -18,10 +18,10 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 213 31% 9%;
 
-    /* Agricultural Tech Primary - Modern Green */
-    --primary: 142 76% 36%;
+    /* Agricultural Tech Primary - Samsung Blue */
+    --primary: 230 78% 35%;
     --primary-foreground: 0 0% 98%;
-    --primary-hover: 142 76% 32%;
+    --primary-hover: 230 78% 31%;
 
     /* Microsoft-inspired Secondary - Professional Blue */
     --secondary: 213 93% 54%;
@@ -46,7 +46,7 @@ All colors MUST be HSL.
     /* iOS-inspired borders and inputs */
     --border: 213 31% 90%;
     --input: 213 31% 94%;
-    --ring: 142 76% 36%;
+    --ring: 230 78% 35%;
 
     /* iOS-style radius */
     --radius: 0.75rem;
