@@ -364,48 +364,48 @@ const TechnicalMap: React.FC = () => {
       });
       geolocateControlRef.current = geolocateControl;
       map.current.addControl(geolocateControl, 'top-left');
-    })();
 
-    // Handle map load errors
-    map.current.on('error', e => {
-      console.error('Map loading error:', e);
-      toast({
-        title: "Erro ao carregar o mapa",
-        description: "Verifique a chave da API.",
-        variant: "destructive"
+      // Handle map load errors
+      map.current.on('error', e => {
+        console.error('Map loading error:', e);
+        toast({
+          title: 'Erro ao carregar o mapa',
+          description: 'Verifique a chave da API.',
+          variant: 'destructive'
+        });
       });
-    });
 
-    // Try to get user's location when map loads
-    map.current.on('load', async () => {
-      try {
-        if (isGPSEnabled && userLocation) {
-          map.current?.flyTo({
-            center: [userLocation.longitude, userLocation.latitude],
-            zoom: 16,
-            duration: 1000
-          });
-        } else {
-          // Try to trigger GPS location
-          try {
-            geolocateControlRef.current?.trigger();
-          } catch (error) {
-            console.log('GPS trigger failed, using default location');
+      // Try to get user's location when map loads
+      map.current.on('load', async () => {
+        try {
+          if (isGPSEnabled && userLocation) {
+            map.current?.flyTo({
+              center: [userLocation.longitude, userLocation.latitude],
+              zoom: 16,
+              duration: 1000
+            });
+          } else {
+            // Try to trigger GPS location
+            try {
+              geolocateControlRef.current?.trigger();
+            } catch (error) {
+              console.log('GPS trigger failed, using default location');
+            }
           }
+        } catch (error) {
+          console.log('Location unavailable, using default center');
         }
-       } catch (error) {
-         console.log('Location unavailable, using default center');
-       }
-       // Prepare live route layer and draw current trail if any
-       try {
-         ensureLiveRouteLayer();
-         if (currentTrail?.points?.length) {
-           updateLiveRouteVisualization(currentTrail);
-         }
-       } catch (e) {
-         console.warn('Live route layer init failed', e);
-       }
-     });
+        // Prepare live route layer and draw current trail if any
+        try {
+          ensureLiveRouteLayer();
+          if (currentTrail?.points?.length) {
+            updateLiveRouteVisualization(currentTrail);
+          }
+        } catch (e) {
+          console.warn('Live route layer init failed', e);
+        }
+      });
+    })();
 
     // Initialize GPS and load data
     initializeGPS();

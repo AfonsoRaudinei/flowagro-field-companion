@@ -1,11 +1,50 @@
 import { Geolocation, Position } from '@capacitor/geolocation';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { toast } from '@/hooks/use-toast';
 
 export interface UserLocation {
   latitude: number;
   longitude: number;
   accuracy: number;
   timestamp: Date;
+}
+
+// Simple correlation id for the GPS session
+const gpsSessionId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+let lastErrorToastAt: Record<number, number> = {};
+const ERROR_TOAST_COOLDOWN_MS = 10000; // avoid spamming the same error
+
+function mapGeoError(error: any): { code: number; key: 'PERMISSION_DENIED' | 'POSITION_UNAVAILABLE' | 'TIMEOUT' | 'UNKNOWN'; message: string } {
+  const code = Number(error?.code);
+  switch (code) {
+    case 1:
+      return { code, key: 'PERMISSION_DENIED', message: 'GPS: permissão negada' };
+    case 2:
+      return { code, key: 'POSITION_UNAVAILABLE', message: 'GPS indisponível (sem sinal)' };
+    case 3:
+      return { code, key: 'TIMEOUT', message: 'GPS: tempo esgotado' };
+    default:
+      return { code: -1, key: 'UNKNOWN', message: 'GPS: erro desconhecido' };
+  }
+}
+
+function notifyGeoError(err: any) {
+  const mapped = mapGeoError(err);
+  const now = Date.now();
+  const last = lastErrorToastAt[mapped.code] || 0;
+  if (now - last > ERROR_TOAST_COOLDOWN_MS) {
+    lastErrorToastAt[mapped.code] = now;
+    toast({ title: mapped.message, variant: 'destructive' });
+  }
+  try {
+    Haptics.impact({ style: ImpactStyle.Light });
+  } catch {}
+  console.error('[GPS][watch] error', {
+    correlationId: gpsSessionId,
+    code: mapped.code,
+    key: mapped.key,
+    raw: err?.message || err,
+  });
 }
 
 export class GPSService {
