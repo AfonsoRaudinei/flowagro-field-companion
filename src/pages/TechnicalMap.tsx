@@ -1700,7 +1700,7 @@ const TechnicalMap: React.FC = () => {
         </div>
 
         {/* Right Floating Toolbar - Reorganizado por prioridade */}
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-3 px-0 my-[330px]">
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-3 px-0 my-[395px]">
           {/* GPS Fix Button */}
           <GPSButton gpsState={gpsState} icon={<Navigation className="h-5 w-5" />} onClick={handleGPSRecenter} requiresGPS={true} tooltip="Centralizar no GPS" variant="ghost" className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform" size="sm" />
 
