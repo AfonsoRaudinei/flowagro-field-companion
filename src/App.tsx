@@ -2,7 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { UserProvider } from "./contexts/UserContext";
 import BottomNavigation from "./components/ui/bottom-navigation";
 import NotFound from "./pages/NotFound";
@@ -38,7 +38,7 @@ const AppLayout = () => {
       <div className={`w-full max-w-md mx-auto bg-background min-h-screen ${showBottomNav ? 'pb-16' : ''}`}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/" element={<LoginMapa />} />
+            <Route path="/" element={<Navigate to="/login-mapa" replace />} />
             <Route path="/login-mapa" element={<LoginMapa />} />
             <Route path="/login-form" element={<LoginForm />} />
             <Route path="/technical-map" element={<TechnicalMap />} />

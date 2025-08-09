@@ -545,11 +545,7 @@ const TechnicalMap: React.FC = () => {
           });
         }
       } catch (error) {
-        toast({
-          title: "Erro ao obter localização",
-          description: "Verifique se o GPS está ativado",
-          variant: "destructive"
-        });
+        // Silenciar erros de obtenção de localização; indicador visual mostra o estado do GPS
       }
     } catch (error) {
       console.error('GPS initialization error:', error);
@@ -576,10 +572,6 @@ const TechnicalMap: React.FC = () => {
       return;
     }
     try {
-      toast({
-        title: "Obtendo localização...",
-        description: "Aguarde um momento"
-      });
       const location = await GPSService.getCurrentLocation();
       setUserLocation(location);
       if (map.current) {
@@ -589,17 +581,8 @@ const TechnicalMap: React.FC = () => {
           duration: 1000
         });
       }
-      toast({
-        title: "Localização atualizada",
-        description: `Precisão: ${Math.round(location.accuracy)}m`,
-        variant: "default"
-      });
     } catch (error) {
-      toast({
-        title: "Erro ao obter localização",
-        description: "Verifique se o GPS está ativado",
-        variant: "destructive"
-      });
+      // Silenciar erro ao obter localização; sem toast vermelho
     }
   };
   const handleLayerChange = async (layerId: string, options?: {

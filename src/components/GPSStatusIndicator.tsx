@@ -40,7 +40,7 @@ export const GPSStatusIndicator: React.FC<GPSStatusIndicatorProps> = ({
   return (
     <div
       aria-hidden="true"
-      className={`${className} w-3 h-3 rounded-full ${gpsState.isEnabled ? 'bg-success' : 'bg-destructive'} transition-opacity duration-300`}
+      className={`${className} w-3 h-3 rounded-full ${gpsState.isEnabled ? 'bg-success pulse' : 'bg-destructive'} transition-opacity duration-300`}
     />
   );
 };
