@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
+import type { Map, Marker, GeoJSONSource } from 'maplibre-gl';
+// maplibre-gl CSS and module are loaded dynamically for better TTI
 import { ArrowLeft, Compass, Layers, Edit3, Upload, Camera, Navigation, Cloud, Square, Circle, Pentagon, Route, MessageCircle, Plus, Minus, Trash2, LogOut, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -50,7 +50,9 @@ const TechnicalMap: React.FC = () => {
     toast
   } = useToast();
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<maplibregl.Map | null>(null);
+  const maplibre = useRef<null | (typeof import('maplibre-gl'))>(null);
+  const map = useRef<Map | null>(null);
+  const geolocateControlRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     userData,
@@ -103,7 +105,7 @@ const TechnicalMap: React.FC = () => {
   // Live route/position visualization
   const liveRouteSourceId = 'live-route-source';
   const liveRouteLayerId = 'live-route-layer';
-  const userMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const userMarkerRef = useRef<Marker | null>(null);
   const followUserRef = useRef(true);
 
   // Live route helpers (hoisted)
@@ -129,16 +131,16 @@ const TechnicalMap: React.FC = () => {
     if (!map.current) return;
     ensureLiveRouteLayer();
     const coords = (trail.points || []).map(p => [p.longitude, p.latitude]) as [number, number][];
-    const src = map.current.getSource(liveRouteSourceId) as maplibregl.GeoJSONSource | undefined;
+    const src = map.current.getSource(liveRouteSourceId) as GeoJSONSource | undefined;
     if (src) {
       src.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: coords }, properties: {} } as any);
     }
     const last = coords[coords.length - 1];
     if (last) {
       if (!userMarkerRef.current) {
-        const el = document.createElement('div');
-        el.className = 'w-4 h-4 rounded-full bg-primary ring-2 ring-background shadow-md animate-pulse';
-        userMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(last).addTo(map.current);
+      const el = document.createElement('div');
+      el.className = 'w-4 h-4 rounded-full bg-primary ring-2 ring-background shadow-md animate-pulse';
+      userMarkerRef.current = new (maplibre.current as any).Marker({ element: el, anchor: 'center' }).setLngLat(last).addTo(map.current as any);
       } else {
         userMarkerRef.current.setLngLat(last);
       }
@@ -150,7 +152,7 @@ const TechnicalMap: React.FC = () => {
 
   function clearLiveRouteVisualization() {
     if (!map.current) return;
-    const src = map.current.getSource(liveRouteSourceId) as maplibregl.GeoJSONSource | undefined;
+    const src = map.current.getSource(liveRouteSourceId) as GeoJSONSource | undefined;
     if (src) {
       src.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} } as any);
     }
@@ -326,32 +328,39 @@ const TechnicalMap: React.FC = () => {
     };
     initializeStorage();
 
-    // Initialize map with MapTiler style URLs
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: mapLayers.find(l => l.id === currentLayer)?.url || mapLayers[0].url,
-      center: [-52.0, -10.0],
-      // Default center on Brazil
-      zoom: 16,
-      pitch: 0,
-      bearing: 0
-    });
+    // Lazily load maplibre-gl and initialize map
+    (async () => {
+      const m = await import('maplibre-gl');
+      await import('maplibre-gl/dist/maplibre-gl.css');
+      maplibre.current = m;
 
-    // Add map controls
-    map.current.addControl(new maplibregl.NavigationControl({
-      showCompass: true,
-      showZoom: true,
-      visualizePitch: false
-    }), 'top-left');
+      map.current = new m.Map({
+        container: mapContainer.current!,
+        style: mapLayers.find(l => l.id === currentLayer)?.url || mapLayers[0].url,
+        center: [-52.0, -10.0],
+        // Default center on Brazil
+        zoom: 16,
+        pitch: 0,
+        bearing: 0
+      });
 
-    // Add geolocate control
-    const geolocateControl = new maplibregl.GeolocateControl({
-      positionOptions: {
-        enableHighAccuracy: true
-      },
-      trackUserLocation: true
-    });
-    map.current.addControl(geolocateControl, 'top-left');
+      // Add map controls
+      map.current.addControl(new m.NavigationControl({
+        showCompass: true,
+        showZoom: true,
+        visualizePitch: false
+      }), 'top-left');
+
+      // Add geolocate control
+      const geolocateControl = new m.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true
+        },
+        trackUserLocation: true
+      });
+      geolocateControlRef.current = geolocateControl;
+      map.current.addControl(geolocateControl, 'top-left');
+    })();
 
     // Handle map load errors
     map.current.on('error', e => {
@@ -375,7 +384,7 @@ const TechnicalMap: React.FC = () => {
         } else {
           // Try to trigger GPS location
           try {
-            geolocateControl.trigger();
+            geolocateControlRef.current?.trigger();
           } catch (error) {
             console.log('GPS trigger failed, using default location');
           }
