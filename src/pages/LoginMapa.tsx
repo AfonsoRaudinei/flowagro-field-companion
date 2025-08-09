@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
-import { Plus, Minus, Navigation, MessageCircle } from 'lucide-react';
+import { Plus, Minus, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CompassDialIcon from '@/components/icons/CompassDialIcon';
+import MapCore from '@/components/map/MapCore';
 const LoginMapa: React.FC = () => {
   const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
