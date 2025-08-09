@@ -39,7 +39,7 @@ class SatelliteService {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('sentinel-hub', {
+      const { data, error } = await supabase.functions.invoke<ArrayBuffer>('sentinel-hub', {
         body: {
           bbox: request.bbox,
           date: request.date.toISOString().split('T')[0],
@@ -91,7 +91,13 @@ class SatelliteService {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('planet-labs', {
+      type PlanetInvokeResult = {
+        acquisitionDate: string;
+        cloudCover: number;
+        status: 'activating' | 'ready' | string;
+        downloadUrl: string;
+      };
+      const { data, error } = await supabase.functions.invoke<PlanetInvokeResult>('planet-labs', {
         body: {
           bbox: request.bbox,
           date: request.date.toISOString().split('T')[0],
