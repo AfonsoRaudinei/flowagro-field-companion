@@ -2,14 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Plus, Minus, Navigation, MessageCircle, Compass } from 'lucide-react';
+import { Plus, Minus, Navigation, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import CompassDialIcon from '@/components/icons/CompassDialIcon';
 const LoginMapa: React.FC = () => {
   const navigate = useNavigate();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Localizando...');
+  const [bearing, setBearing] = useState(0);
   useEffect(() => {
     if (!mapContainer.current) return;
 
@@ -38,6 +40,11 @@ const LoginMapa: React.FC = () => {
       pitch: 0,
       bearing: 0
     });
+
+    // Bearing listener
+    const handleMove = () => setBearing(map.current?.getBearing() ?? 0);
+    map.current.on('move', handleMove);
+    map.current.on('rotate', handleMove);
 
     // Add marketing pins
     const marketingPins = [{
@@ -122,8 +129,8 @@ const LoginMapa: React.FC = () => {
 
       {/* Compass */}
       <div className="absolute top-4 right-4 z-10">
-        <div className="backdrop-blur-sm p-3 rounded-full shadow-ios-md mx-0 my-[760px] bg-[#513395]/[0.29]">
-          <Compass className="h-6 w-6 text-foreground" />
+        <div onClick={() => map.current?.easeTo({ bearing: 0, duration: 500 })} className="cursor-pointer backdrop-blur-sm p-3 rounded-full shadow-ios-md bg-card/80 border border-border">
+          <CompassDialIcon bearing={bearing} className="h-6 w-6 text-foreground" />
         </div>
       </div>
 

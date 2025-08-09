@@ -38,6 +38,7 @@ import MapView from "@/components/technical-map/MapView";
 import LayerPanel from "@/components/technical-map/LayerPanel";
 import Toolbars from "@/components/technical-map/Toolbars";
 import RouteUI from "@/components/technical-map/RouteUI";
+import CompassDialIcon from "@/components/icons/CompassDialIcon";
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -103,6 +104,7 @@ const TechnicalMap: React.FC = () => {
   const [gpsWatchId, setGpsWatchId] = useState<string | null>(null);
   const [currentTrail, setCurrentTrail] = useState<Trail | null>(null);
   const [isRecordingTrail, setIsRecordingTrail] = useState(false);
+  const [mapBearing, setMapBearing] = useState(0);
 
   // Route recording state
   const [showRouteRecorder, setShowRouteRecorder] = useState(false);
@@ -404,6 +406,12 @@ const TechnicalMap: React.FC = () => {
       });
       geolocateControlRef.current = geolocateControl;
       map.current.addControl(geolocateControl, 'top-left');
+
+      // Update bearing on map rotate/move
+      const handleMove = () => setMapBearing(map.current?.getBearing() ?? 0);
+      map.current.on('move', handleMove);
+      map.current.on('rotate', handleMove);
+      setMapBearing(map.current.getBearing());
 
       // Handle map load errors
       map.current.on('error', e => {
@@ -1587,6 +1595,13 @@ const TechnicalMap: React.FC = () => {
             variant: "default"
           });
         }} />
+        </div>
+
+        {/* Compass - custom */}
+        <div className="absolute top-24 right-4 z-20">
+          <div onClick={() => map.current?.easeTo({ bearing: 0, duration: 500 })} className="cursor-pointer backdrop-blur-sm p-3 rounded-full shadow-ios-md bg-card/80 border border-border">
+            <CompassDialIcon bearing={mapBearing} className="h-6 w-6 text-foreground" />
+          </div>
         </div>
 
         {/* Instruction Message for Drawing Mode */}
