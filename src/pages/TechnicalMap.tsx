@@ -498,11 +498,6 @@ const TechnicalMap: React.FC = () => {
       try {
         const location = await GPSService.getCurrentLocation();
         setUserLocation(location);
-        toast({
-          title: "GPS ativado",
-          description: "Localização disponível",
-          variant: "default"
-        });
 
         // Center map on user location
         if (map.current) {

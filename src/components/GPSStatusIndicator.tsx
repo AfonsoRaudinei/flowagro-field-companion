@@ -1,7 +1,4 @@
-import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { MapPin, MapPinOff, Loader2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 import { GPSState } from '@/hooks/useGPSState';
 
 interface GPSStatusIndicatorProps {
@@ -9,85 +6,41 @@ interface GPSStatusIndicatorProps {
   className?: string;
 }
 
-export const GPSStatusIndicator: React.FC<GPSStatusIndicatorProps> = ({ 
-  gpsState, 
-  className = "" 
+export const GPSStatusIndicator: React.FC<GPSStatusIndicatorProps> = ({
+  gpsState,
+  className = "",
 }) => {
-  const getStatusInfo = () => {
-    if (gpsState.isChecking) {
-      return {
-        icon: Loader2,
-        text: "Verificando GPS...",
-        variant: "secondary" as const,
-        className: "animate-spin"
-      };
+  const [visible, setVisible] = useState(false);
+  const prevEnabledRef = useRef<boolean | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+
+  // Show the indicator briefly only when the enabled state changes (not on initial mount)
+  useEffect(() => {
+    if (prevEnabledRef.current === null) {
+      prevEnabledRef.current = gpsState.isEnabled;
+      return;
     }
 
-    if (!gpsState.isEnabled) {
-      return {
-        icon: MapPinOff,
-        text: "GPS Inativo",
-        variant: "destructive" as const,
-        className: "animate-pulse"
-      };
+    if (prevEnabledRef.current !== gpsState.isEnabled) {
+      prevEnabledRef.current = gpsState.isEnabled;
+      setVisible(true);
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = window.setTimeout(() => setVisible(false), 2500) as unknown as number;
     }
+  }, [gpsState.isEnabled]);
 
-    const accuracyText = {
-      'high': 'GPS Alta Precisão',
-      'medium': 'GPS Média Precisão', 
-      'low': 'GPS Baixa Precisão',
-      'unknown': 'GPS Ativo'
-    }[gpsState.accuracy];
-
-    const sourceText = {
-      'gps': 'Localização Atual',
-      'cache': 'Localização em Cache',
-      'map-center': 'Centro do Mapa',
-      'none': 'Sem Localização'
-    }[gpsState.source];
-
-    return {
-      icon: MapPin,
-      text: accuracyText,
-      variant: gpsState.accuracy === 'high' ? 'default' as const : 'secondary' as const,
-      className: "",
-      detail: sourceText
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     };
-  };
+  }, []);
 
-  const statusInfo = getStatusInfo();
-  const Icon = statusInfo.icon;
+  if (!visible) return null;
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Badge 
-            variant={statusInfo.variant}
-            className={`
-              ${className} 
-              flex items-center gap-1 text-xs font-medium
-              transition-all duration-300
-            `}
-          >
-            <Icon className={`w-3 h-3 ${statusInfo.className}`} />
-            <span className="hidden sm:inline">{statusInfo.text}</span>
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent>
-          <div className="space-y-1">
-            <p className="font-medium">{statusInfo.text}</p>
-            {statusInfo.detail && (
-              <p className="text-xs text-muted-foreground">{statusInfo.detail}</p>
-            )}
-            {gpsState.lastLocation && (
-              <p className="text-xs text-muted-foreground">
-                Última atualização: {gpsState.lastCheck.toLocaleTimeString()}
-              </p>
-            )}
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <div
+      aria-hidden="true"
+      className={`${className} w-3 h-3 rounded-full ${gpsState.isEnabled ? 'bg-success' : 'bg-destructive'} transition-opacity duration-300`}
+    />
   );
 };

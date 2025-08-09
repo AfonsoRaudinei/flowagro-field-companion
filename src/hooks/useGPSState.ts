@@ -77,25 +77,11 @@ export const useGPSState = () => {
         isChecking: false
       }));
 
-      // Haptic feedback and toast for GPS state changes
+      // Haptic feedback for GPS state changes (no toast)
       if (hasPermissions && !wasEnabled) {
-        try {
-          await Haptics.impact({ style: ImpactStyle.Light });
-        } catch (e) {}
-        toast({
-          title: "GPS Ativado",
-          description: "Localização está disponível",
-          className: "bg-success text-success-foreground"
-        });
+        try { await Haptics.impact({ style: ImpactStyle.Light }); } catch (e) {}
       } else if (!hasPermissions && wasEnabled) {
-        try {
-          await Haptics.impact({ style: ImpactStyle.Medium });
-        } catch (e) {}
-        toast({
-          title: "GPS Desativado",
-          description: "Ative o GPS para usar recursos de localização",
-          variant: "destructive"
-        });
+        try { await Haptics.impact({ style: ImpactStyle.Medium }); } catch (e) {}
       }
 
       return hasPermissions;
