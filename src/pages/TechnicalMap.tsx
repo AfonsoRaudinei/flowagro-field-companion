@@ -34,6 +34,10 @@ import { satelliteService } from '@/services/satelliteService';
 import { RouteRecorder } from '@/components/RouteRecorder';
 import { RouteHistoryModal } from '@/components/RouteHistoryModal';
 import { RouteViewer } from '@/components/RouteViewer';
+import MapView from "@/components/technical-map/MapView";
+import LayerPanel from "@/components/technical-map/LayerPanel";
+import Toolbars from "@/components/technical-map/Toolbars";
+import RouteUI from "@/components/technical-map/RouteUI";
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -1581,7 +1585,7 @@ const TechnicalMap: React.FC = () => {
       
       <div className="relative w-full h-screen overflow-hidden bg-background">
         {/* Map Container */}
-        <div ref={mapContainer} className="absolute inset-0" onClick={handleMapClick} />
+        <MapView containerRef={mapContainer} className="absolute inset-0" onClick={handleMapClick} />
         
         {/* Top Bar */}
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4">
@@ -1809,38 +1813,28 @@ const TechnicalMap: React.FC = () => {
           
         </div>
 
-        {/* Satellite Layer Selector Panel */}
-        {showLayerSelector && (
-          <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30">
-            <SatelliteLayerSelector
-              onLayerChange={handleLayerChange}
-              currentLayer={currentLayer}
-              onClose={() => setShowLayerSelector(false)}
-            />
-          </div>
-        )}
+        <LayerPanel
+          show={showLayerSelector}
+          currentLayer={currentLayer}
+          onLayerChange={handleLayerChange}
+          onClose={() => setShowLayerSelector(false)}
+        />
 
-        {/* Drawing Tools Panel */}
-        {showDrawingTools && (
-          <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30">
-            <DrawingToolsPanel
-              selectedTool={selectedTool}
-              onToolSelect={(toolId) => {
-                handleToolSelect(toolId);
-                setTimeout(() => setShowDrawingTools(false), 200);
-              }}
-              onRemoveSelected={() => {
-                if (selectedShape) {
-                  handleDeleteShape();
-                }
-                setShowDrawingTools(false);
-              }}
-              onImportKML={handleFileImport}
-              hasSelectedShape={!!selectedShape}
-              className="w-72"
-            />
-          </div>
-        )}
+        <Toolbars
+          show={showDrawingTools}
+          selectedTool={selectedTool}
+          onToolSelect={(toolId) => {
+            handleToolSelect(toolId);
+          }}
+          onRemoveSelected={() => {
+            if (selectedShape) {
+              handleDeleteShape();
+            }
+          }}
+          onImportKML={handleFileImport}
+          hasSelectedShape={!!selectedShape}
+          onClose={() => setShowDrawingTools(false)}
+        />
 
         {/* Drawing Confirmation Dialog */}
         {showDrawingConfirm && pendingDrawing && <div className="absolute inset-0 z-40 bg-black/50 flex items-center justify-center p-4">
@@ -1996,34 +1990,19 @@ const TechnicalMap: React.FC = () => {
             </Card>
           </div>}
 
-        {/* Route Recording Interface */}
-        <RouteRecorder 
+        <RouteUI
           farmId={selectedProducer?.id || ownFarm?.id || ''}
           farmName={selectedProducer?.farm || ownFarm?.name || ''}
-          isVisible={showRouteRecorder}
+          showRouteRecorder={showRouteRecorder}
           onTrailUpdate={(t) => { setCurrentTrail(t); setIsRecordingTrail(true); setShowRouteRecorder(true); updateLiveRouteVisualization(t); }}
           onTrailComplete={handleRouteComplete}
-        />
-
-        {/* Route History Modal */}
-        <RouteHistoryModal
-          isOpen={showRouteHistory}
-          onClose={() => setShowRouteHistory(false)}
-          farmId={selectedProducer?.id || ownFarm?.id || ''}
+          showRouteHistory={showRouteHistory}
+          closeRouteHistory={() => setShowRouteHistory(false)}
           onViewRoute={handleViewRoute}
-        />
-
-        {/* Route Viewer Modal */}
-        <RouteViewer
-          trail={selectedViewTrail}
-          isOpen={showRouteViewer}
-          onClose={() => {
-            setShowRouteViewer(false);
-            setSelectedViewTrail(null);
-          }}
-          photos={fieldPhotos.filter(photo => 
-            selectedViewTrail && photo.notes?.includes(selectedViewTrail.id)
-          )}
+          selectedViewTrail={selectedViewTrail}
+          showRouteViewer={showRouteViewer}
+          closeRouteViewer={() => { setShowRouteViewer(false); setSelectedViewTrail(null); }}
+          photos={fieldPhotos.filter(photo => selectedViewTrail && photo.notes?.includes(selectedViewTrail.id))}
         />
 
         {/* Backdrop for closing menus */}
