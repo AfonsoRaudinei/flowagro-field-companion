@@ -142,9 +142,7 @@ const LoginMapa: React.FC = () => {
 
             // Basic error logging without blocking UI
             map.on('error', (e) => {
-              // @ts-expect-error - maplibre error typing
-              const src = e?.sourceId || 'unknown';
-              console.warn('Map source error:', src);
+              console.warn('Map error', e);
             });
 
             const [lng, lat] = DEFAULT_CENTER;
@@ -305,19 +303,16 @@ const LoginMapa: React.FC = () => {
             // Simple tooltip for marketing points
             map.on('mouseenter', 'marketing-points', (e) => {
               map.getCanvas().style.cursor = 'pointer';
-              // @ts-expect-error - features may be undefined in type
-              const f = e?.features?.[0];
+              const f = (e as any)?.features?.[0];
               const title = f?.properties?.title || 'Ponto';
               if (!marketingPopupRef.current) {
                 marketingPopupRef.current = new Popup({ closeButton: false, closeOnClick: false });
               }
-              // @ts-expect-error - maplibre types for events
-              marketingPopupRef.current!.setLngLat(e.lngLat).setText(String(title)).addTo(map);
+              marketingPopupRef.current!.setLngLat((e as any).lngLat).setText(String(title)).addTo(map);
             });
             map.on('mousemove', 'marketing-points', (e) => {
               if (!marketingPopupRef.current) return;
-              // @ts-expect-error - maplibre types for events
-              marketingPopupRef.current.setLngLat(e.lngLat);
+              marketingPopupRef.current.setLngLat((e as any).lngLat);
             });
             map.on('mouseleave', 'marketing-points', () => {
               map.getCanvas().style.cursor = '';

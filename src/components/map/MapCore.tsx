@@ -11,7 +11,7 @@ interface MapCoreProps extends React.HTMLAttributes<HTMLDivElement> {
   onBearingChange?: (bearing: number) => void;
 }
 
-// Resolve a base map style with MapTiler when key is present, otherwise OSM fallback
+// Resolve a base map style with MapTiler when key is present, otherwise use public demotiles
 function resolveBaseStyle(styleId: string | undefined) {
   const key = typeof window !== "undefined" ? localStorage.getItem("MAPTILER_API_KEY") : null;
   const id = styleId || "satellite";
@@ -20,28 +20,12 @@ function resolveBaseStyle(styleId: string | undefined) {
       satellite: `https://api.maptiler.com/maps/satellite/style.json?key=${key}`,
       hybrid: `https://api.maptiler.com/maps/hybrid/style.json?key=${key}`,
       terrain: `https://api.maptiler.com/maps/landscape/style.json?key=${key}`,
+      streets: `https://api.maptiler.com/maps/streets/style.json?key=${key}`,
     } as Record<string, string>;
     return maptiler[id] || maptiler.satellite;
   }
-  // Tokenless OSM raster fallback
-  return {
-    version: 8,
-    sources: {
-      osm: {
-        type: "raster",
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        tileSize: 256,
-        attribution: "© OpenStreetMap contributors",
-      },
-    },
-    layers: [
-      {
-        id: "osm",
-        type: "raster",
-        source: "osm",
-      },
-    ],
-  } as any;
+  // Tokenless public fallback style (prevents white screen)
+  return "https://demotiles.maplibre.org/style.json" as any;
 }
 
 const MapCore: React.FC<MapCoreProps> = ({
@@ -59,39 +43,92 @@ const MapCore: React.FC<MapCoreProps> = ({
   const mapRef = useRef<Map | null>(null);
   const maplibreRef = useRef<null | (typeof import("maplibre-gl"))>(null);
 
-  // Initialize map once
-  useEffect(() => {
-    const node = containerRef?.current || localRef.current;
-    if (!node || mapRef.current) return;
+// Initialize map once with container readiness and one-time fallback
+useEffect(() => {
+  const node = containerRef?.current || localRef.current;
+  if (!node || mapRef.current) return;
 
-    (async () => {
-      const m = await import("maplibre-gl");
-      await import("maplibre-gl/dist/maplibre-gl.css");
-      maplibreRef.current = m;
+  let destroyed = false;
+  let sizeObserver: ResizeObserver | null = null;
+  let resizeObserver: ResizeObserver | null = null;
+  let readyToInit = false;
 
-      const map = new m.Map({
-        container: node,
-        style: resolveBaseStyle(styleId),
-        center: initialCenter,
-        zoom: initialZoom,
-        bearing: initialBearing,
-        pitch: 0,
-      });
-      mapRef.current = map as Map;
+  const tryInit = async () => {
+    if (destroyed || mapRef.current || !readyToInit) return;
+    const m = await import("maplibre-gl");
+    await import("maplibre-gl/dist/maplibre-gl.css");
+    maplibreRef.current = m;
+
+    const initialStyle = resolveBaseStyle(styleId);
+    const map = new m.Map({
+      container: node,
+      style: initialStyle,
+      center: initialCenter,
+      zoom: initialZoom,
+      bearing: initialBearing,
+      pitch: 0,
+    });
+    mapRef.current = map as Map;
+
+    // One-time boot fallback to demotiles if style errors before first load
+    let hasFallbackApplied = false;
+    const demotiles = "https://demotiles.maplibre.org/style.json";
+    const handleBootError = (e: any) => {
+      if (hasFallbackApplied) return;
+      const usingMapTiler = typeof initialStyle === "string" && (initialStyle as string).includes("api.maptiler.com");
+      if (usingMapTiler) {
+        try {
+          (map as any).setStyle(demotiles);
+          hasFallbackApplied = true;
+        } catch {}
+      }
+      console.warn("Map style error during boot, applying fallback", e?.error || e);
+    };
+    map.on("error", handleBootError);
+
+    map.once("load", () => {
+      try { map.resize(); } catch {}
+      // After first load, stop boot fallback; keep only discreet logging
+      map.off("error", handleBootError);
+      map.on("error", (e: any) => console.warn("Map error", e?.error || e));
 
       const handleMove = () => onBearingChange?.(map.getBearing());
       map.on("move", handleMove);
       map.on("rotate", handleMove);
 
       onMapReady?.(map as Map, m);
-    })();
+    });
 
-    return () => {
-      mapRef.current?.remove();
-      mapRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // Observe container size changes for responsive resize
+    resizeObserver = new ResizeObserver(() => {
+      try { (mapRef.current as any)?.resize(); } catch {}
+    });
+    resizeObserver.observe(node);
+  };
+
+  // Wait until the container has dimensions before initializing
+  sizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const { width, height } = entry.contentRect;
+      if (width > 0 && height > 0) {
+        readyToInit = true;
+        sizeObserver?.disconnect();
+        tryInit();
+        break;
+      }
+    }
+  });
+  sizeObserver.observe(node);
+
+  return () => {
+    destroyed = true;
+    resizeObserver?.disconnect();
+    sizeObserver?.disconnect();
+    mapRef.current?.remove();
+    mapRef.current = null;
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   // Update style when styleId changes
   useEffect(() => {
