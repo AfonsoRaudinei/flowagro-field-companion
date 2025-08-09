@@ -1599,7 +1599,10 @@ const TechnicalMap: React.FC = () => {
 
         {/* Compass - custom */}
         <div className="absolute top-24 right-4 z-20">
-          <div onClick={() => map.current?.easeTo({ bearing: 0, duration: 500 })} className="cursor-pointer backdrop-blur-sm p-3 rounded-full shadow-ios-md bg-card/80 border border-border">
+          <div onClick={() => map.current?.easeTo({
+          bearing: 0,
+          duration: 500
+        })} className="cursor-pointer backdrop-blur-sm p-3 rounded-full shadow-ios-md bg-card/80 border border-border">
             <CompassDialIcon bearing={mapBearing} className="h-6 w-6 text-foreground" />
           </div>
         </div>
@@ -1677,7 +1680,7 @@ const TechnicalMap: React.FC = () => {
         </div>
 
         {/* Left Floating Toolbar */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-2 my-[320px]">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-2 my-[360px]">
           {/* Trail Button */}
           <GPSButton gpsState={gpsState} icon={<Route className="h-4 w-4" />} onClick={handleTrailToggle} requiresGPS={true} tooltip={isRecordingTrail ? "Parar gravação" : "Gravar trilha"} variant={isRecordingTrail ? "destructive" : "ghost"} className={`w-10 h-10 rounded-full backdrop-blur-sm shadow-md border border-border hover:bg-white ${isRecordingTrail ? 'animate-pulse' : 'bg-white/90'}`} size="sm" />
 
