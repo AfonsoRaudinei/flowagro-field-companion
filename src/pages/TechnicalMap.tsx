@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Map, GeoJSONSource, MapLayerMouseEvent } from 'maplibre-gl';
 import { Popup } from 'maplibre-gl';
-import { ArrowLeft, Plus, Minus, Navigation, Pencil, Shapes, Circle as CircleIcon, Square as SquareIcon, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, Navigation, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
