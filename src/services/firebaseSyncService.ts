@@ -1,7 +1,9 @@
 import { FirebaseAuthService } from './firebaseAuthService';
 import { FirestoreService } from './firestoreService';
 import { FirebaseStorageService } from './firebaseStorageService';
-import { supabase } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as unknown as SupabaseClient;
 
 export interface SyncStats {
   checkinsSincronizados: number;
