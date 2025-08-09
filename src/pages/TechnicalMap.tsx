@@ -56,6 +56,7 @@ const TechnicalMap: React.FC = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const maplibre = useRef<null | (typeof import('maplibre-gl'))>(null);
   const map = useRef<Map | null>(null);
+  const mapLoadedRef = useRef(false);
   const geolocateControlRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
@@ -377,6 +378,7 @@ const TechnicalMap: React.FC = () => {
 
       // Try to get user's location when map loads
       map.current.on('load', async () => {
+        mapLoadedRef.current = true;
         try {
           if (isGPSEnabled && userLocation) {
             map.current?.flyTo({
@@ -464,7 +466,15 @@ const TechnicalMap: React.FC = () => {
       // Remove drawing listener
       DrawingService.removeListener(setDrawnShapes);
       DrawingUndoService.removeListener(handleSessionChange);
-      map.current?.remove();
+      try {
+        if (map.current && mapLoadedRef.current && typeof (map.current as any).remove === 'function') {
+          map.current.remove();
+        }
+      } catch (e) {
+        console.warn('Map cleanup skipped', e);
+      } finally {
+        map.current = null;
+      }
     };
   }, []);
   const initializeGPS = async () => {
