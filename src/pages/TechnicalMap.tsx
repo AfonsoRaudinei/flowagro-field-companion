@@ -79,7 +79,10 @@ const TechnicalMap: React.FC = () => {
   const [currentDrawingPoints, setCurrentDrawingPoints] = useState<any[]>([]);
   const [hasOverlap, setHasOverlap] = useState(false);
   const [isPolygonClosed, setIsPolygonClosed] = useState(false);
-  const [mousePosition, setMousePosition] = useState<{x: number, y: number} | null>(null);
+  const [mousePosition, setMousePosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [currentSession, setCurrentSession] = useState<DrawingSession | null>(null);
   const [selectedUnit, setSelectedUnit] = useState<UnitType>('ha');
 
@@ -100,7 +103,7 @@ const TechnicalMap: React.FC = () => {
   const [gpsWatchId, setGpsWatchId] = useState<string | null>(null);
   const [currentTrail, setCurrentTrail] = useState<Trail | null>(null);
   const [isRecordingTrail, setIsRecordingTrail] = useState(false);
-  
+
   // Route recording state
   const [showRouteRecorder, setShowRouteRecorder] = useState(false);
   const [showRouteHistory, setShowRouteHistory] = useState(false);
@@ -119,7 +122,14 @@ const TechnicalMap: React.FC = () => {
     if (!map.current.getSource(liveRouteSourceId)) {
       map.current.addSource(liveRouteSourceId, {
         type: 'geojson',
-        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} }
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: []
+          },
+          properties: {}
+        }
       } as any);
     }
     if (!map.current.getLayer(liveRouteLayerId)) {
@@ -127,46 +137,76 @@ const TechnicalMap: React.FC = () => {
         id: liveRouteLayerId,
         type: 'line',
         source: liveRouteSourceId,
-        paint: { 'line-color': '#3b82f6', 'line-width': 4 }
+        paint: {
+          'line-color': '#3b82f6',
+          'line-width': 4
+        }
       });
     }
   }
-
   function updateLiveRouteVisualization(trail: Trail) {
     if (!map.current) return;
     ensureLiveRouteLayer();
     const coords = (trail.points || []).map(p => [p.longitude, p.latitude]) as [number, number][];
     const src = map.current.getSource(liveRouteSourceId) as GeoJSONSource | undefined;
     if (src) {
-      src.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: coords }, properties: {} } as any);
+      src.setData({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: coords
+        },
+        properties: {}
+      } as any);
     }
     const last = coords[coords.length - 1];
     if (last) {
       if (!userMarkerRef.current) {
-      const el = document.createElement('div');
-      el.className = 'w-4 h-4 rounded-full bg-primary ring-2 ring-background shadow-md animate-pulse';
-      userMarkerRef.current = new (maplibre.current as any).Marker({ element: el, anchor: 'center' }).setLngLat(last).addTo(map.current as any);
+        const el = document.createElement('div');
+        el.className = 'w-4 h-4 rounded-full bg-primary ring-2 ring-background shadow-md animate-pulse';
+        userMarkerRef.current = new (maplibre.current as any).Marker({
+          element: el,
+          anchor: 'center'
+        }).setLngLat(last).addTo(map.current as any);
       } else {
         userMarkerRef.current.setLngLat(last);
       }
       if (followUserRef.current) {
-        try { map.current.easeTo({ center: last, duration: 800 }); } catch {}
+        try {
+          map.current.easeTo({
+            center: last,
+            duration: 800
+          });
+        } catch {}
       }
     }
   }
-
   function clearLiveRouteVisualization() {
     if (!map.current) return;
     const src = map.current.getSource(liveRouteSourceId) as GeoJSONSource | undefined;
     if (src) {
-      src.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} } as any);
+      src.setData({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: []
+        },
+        properties: {}
+      } as any);
     }
-    if (userMarkerRef.current) { userMarkerRef.current.remove(); userMarkerRef.current = null; }
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+      userMarkerRef.current = null;
+    }
   }
 
   // Enhanced GPS state management
-  const { gpsState, checkGPSBeforeAction, getCurrentLocationWithFallback } = useGPSState();
-  
+  const {
+    gpsState,
+    checkGPSBeforeAction,
+    getCurrentLocationWithFallback
+  } = useGPSState();
+
   // Legacy GPS state for compatibility
   const isGPSEnabled = gpsState.isEnabled;
   const [drawnShapes, setDrawnShapes] = useState<DrawingShape[]>([]);
@@ -338,7 +378,6 @@ const TechnicalMap: React.FC = () => {
       const m = await import('maplibre-gl');
       await import('maplibre-gl/dist/maplibre-gl.css');
       maplibre.current = m;
-
       map.current = new m.Map({
         container: mapContainer.current!,
         style: mapLayers.find(l => l.id === currentLayer)?.url || mapLayers[0].url,
@@ -436,7 +475,7 @@ const TechnicalMap: React.FC = () => {
       }
     };
     loadStoredData();
-    
+
     // Recuperar sessão de desenho se existir
     const recoveredSession = DrawingUndoService.recoverSession();
     if (recoveredSession) {
@@ -455,9 +494,7 @@ const TechnicalMap: React.FC = () => {
     const handleSessionChange = (session: DrawingSession | null) => {
       setCurrentSession(session);
     };
-
     DrawingUndoService.addListener(handleSessionChange);
-
     return () => {
       // Cleanup GPS watch
       if (gpsWatchId) {
@@ -533,7 +570,6 @@ const TechnicalMap: React.FC = () => {
       clearLiveRouteVisualization();
     }
   }, [currentTrail]);
-
   const handleGPSRecenter = async () => {
     if (!isGPSEnabled) {
       await initializeGPS();
@@ -566,61 +602,51 @@ const TechnicalMap: React.FC = () => {
       });
     }
   };
-
-  const handleLayerChange = async (layerId: string, options?: { date?: Date }) => {
+  const handleLayerChange = async (layerId: string, options?: {
+    date?: Date;
+  }) => {
     if (!map.current) return;
     setCurrentLayer(layerId);
     setShowLayerSelector(false);
 
     // Handle base layers
     const baseLayer = mapLayers.find(l => l.id === layerId);
-     if (baseLayer) {
-       map.current.setStyle(baseLayer.url);
-       // Re-add live route layer after style changes
-       map.current.once('style.load', () => {
-         ensureLiveRouteLayer();
-         if (currentTrail?.isActive) {
-           updateLiveRouteVisualization(currentTrail);
-         }
-       });
-       toast({
-         title: "Camada alterada",
-         description: `Visualizando: ${baseLayer.name}`,
-         variant: "default"
-       });
-       return;
-     }
+    if (baseLayer) {
+      map.current.setStyle(baseLayer.url);
+      // Re-add live route layer after style changes
+      map.current.once('style.load', () => {
+        ensureLiveRouteLayer();
+        if (currentTrail?.isActive) {
+          updateLiveRouteVisualization(currentTrail);
+        }
+      });
+      toast({
+        title: "Camada alterada",
+        description: `Visualizando: ${baseLayer.name}`,
+        variant: "default"
+      });
+      return;
+    }
 
     // Handle satellite layers
-    if (layerId.includes('ndvi') || layerId.includes('biomassa') || layerId.includes('estresse') || 
-        layerId.includes('vigor') || layerId.includes('crescimento') || layerId.includes('fase')) {
-      
+    if (layerId.includes('ndvi') || layerId.includes('biomassa') || layerId.includes('estresse') || layerId.includes('vigor') || layerId.includes('crescimento') || layerId.includes('fase')) {
       setLoadingSatellite(true);
       toast({
         title: "Carregando dados de satélite...",
         description: "Aguarde um momento",
         variant: "default"
       });
-
       try {
         const bounds = map.current.getBounds();
-        const bbox: [number, number, number, number] = [
-          bounds.getWest(),
-          bounds.getSouth(), 
-          bounds.getEast(),
-          bounds.getNorth()
-        ];
-
+        const bbox: [number, number, number, number] = [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()];
         const source = layerId.includes('planet') ? 'planet' : 'sentinel';
         const layerType = layerId.includes('ndvi') ? 'ndvi' : 'true-color';
-        
         const imageResponse = await satelliteService.getSatelliteImage({
           bbox,
           date: options?.date || new Date(),
           layerType,
           source
         });
-
         if (imageResponse.status === 'success') {
           // Clear previous overlays
           satelliteOverlays.forEach(overlay => {
@@ -640,7 +666,6 @@ const TechnicalMap: React.FC = () => {
               source: layer.id,
               paint: layer.paint
             });
-
             setSatelliteOverlays([layer]);
             toast({
               title: "Camada de satélite carregada",
@@ -676,13 +701,10 @@ const TechnicalMap: React.FC = () => {
   // Simular detecção de sobreposição
   const checkOverlapWithExistingShapes = (newPoints: any[]) => {
     // Simulação simples - considera sobreposição se já existem formas na área
-    const hasNearbyShapes = drawnShapes.some(shape => 
-      shape.points && shape.points.length > 0 && 
-      Math.random() > 0.7 // 30% chance de sobreposição para demonstração
+    const hasNearbyShapes = drawnShapes.some(shape => shape.points && shape.points.length > 0 && Math.random() > 0.7 // 30% chance de sobreposição para demonstração
     );
     return hasNearbyShapes;
   };
-
   const handleToolSelect = (toolId: string) => {
     const targetFarm = isConsultor ? selectedProducer : ownFarm;
 
@@ -695,7 +717,6 @@ const TechnicalMap: React.FC = () => {
       });
       return;
     }
-
     setSelectedTool(toolId);
 
     // Handle remove tool differently
@@ -705,7 +726,6 @@ const TechnicalMap: React.FC = () => {
       if (mapContainer.current) {
         mapContainer.current.style.cursor = 'pointer';
       }
-      
       toast({
         title: "🗑️ Modo remoção ativado",
         description: "Toque em uma área para remover",
@@ -717,7 +737,7 @@ const TechnicalMap: React.FC = () => {
         // Simular remoção de forma tocada
         if (drawnShapes.length > 0) {
           const shapeToRemove = drawnShapes[Math.floor(Math.random() * drawnShapes.length)];
-          
+
           // Primeiro clique: destacar forma para remoção (simulação)
           const isPendingRemoval = Math.random() > 0.5; // Simular estado pendente
           if (!isPendingRemoval) {
@@ -729,7 +749,7 @@ const TechnicalMap: React.FC = () => {
             // Marcar forma como pendente de remoção (simulação)
             return;
           }
-          
+
           // Segundo clique: remover forma
           DrawingService.deleteDrawing(shapeToRemove.id);
           toast({
@@ -744,7 +764,7 @@ const TechnicalMap: React.FC = () => {
             variant: "default"
           });
         }
-        
+
         // Reset removal mode
         setSelectedTool('');
         setShowInstructions(false);
@@ -754,7 +774,6 @@ const TechnicalMap: React.FC = () => {
           mapContainer.current?.removeEventListener('click', handleRemoveClick);
         }
       };
-
       mapContainer.current?.addEventListener('click', handleRemoveClick);
       return;
     }
@@ -765,15 +784,11 @@ const TechnicalMap: React.FC = () => {
     setCurrentDrawingPoints([]);
     setHasOverlap(false);
     setIsPolygonClosed(false);
-    
+
     // Iniciar nova sessão de desenho
     const currentFarm = selectedProducer || ownFarm;
     if (currentFarm) {
-      DrawingUndoService.startSession(
-        currentFarm.id,
-        currentFarm.farm,
-        toolId
-      );
+      DrawingUndoService.startSession(currentFarm.id, currentFarm.farm, toolId);
     }
 
     // Add visual feedback to map container
@@ -792,32 +807,34 @@ const TechnicalMap: React.FC = () => {
     // Add mouse move listener for real-time line preview
     const handleMouseMove = (e: any) => {
       if (!isDrawingActive) return;
-      
       const rect = mapContainer.current?.getBoundingClientRect();
       if (!rect) return;
-
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      
-      setMousePosition({ x, y });
+      setMousePosition({
+        x,
+        y
+      });
     };
 
     // Add click listener for drawing
     const handleMapDrawClick = (e: any) => {
       e.preventDefault();
       e.stopPropagation();
-
       const rect = mapContainer.current?.getBoundingClientRect();
       if (!rect) return;
-
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      
-      // Simular coordenadas geográficas
-      const lat = -15.7942 + (y - rect.height/2) * 0.0001;
-      const lng = -47.8825 + (x - rect.width/2) * 0.0001;
 
-      const newPoint = { x, y, lat, lng };
+      // Simular coordenadas geográficas
+      const lat = -15.7942 + (y - rect.height / 2) * 0.0001;
+      const lng = -47.8825 + (x - rect.width / 2) * 0.0001;
+      const newPoint = {
+        x,
+        y,
+        lat,
+        lng
+      };
 
       // Adicionar ponto à sessão
       DrawingUndoService.addPoint(newPoint);
@@ -826,8 +843,8 @@ const TechnicalMap: React.FC = () => {
       if (currentDrawingPoints.length >= 3) {
         const firstPoint = currentDrawingPoints[0];
         const distance = Math.sqrt(Math.pow(x - firstPoint.x, 2) + Math.pow(y - firstPoint.y, 2));
-        
-        if (distance < 20) { // 20px threshold for closing
+        if (distance < 20) {
+          // 20px threshold for closing
           setIsPolygonClosed(true);
           finishDrawing(toolId, currentDrawingPoints, targetFarm);
           toast({
@@ -838,7 +855,6 @@ const TechnicalMap: React.FC = () => {
           return;
         }
       }
-
       const updatedPoints = [...currentDrawingPoints, newPoint];
       setCurrentDrawingPoints(updatedPoints);
 
@@ -846,7 +862,6 @@ const TechnicalMap: React.FC = () => {
       if (updatedPoints.length >= 3) {
         const hasOverlapDetected = checkOverlapWithExistingShapes(updatedPoints);
         setHasOverlap(hasOverlapDetected);
-        
         if (hasOverlapDetected) {
           toast({
             title: "⚠️ Sobreposição detectada",
@@ -869,13 +884,12 @@ const TechnicalMap: React.FC = () => {
       mapContainer.current.addEventListener('mousemove', handleMouseMove);
     }
   };
-
   const finishDrawing = (toolId: string, points: any[], targetFarm: any) => {
     // Remove drawing mode styling and event listeners
     if (mapContainer.current) {
       mapContainer.current.style.cursor = 'default';
       mapContainer.current.classList.remove('drawing-active');
-      
+
       // Remove event listeners
       const elements = mapContainer.current.querySelectorAll('*');
       elements.forEach(el => {
@@ -883,7 +897,6 @@ const TechnicalMap: React.FC = () => {
         el.removeEventListener('mousemove', () => {});
       });
     }
-
     setIsDrawingActive(false);
     setShowInstructions(false);
     setMousePosition(null);
@@ -909,7 +922,6 @@ const TechnicalMap: React.FC = () => {
     });
     setShowDrawingConfirm(true);
     setCurrentDrawingPoints([]);
-    
     toast({
       title: "✅ Desenho concluído",
       description: "Configure os dados da área abaixo",
@@ -1468,7 +1480,6 @@ const TechnicalMap: React.FC = () => {
       });
     }
   };
-
   const handleCancelCurrentDrawing = () => {
     DrawingUndoService.cancelSession();
     setCurrentDrawingPoints([]);
@@ -1477,22 +1488,18 @@ const TechnicalMap: React.FC = () => {
     setShowInstructions(false);
     setIsPolygonClosed(false);
     setMousePosition(null);
-    
     if (mapContainer.current) {
       mapContainer.current.style.cursor = 'default';
       mapContainer.current.classList.remove('drawing-active');
     }
-    
     toast({
       title: "Desenho cancelado",
       description: "Desenho foi cancelado",
       variant: "default"
     });
   };
-
   const handleCompleteDrawing = () => {
     if (!currentSession) return;
-    
     const points = DrawingUndoService.getSessionPoints();
     if (points.length >= 3) {
       const currentFarm = selectedProducer || ownFarm;
@@ -1504,7 +1511,6 @@ const TechnicalMap: React.FC = () => {
       }
     }
   };
-
   const calculateCurrentArea = useCallback(() => {
     if (currentDrawingPoints.length < 3) return 0;
     // Use private method from DrawingService for area calculation
@@ -1514,26 +1520,23 @@ const TechnicalMap: React.FC = () => {
     // Navigation logic would go here
     navigate('/login-form');
   };
-
   const handleRouteComplete = (trail: Trail) => {
     setCurrentTrail(null);
     setIsRecordingTrail(false);
     setShowRouteRecorder(false);
-    
+
     // Clear live visualization
     clearLiveRouteVisualization();
-    
+
     // Show route viewer for completed trail
     setSelectedViewTrail(trail);
     setShowRouteViewer(true);
   };
-
   const handleViewRoute = (trail: Trail) => {
     setSelectedViewTrail(trail);
     setShowRouteHistory(false);
     setShowRouteViewer(true);
   };
-
   const handleFloatingAction = async (actionId: string) => {
     if (!selectedProducer && !ownFarm) {
       toast({
@@ -1543,10 +1546,8 @@ const TechnicalMap: React.FC = () => {
       });
       return;
     }
-
     const farmId = selectedProducer?.id || ownFarm?.id || '';
     const farmName = selectedProducer?.farm || ownFarm?.name || '';
-
     if (actionId === 'camera') {
       // Check GPS and proceed to camera
       const canProceed = await checkGPSBeforeAction("Para tirar fotos geolocalizadas, o GPS deve estar habilitado.");
@@ -1563,14 +1564,10 @@ const TechnicalMap: React.FC = () => {
       // Show last 10 photos
       const photos = await CameraService.getStoredPhotos();
       const recentPhotos = photos.slice(-10).reverse();
-      let message = recentPhotos.length > 0 
-        ? "Últimos eventos:\n\n" + recentPhotos.map(photo => CameraService.createChatMessage(photo)).join('\n\n')
-        : "Nenhum evento registrado ainda.";
-      
+      let message = recentPhotos.length > 0 ? "Últimos eventos:\n\n" + recentPhotos.map(photo => CameraService.createChatMessage(photo)).join('\n\n') : "Nenhum evento registrado ainda.";
       if (message.length > 1000) {
         message = message.substring(0, 1000) + "...";
       }
-      
       alert(message);
     }
   };
@@ -1596,14 +1593,7 @@ const TechnicalMap: React.FC = () => {
         <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4">
           <div className="flex items-center space-x-3">
             {/* Back Button */}
-            <Button
-              onClick={handleBack}
-              className="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm shadow-md border border-border hover:bg-white"
-              variant="ghost"
-              size="sm"
-            >
-              <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-            </Button>
+            
           </div>
 
           {/* Status Card no topo direito */}
@@ -1617,130 +1607,66 @@ const TechnicalMap: React.FC = () => {
         </div>
 
         {/* Instruction Message for Drawing Mode */}
-        {showInstructions && (
-          <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30">
+        {showInstructions && <div className="absolute top-16 left-1/2 -translate-x-1/2 z-30">
             <Card className="bg-card/95 backdrop-blur-sm border border-border shadow-lg">
               <div className="px-4 py-2">
                 <div className="text-sm font-medium text-foreground flex items-center space-x-2">
-                  {selectedTool === 'remove' ? (
-                    <>
+                  {selectedTool === 'remove' ? <>
                       <span className="text-destructive">🗑️</span>
                       <span>Toque em uma área para remover</span>
-                    </>
-                  ) : isPolygonClosed ? (
-                    <>
+                    </> : isPolygonClosed ? <>
                       <span className="text-green-500">✅</span>
                       <span>Área desenhada com sucesso</span>
-                    </>
-                  ) : currentDrawingPoints.length === 0 ? (
-                    <>
+                    </> : currentDrawingPoints.length === 0 ? <>
                       <span className="text-primary">✏️</span>
                       <span>Toque no mapa para iniciar a área</span>
-                    </>
-                  ) : (
-                    <>
+                    </> : <>
                       <span className="text-blue-500">🔵</span>
                       <span>Continue adicionando pontos ou toque no primeiro para fechar</span>
-                    </>
-                  )}
+                    </>}
                 </div>
-                {hasOverlap && (
-                  <div className="text-xs text-destructive mt-1 flex items-center space-x-1">
+                {hasOverlap && <div className="text-xs text-destructive mt-1 flex items-center space-x-1">
                     <span>⚠️</span>
                     <span>Sobreposição detectada</span>
-                  </div>
-                )}
+                  </div>}
               </div>
             </Card>
-          </div>
-        )}
+          </div>}
 
         {/* Enhanced Drawing Visualization */}
-        {isDrawingActive && currentDrawingPoints.length > 0 && (
-          <>
+        {isDrawingActive && currentDrawingPoints.length > 0 && <>
             {/* SVG for drawing lines and area */}
-            <svg className="absolute inset-0 z-20 pointer-events-none" style={{ width: '100%', height: '100%' }}>
+            <svg className="absolute inset-0 z-20 pointer-events-none" style={{
+          width: '100%',
+          height: '100%'
+        }}>
               {/* Area fill */}
-              {currentDrawingPoints.length >= 3 && (
-                <polygon
-                  points={currentDrawingPoints.map(p => `${p.x},${p.y}`).join(' ')}
-                  fill={hasOverlap ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)'}
-                  stroke={hasOverlap ? '#ef4444' : '#3b82f6'}
-                  strokeWidth="2"
-                  strokeDasharray={hasOverlap ? "5,5" : "none"}
-                  opacity="0.8"
-                />
-              )}
+              {currentDrawingPoints.length >= 3 && <polygon points={currentDrawingPoints.map(p => `${p.x},${p.y}`).join(' ')} fill={hasOverlap ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)'} stroke={hasOverlap ? '#ef4444' : '#3b82f6'} strokeWidth="2" strokeDasharray={hasOverlap ? "5,5" : "none"} opacity="0.8" />}
               
               {/* Connection lines */}
-              {currentDrawingPoints.length > 1 && (
-                <polyline
-                  points={currentDrawingPoints.map(p => `${p.x},${p.y}`).join(' ')}
-                  fill="none"
-                  stroke="#3b82f6"
-                  strokeWidth="2"
-                  opacity="0.8"
-                />
-              )}
+              {currentDrawingPoints.length > 1 && <polyline points={currentDrawingPoints.map(p => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#3b82f6" strokeWidth="2" opacity="0.8" />}
               
               {/* Real-time line from last point to mouse */}
-              {currentDrawingPoints.length > 0 && mousePosition && !isPolygonClosed && (
-                <line
-                  x1={currentDrawingPoints[currentDrawingPoints.length - 1].x}
-                  y1={currentDrawingPoints[currentDrawingPoints.length - 1].y}
-                  x2={mousePosition.x}
-                  y2={mousePosition.y}
-                  stroke="#3b82f6"
-                  strokeWidth="2"
-                  opacity="0.5"
-                  strokeDasharray="3,3"
-                />
-              )}
+              {currentDrawingPoints.length > 0 && mousePosition && !isPolygonClosed && <line x1={currentDrawingPoints[currentDrawingPoints.length - 1].x} y1={currentDrawingPoints[currentDrawingPoints.length - 1].y} x2={mousePosition.x} y2={mousePosition.y} stroke="#3b82f6" strokeWidth="2" opacity="0.5" strokeDasharray="3,3" />}
             </svg>
 
             {/* Vertex points */}
-            {currentDrawingPoints.map((point, index) => (
-              <div
-                key={index}
-                className={`absolute rounded-full shadow-lg z-25 pointer-events-none transition-all duration-200 ${
-                  index === 0 
-                    ? 'w-4 h-4 bg-green-500 border-2 border-white' // First point - green
-                    : 'w-3 h-3 bg-blue-500 border-2 border-white'   // Other points - blue
-                }`}
-                style={{
-                  left: point.x - (index === 0 ? 8 : 6),
-                  top: point.y - (index === 0 ? 8 : 6),
-                }}
-              />
-            ))}
+            {currentDrawingPoints.map((point, index) => <div key={index} className={`absolute rounded-full shadow-lg z-25 pointer-events-none transition-all duration-200 ${index === 0 ? 'w-4 h-4 bg-green-500 border-2 border-white' // First point - green
+        : 'w-3 h-3 bg-blue-500 border-2 border-white' // Other points - blue
+        }`} style={{
+          left: point.x - (index === 0 ? 8 : 6),
+          top: point.y - (index === 0 ? 8 : 6)
+        }} />)}
             
             {/* First point hover area for closing polygon */}
-            {currentDrawingPoints.length >= 3 && !isPolygonClosed && (
-              <div
-                className="absolute w-8 h-8 rounded-full border-2 border-green-400 bg-green-400/20 z-24 pointer-events-none animate-pulse"
-                style={{
-                  left: currentDrawingPoints[0].x - 16,
-                  top: currentDrawingPoints[0].y - 16,
-                }}
-              />
-            )}
-          </>
-        )}
+            {currentDrawingPoints.length >= 3 && !isPolygonClosed && <div className="absolute w-8 h-8 rounded-full border-2 border-green-400 bg-green-400/20 z-24 pointer-events-none animate-pulse" style={{
+          left: currentDrawingPoints[0].x - 16,
+          top: currentDrawingPoints[0].y - 16
+        }} />}
+          </>}
 
         {/* Drawing Controls */}
-        {currentSession && (
-          <DrawingControls
-            pointsCount={DrawingUndoService.getPointsCount()}
-            canUndo={DrawingUndoService.canUndo()}
-            onUndo={handleUndoLastPoint}
-            onCancel={handleCancelCurrentDrawing}
-            onSave={handleCompleteDrawing}
-            areaM2={calculateCurrentArea()}
-            selectedUnit={selectedUnit}
-            onUnitChange={setSelectedUnit}
-            isPolygonCloseable={currentDrawingPoints.length >= 3 && isPolygonClosed}
-          />
-        )}
+        {currentSession && <DrawingControls pointsCount={DrawingUndoService.getPointsCount()} canUndo={DrawingUndoService.canUndo()} onUndo={handleUndoLastPoint} onCancel={handleCancelCurrentDrawing} onSave={handleCompleteDrawing} areaM2={calculateCurrentArea()} selectedUnit={selectedUnit} onUnitChange={setSelectedUnit} isPolygonCloseable={currentDrawingPoints.length >= 3 && isPolygonClosed} />}
 
         {/* Card Minha Fazenda - Canto superior direito */}
         <div className="absolute top-4 right-4 z-30 w-56">
@@ -1755,16 +1681,7 @@ const TechnicalMap: React.FC = () => {
         {/* Left Floating Toolbar */}
         <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-2">
           {/* Trail Button */}
-          <GPSButton
-            gpsState={gpsState}
-            icon={<Route className="h-4 w-4" />}
-            onClick={handleTrailToggle}
-            requiresGPS={true}
-            tooltip={isRecordingTrail ? "Parar gravação" : "Gravar trilha"}
-            variant={isRecordingTrail ? "destructive" : "ghost"}
-            className={`w-10 h-10 rounded-full backdrop-blur-sm shadow-md border border-border hover:bg-white ${isRecordingTrail ? 'animate-pulse' : 'bg-white/90'}`}
-            size="sm"
-          />
+          <GPSButton gpsState={gpsState} icon={<Route className="h-4 w-4" />} onClick={handleTrailToggle} requiresGPS={true} tooltip={isRecordingTrail ? "Parar gravação" : "Gravar trilha"} variant={isRecordingTrail ? "destructive" : "ghost"} className={`w-10 h-10 rounded-full backdrop-blur-sm shadow-md border border-border hover:bg-white ${isRecordingTrail ? 'animate-pulse' : 'bg-white/90'}`} size="sm" />
 
           {/* Back Button */}
           
@@ -1784,16 +1701,7 @@ const TechnicalMap: React.FC = () => {
         {/* Right Floating Toolbar - Reorganizado por prioridade */}
         <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-3">
           {/* GPS Fix Button */}
-          <GPSButton
-            gpsState={gpsState}
-            icon={<Navigation className="h-5 w-5" />}
-            onClick={handleGPSRecenter}
-            requiresGPS={true}
-            tooltip="Centralizar no GPS"
-            variant="ghost"
-            className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform"
-            size="sm"
-          />
+          <GPSButton gpsState={gpsState} icon={<Navigation className="h-5 w-5" />} onClick={handleGPSRecenter} requiresGPS={true} tooltip="Centralizar no GPS" variant="ghost" className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border hover:scale-105 transition-transform" size="sm" />
 
           {/* Zoom In */}
           
@@ -1802,44 +1710,22 @@ const TechnicalMap: React.FC = () => {
           
 
           {/* PRIORIDADE 1: Câmera - Destaque especial */}
-          <GPSButton
-            gpsState={gpsState}
-            icon={<Camera className="h-6 w-6 text-primary-foreground" />}
-            onClick={handleCameraOpen}
-            requiresGPS={false}
-            tooltip="Capturar evento"
-            variant="ghost"
-            className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm shadow-lg border-2 border-primary hover:scale-105 transition-transform"
-            size="sm"
-          />
+          <GPSButton gpsState={gpsState} icon={<Camera className="h-6 w-6 text-primary-foreground" />} onClick={handleCameraOpen} requiresGPS={false} tooltip="Capturar evento" variant="ghost" className="w-14 h-14 rounded-full bg-primary/90 backdrop-blur-sm shadow-lg border-2 border-primary hover:scale-105 transition-transform" size="sm" />
 
 
           {/* PRIORIDADE 3: Ocorrências */}
           
         </div>
 
-        <LayerPanel
-          show={showLayerSelector}
-          currentLayer={currentLayer}
-          onLayerChange={handleLayerChange}
-          onClose={() => setShowLayerSelector(false)}
-        />
+        <LayerPanel show={showLayerSelector} currentLayer={currentLayer} onLayerChange={handleLayerChange} onClose={() => setShowLayerSelector(false)} />
 
-        <Toolbars
-          show={showDrawingTools}
-          selectedTool={selectedTool}
-          onToolSelect={(toolId) => {
-            handleToolSelect(toolId);
-          }}
-          onRemoveSelected={() => {
-            if (selectedShape) {
-              handleDeleteShape();
-            }
-          }}
-          onImportKML={handleFileImport}
-          hasSelectedShape={!!selectedShape}
-          onClose={() => setShowDrawingTools(false)}
-        />
+        <Toolbars show={showDrawingTools} selectedTool={selectedTool} onToolSelect={toolId => {
+        handleToolSelect(toolId);
+      }} onRemoveSelected={() => {
+        if (selectedShape) {
+          handleDeleteShape();
+        }
+      }} onImportKML={handleFileImport} hasSelectedShape={!!selectedShape} onClose={() => setShowDrawingTools(false)} />
 
         {/* Drawing Confirmation Dialog */}
         {showDrawingConfirm && pendingDrawing && <div className="absolute inset-0 z-40 bg-black/50 flex items-center justify-center p-4">
@@ -1995,20 +1881,15 @@ const TechnicalMap: React.FC = () => {
             </Card>
           </div>}
 
-        <RouteUI
-          farmId={selectedProducer?.id || ownFarm?.id || ''}
-          farmName={selectedProducer?.farm || ownFarm?.name || ''}
-          showRouteRecorder={showRouteRecorder}
-          onTrailUpdate={(t) => { setCurrentTrail(t); setIsRecordingTrail(true); setShowRouteRecorder(true); updateLiveRouteVisualization(t); }}
-          onTrailComplete={handleRouteComplete}
-          showRouteHistory={showRouteHistory}
-          closeRouteHistory={() => setShowRouteHistory(false)}
-          onViewRoute={handleViewRoute}
-          selectedViewTrail={selectedViewTrail}
-          showRouteViewer={showRouteViewer}
-          closeRouteViewer={() => { setShowRouteViewer(false); setSelectedViewTrail(null); }}
-          photos={fieldPhotos.filter(photo => selectedViewTrail && photo.notes?.includes(selectedViewTrail.id))}
-        />
+        <RouteUI farmId={selectedProducer?.id || ownFarm?.id || ''} farmName={selectedProducer?.farm || ownFarm?.name || ''} showRouteRecorder={showRouteRecorder} onTrailUpdate={t => {
+        setCurrentTrail(t);
+        setIsRecordingTrail(true);
+        setShowRouteRecorder(true);
+        updateLiveRouteVisualization(t);
+      }} onTrailComplete={handleRouteComplete} showRouteHistory={showRouteHistory} closeRouteHistory={() => setShowRouteHistory(false)} onViewRoute={handleViewRoute} selectedViewTrail={selectedViewTrail} showRouteViewer={showRouteViewer} closeRouteViewer={() => {
+        setShowRouteViewer(false);
+        setSelectedViewTrail(null);
+      }} photos={fieldPhotos.filter(photo => selectedViewTrail && photo.notes?.includes(selectedViewTrail.id))} />
 
         {/* Backdrop for closing menus */}
         {(showLayerSelector || showDrawingTools || showCameraEventSelector || showEventForm || showStageEditor) && <div className="absolute inset-0 z-20" onClick={() => {
