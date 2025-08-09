@@ -467,7 +467,7 @@ const TechnicalMap: React.FC = () => {
       DrawingService.removeListener(setDrawnShapes);
       DrawingUndoService.removeListener(handleSessionChange);
       try {
-        if (map.current && mapLoadedRef.current && typeof (map.current as any).remove === 'function') {
+        if (map.current && mapLoadedRef.current && typeof (map.current as any).remove === 'function' && (map.current as any).style) {
           map.current.remove();
         }
       } catch (e) {
