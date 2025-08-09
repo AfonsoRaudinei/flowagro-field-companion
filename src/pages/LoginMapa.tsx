@@ -1,161 +1,90 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus, Navigation } from 'lucide-react';
+import type { Map } from 'maplibre-gl';
+import { Plus, Minus, Navigation, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CompassDialIcon from '@/components/icons/CompassDialIcon';
 import MapCore from '@/components/map/MapCore';
+
+const DEFAULT_CENTER: [number, number] = [-47.8825, -15.7942];
+const DEFAULT_ZOOM = 12;
+
 const LoginMapa: React.FC = () => {
   const navigate = useNavigate();
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<maplibregl.Map | null>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('Localizando...');
+  const mapRef = useRef<Map | null>(null);
   const [bearing, setBearing] = useState(0);
+
+  // Ensure MapTiler key exists and set basic SEO
   useEffect(() => {
-    if (!mapContainer.current) return;
+    document.title = 'Mapa de Acesso | FlowAgro';
+    const desc = 'Mapa de acesso com zoom, recentrar e bússola.';
+    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      document.head.appendChild(meta);
+    }
+    meta.content = desc;
 
-    // Initialize map with satellite view
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          'satellite': {
-            type: 'raster',
-            tiles: ['https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=TomRDHESnrtpittgnpuf'],
-            tileSize: 256,
-            attribution: '© MapTiler © OpenStreetMap contributors'
-          }
-        },
-        layers: [{
-          id: 'satellite',
-          type: 'raster',
-          source: 'satellite'
-        }]
-      },
-      center: [-47.8825, -15.7942],
-      // Brasília coordinates
-      zoom: 12,
-      pitch: 0,
-      bearing: 0
-    });
-
-    // Bearing listener
-    const handleMove = () => setBearing(map.current?.getBearing() ?? 0);
-    map.current.on('move', handleMove);
-    map.current.on('rotate', handleMove);
-
-    // Add marketing pins
-    const marketingPins = [{
-      lng: -47.8825,
-      lat: -15.7942,
-      title: 'Campo Principal',
-      description: 'Área de demonstração técnica'
-    }, {
-      lng: -47.8735,
-      lat: -15.7852,
-      title: 'Zona Experimental',
-      description: 'Testes de agricultura de precisão'
-    }, {
-      lng: -47.8915,
-      lat: -15.8032,
-      title: 'Centro de Análise',
-      description: 'Laboratório de solo e plantas'
-    }, {
-      lng: -47.8645,
-      lat: -15.7762,
-      title: 'Estação Meteorológica',
-      description: 'Monitoramento climático'
-    }];
-    map.current.on('load', () => {
-      setMapLoaded(true);
-      setStatusMessage('');
-
-      // Add marketing pins
-      marketingPins.forEach((pin, index) => {
-        // Create popup
-        const popup = new maplibregl.Popup({
-          offset: 25,
-          className: 'agricultural-popup'
-        }).setHTML(`
-          <div class="p-2 bg-card rounded-lg shadow-lg border border-border">
-            <h3 class="font-semibold text-sm text-foreground">${pin.title}</h3>
-            <p class="text-xs text-muted-foreground mt-1">${pin.description}</p>
-          </div>
-        `);
-
-        // Create marker
-        const marker = new maplibregl.Marker({
-          color: '#16a34a',
-          scale: 0.8
-        }).setLngLat([pin.lng, pin.lat]).setPopup(popup).addTo(map.current!);
-      });
-    });
-    map.current.on('error', () => {
-      setStatusMessage('Erro de GPS');
-    });
-    return () => {
-      map.current?.remove();
-    };
+    if (typeof window !== 'undefined' && !localStorage.getItem('MAPTILER_API_KEY')) {
+      localStorage.setItem('MAPTILER_API_KEY', 'TomRDHESnrtpittgnpuf');
+    }
   }, []);
-  const handleZoomIn = () => {
-    map.current?.zoomIn();
-  };
-  const handleZoomOut = () => {
-    map.current?.zoomOut();
-  };
-  const handleRecenter = () => {
-    setStatusMessage('Localizando...');
-    map.current?.flyTo({
-      center: [-47.8825, -15.7942],
-      zoom: 12,
-      essential: true
-    });
-    setTimeout(() => setStatusMessage(''), 1500);
-  };
-  const handleChat = () => {
-    // Chat functionality will be implemented later
-    console.log('Chat button clicked');
-  };
-  return <div className="relative w-full h-screen overflow-hidden bg-background">
-      {/* Map Container */}
-      <div ref={mapContainer} className="absolute inset-0" />
-      
-      {/* Status Message */}
-      {statusMessage && <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
-          
-        </div>}
 
-      {/* Compass */}
-      <div className="absolute top-4 right-4 z-10">
-        <div onClick={() => map.current?.easeTo({ bearing: 0, duration: 500 })} className="cursor-pointer backdrop-blur-sm p-3 rounded-full shadow-ios-md bg-card/80 border border-border">
-          <CompassDialIcon bearing={bearing} className="h-6 w-6 text-foreground" />
-        </div>
-      </div>
+  const handleZoomIn = useCallback(() => mapRef.current?.zoomIn(), []);
+  const handleZoomOut = useCallback(() => mapRef.current?.zoomOut(), []);
+  const handleRecenter = useCallback(() => {
+    mapRef.current?.flyTo({ center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, essential: true });
+  }, []);
+  const handleResetBearing = useCallback(() => {
+    mapRef.current?.easeTo({ bearing: 0, duration: 500 });
+  }, []);
 
-      {/* Floating Controls - Right Side */}
-      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 flex flex-col space-y-3">
-        <Button onClick={handleZoomIn} className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md hover:bg-card border border-border" variant="ghost">
+  return (
+    <div className="relative w-full h-screen bg-background">
+      {/* Top bar with back and title */}
+      <header className="absolute top-0 left-0 right-0 z-20 p-4 flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full border border-border bg-card/70 backdrop-blur-sm shadow-ios-md"
+          aria-label="Voltar"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="h-5 w-5 text-foreground" />
+        </Button>
+        <h1 className="text-base font-semibold text-foreground">Mapa de Acesso</h1>
+      </header>
+
+      {/* Fullscreen Map */}
+      <MapCore
+        className="absolute inset-0"
+        initialCenter={DEFAULT_CENTER}
+        initialZoom={DEFAULT_ZOOM}
+        styleId="satellite"
+        onMapReady={(map) => {
+          mapRef.current = map;
+        }}
+        onBearingChange={(b) => setBearing(b)}
+      />
+
+      {/* Floating Controls - Right Stack */}
+      <aside className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col space-y-3">
+        <Button onClick={handleZoomIn} variant="ghost" className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border">
           <Plus className="h-5 w-5 text-foreground" />
         </Button>
-        
-        <Button onClick={handleZoomOut} className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md hover:bg-card border border-border" variant="ghost">
+        <Button onClick={handleZoomOut} variant="ghost" className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border">
           <Minus className="h-5 w-5 text-foreground" />
         </Button>
-        
-        <Button onClick={handleRecenter} className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md hover:bg-card border border-border" variant="ghost">
+        <Button onClick={handleRecenter} variant="ghost" className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border">
           <Navigation className="h-5 w-5 text-foreground" />
         </Button>
-        
-        
-      </div>
-
-      {/* FlowAgro Button */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-        <Button onClick={() => navigate('/login-form')} className="px-8 py-4 bg-success text-white rounded-full shadow-ios-button font-semibold text-lg hover:bg-success/90 transition-all">
-          FlowAgro
+        <Button onClick={handleResetBearing} variant="ghost" className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md border border-border" aria-label="Resetar orientação">
+          <CompassDialIcon bearing={bearing} className="h-5 w-5 text-foreground" />
         </Button>
-      </div>
-    </div>;
+      </aside>
+    </div>
+  );
 };
+
 export default LoginMapa;
