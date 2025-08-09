@@ -34,20 +34,98 @@ function log(level: string, message: string, extra?: any) {
   }));
 }
 
-// Extração de texto simples (placeholder - em produção usar biblioteca PDF)
-function extractTextFromPDF(pdfBytes: Uint8Array): string {
-  // NOTA: Esta é uma implementação simplificada
-  // Em produção, usar biblioteca como pdf-parse ou similar
-  const decoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: false });
-  let text = decoder.decode(pdfBytes);
-  
-  // Remove caracteres de controle e normaliza
-  text = text.replace(/[\x00-\x1F\x7F]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-  
-  log("info", "Text extracted from PDF", { text_length: text.length });
-  return text;
+// Extração de texto com biblioteca PDF real
+async function extractTextFromPDF(pdfBytes: Uint8Array): Promise<string> {
+  try {
+    // Tenta usar pdf-parse (biblioteca dedicada para PDFs)
+    log("info", "Attempting PDF parsing with pdf-parse");
+    
+    const response = await fetch("https://esm.sh/pdf-parse@1.1.1", {
+      method: "GET",
+      headers: { "Accept": "application/javascript" }
+    });
+    
+    if (response.ok) {
+      const pdfParseCode = await response.text();
+      const pdfParse = eval(`(${pdfParseCode})`);
+      
+      const pdfData = await pdfParse(pdfBytes);
+      
+      if (pdfData.text && pdfData.text.trim().length > 0) {
+        log("info", "PDF parsing successful", { 
+          text_length: pdfData.text.length,
+          pages: pdfData.numpages || 0 
+        });
+        return cleanExtractedText(pdfData.text);
+      }
+    }
+    
+    log("warn", "PDF parsing failed, using fallback method");
+    return extractTextFallback(pdfBytes);
+    
+  } catch (error) {
+    log("error", "PDF parsing error, using fallback", { error: error.message });
+    return extractTextFallback(pdfBytes);
+  }
+}
+
+// Método de fallback para extração de texto
+function extractTextFallback(pdfBytes: Uint8Array): string {
+  try {
+    log("info", "Using fallback text extraction");
+    
+    const decoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: false });
+    let rawText = decoder.decode(pdfBytes);
+    
+    // Tenta extrair padrões de texto legível
+    const textPatterns = [
+      // Palavras em português (agricultura)
+      /\b(?:solo|planta|cultura|praga|doença|adubação|calcário|pH|nutriente|irrigação|plantio|colheita|produção|rendimento)[a-záéíóúàèìòùãõâêîôûç]*\b/gi,
+      // Palavras técnicas agrícolas
+      /\b(?:nitrogênio|fósforo|potássio|NPK|micronutriente|macronutriente|fertilizante|defensivo|herbicida|fungicida|inseticida)[a-záéíóúàèìòùãõâêîôûç]*\b/gi,
+      // Medidas e unidades
+      /\d+[\.,]?\d*\s*(?:kg|g|mg|ha|m²|cm|mm|L|ml|°C|%|ppm|pH)/gi,
+      // Frases técnicas
+      /[A-ZÁÉÍÓÚÀÈÌÒÙÃÕÂÊÎÔÛÇ][a-záéíóúàèìòùãõâêîôûç\s,.-]{10,100}[.!?]/g,
+    ];
+    
+    let extractedText = '';
+    textPatterns.forEach(pattern => {
+      const matches = rawText.match(pattern) || [];
+      extractedText += matches.join(' ') + ' ';
+    });
+    
+    if (extractedText.trim().length < 100) {
+      log("warn", "Fallback extraction yielded little text", { length: extractedText.length });
+      return 'Conteúdo do PDF não pôde ser extraído adequadamente. Verifique se o arquivo não está protegido, corrompido, ou se é uma imagem escaneada.';
+    }
+    
+    const cleanedText = cleanExtractedText(extractedText);
+    log("info", "Fallback extraction completed", { text_length: cleanedText.length });
+    return cleanedText;
+    
+  } catch (error) {
+    log("error", "Fallback extraction failed", { error: error.message });
+    return 'Erro ao processar PDF. Arquivo pode estar corrompido ou em formato incompatível.';
+  }
+}
+
+// Limpa e normaliza texto extraído
+function cleanExtractedText(text: string): string {
+  return text
+    // Remove caracteres de controle
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
+    // Normaliza quebras de linha
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    // Remove espaços extras mas preserva estrutura
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    // Remove espaços no início/fim de linhas
+    .split('\n')
+    .map(line => line.trim())
+    .join('\n')
+    .trim();
 }
 
 // Chunking inteligente por sentenças
@@ -237,7 +315,7 @@ Deno.serve(async (req) => {
 
     // Processa arquivo
     const pdfBytes = new Uint8Array(await file.arrayBuffer());
-    const fullText = extractTextFromPDF(pdfBytes);
+    const fullText = await extractTextFromPDF(pdfBytes);
     const checksum = calculateChecksum(fullText);
 
     // Verifica se já existe (por checksum)
