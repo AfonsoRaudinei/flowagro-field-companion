@@ -34,7 +34,7 @@ const LoginForm: React.FC = () => {
         profile: formData.userProfile as 'consultor' | 'produtor',
         zipCode: formData.zipCode
       });
-      navigate('/technical-map');
+      navigate('/dashboard');
     }
   };
 
@@ -44,8 +44,8 @@ const LoginForm: React.FC = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <NavigationHeader
         title="FlowAgro"
-        onBack={() => navigate('/login-mapa')}
-        showBackButton={true}
+        onBack={() => navigate('/')}
+        showBackButton={false}
       />
 
       <div className="flex-1 p-6">

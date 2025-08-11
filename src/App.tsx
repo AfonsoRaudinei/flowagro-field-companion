@@ -11,9 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const queryClient = new QueryClient();
 
 // Lazy-loaded pages for better TTI
-const LoginMapa = lazy(() => import("./pages/LoginMapa"));
 const LoginForm = lazy(() => import("./pages/LoginForm"));
-const TechnicalMap = lazy(() => import("./pages/TechnicalMap"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
@@ -31,17 +29,15 @@ const AppLayout = () => {
   const location = useLocation();
   
   // Show bottom navigation only on authenticated screens
-  const showBottomNav = ['/technical-map', '/dashboard', '/settings'].includes(location.pathname);
+  const showBottomNav = ['/dashboard', '/settings'].includes(location.pathname);
   
   return (
     <>
       <div className={`w-full max-w-md mx-auto bg-background min-h-screen ${showBottomNav ? 'pb-16' : ''}`}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/" element={<Navigate to="/login-mapa" replace />} />
-            <Route path="/login-mapa" element={<LoginMapa />} />
+            <Route path="/" element={<Navigate to="/login-form" replace />} />
             <Route path="/login-form" element={<LoginForm />} />
-            <Route path="/technical-map" element={<TechnicalMap />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/phenological-stages" element={<PhenologicalStages />} />

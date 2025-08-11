@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Map, MessageCircle, Settings } from 'lucide-react';
+import { MessageCircle, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface BottomNavigationProps {
@@ -12,12 +12,6 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ className = '' }) =
   const location = useLocation();
 
   const tabs = [
-    {
-      id: 'technical-map',
-      path: '/technical-map',
-      label: 'Mapa',
-      icon: Map
-    },
     {
       id: 'dashboard', 
       path: '/dashboard',

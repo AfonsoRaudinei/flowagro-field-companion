@@ -25,7 +25,7 @@ const PhenologicalStages: React.FC = () => {
       selectedCulture,
       selectedStage: stage
     });
-    navigate('/technical-map');
+    navigate('/dashboard');
   };
 
   const sojaStages = {
