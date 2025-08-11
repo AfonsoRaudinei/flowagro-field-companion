@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Trail } from '@/services/trailService';
 import { FieldPhoto } from '@/services/cameraService';
-import maplibregl from 'maplibre-gl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import MapCore, { maplibregl } from '@/components/map/MapCore';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,114 +24,99 @@ export const RouteViewer: React.FC<RouteViewerProps> = ({
   onClose,
   photos = []
 }) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<maplibregl.Map | null>(null);
+  const [map, setMap] = useState<maplibregl.Map | null>(null);
 
-  useEffect(() => {
-    if (!isOpen || !trail || !mapContainer.current) return;
+  const handleMapLoad = (mapInstance: maplibregl.Map) => {
+    if (!trail?.points.length) return;
+    
+    setMap(mapInstance);
 
-    // Initialize map
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: 'https://api.maptiler.com/maps/satellite/style.json?key=TomRDHESnrtpittgnpuf',
-      center: [0, 0],
-      zoom: 16
-    });
+    // Create route line coordinates
+    const coordinates = trail.points.map(point => [point.longitude, point.latitude]);
 
-    map.current.on('load', () => {
-      if (!trail.points.length) return;
-
-      // Create route line coordinates
-      const coordinates = trail.points.map(point => [point.longitude, point.latitude]);
-
-      // Add route line source
-      map.current!.addSource('route', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates
-          }
+    // Add route line source
+    mapInstance.addSource('route', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'LineString',
+          coordinates
         }
-      });
-
-      // Add route line layer
-      map.current!.addLayer({
-        id: 'route',
-        type: 'line',
-        source: 'route',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round'
-        },
-        paint: {
-          'line-color': '#3b82f6',
-          'line-width': 4,
-          'line-opacity': 0.8
-        }
-      });
-
-      // Add start point marker
-      if (coordinates.length > 0) {
-        new maplibregl.Marker({ 
-          color: '#22c55e',
-          scale: 1.2 
-        })
-          .setLngLat(coordinates[0] as [number, number])
-          .addTo(map.current!);
-      }
-
-      // Add end point marker
-      if (coordinates.length > 1) {
-        new maplibregl.Marker({ 
-          color: '#ef4444',
-          scale: 1.2 
-        })
-          .setLngLat(coordinates[coordinates.length - 1] as [number, number])
-          .addTo(map.current!);
-      }
-
-      // Add photo markers
-      photos.forEach((photo, index) => {
-        if (photo.latitude && photo.longitude) {
-          const marker = new maplibregl.Marker({
-            color: '#f59e0b',
-            scale: 0.8
-          })
-            .setLngLat([photo.longitude, photo.latitude])
-            .addTo(map.current!);
-
-          // Add popup with photo info
-          const popup = new maplibregl.Popup({ offset: 25 })
-            .setHTML(`
-              <div class="p-2">
-                <h4 class="font-semibold text-sm">${photo.eventLabel}</h4>
-                <p class="text-xs text-gray-600">${format(new Date(photo.timestamp), 'HH:mm:ss', { locale: ptBR })}</p>
-              </div>
-            `);
-
-          marker.setPopup(popup);
-        }
-      });
-
-      // Fit map to route bounds
-      if (coordinates.length > 0) {
-        const bounds = new maplibregl.LngLatBounds();
-        coordinates.forEach(coord => bounds.extend(coord as [number, number]));
-        
-        map.current!.fitBounds(bounds, {
-          padding: 50,
-          maxZoom: 17
-        });
       }
     });
 
-    return () => {
-      map.current?.remove();
-    };
-  }, [isOpen, trail, photos]);
+    // Add route line layer
+    mapInstance.addLayer({
+      id: 'route',
+      type: 'line',
+      source: 'route',
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': '#3b82f6',
+        'line-width': 4,
+        'line-opacity': 0.8
+      }
+    });
+
+    // Add start point marker
+    if (coordinates.length > 0) {
+      new maplibregl.Marker({ 
+        color: '#22c55e',
+        scale: 1.2 
+      })
+        .setLngLat(coordinates[0] as [number, number])
+        .addTo(mapInstance);
+    }
+
+    // Add end point marker
+    if (coordinates.length > 1) {
+      new maplibregl.Marker({ 
+        color: '#ef4444',
+        scale: 1.2 
+      })
+        .setLngLat(coordinates[coordinates.length - 1] as [number, number])
+        .addTo(mapInstance);
+    }
+
+    // Add photo markers
+    photos.forEach((photo) => {
+      if (photo.latitude && photo.longitude) {
+        const marker = new maplibregl.Marker({
+          color: '#f59e0b',
+          scale: 0.8
+        })
+          .setLngLat([photo.longitude, photo.latitude])
+          .addTo(mapInstance);
+
+        // Add popup with photo info
+        const popup = new maplibregl.Popup({ offset: 25 })
+          .setHTML(`
+            <div class="p-2">
+              <h4 class="font-semibold text-sm">${photo.eventLabel}</h4>
+              <p class="text-xs text-gray-600">${format(new Date(photo.timestamp), 'HH:mm:ss', { locale: ptBR })}</p>
+            </div>
+          `);
+
+        marker.setPopup(popup);
+      }
+    });
+
+    // Fit map to route bounds
+    if (coordinates.length > 0) {
+      const bounds = new maplibregl.LngLatBounds();
+      coordinates.forEach(coord => bounds.extend(coord as [number, number]));
+      
+      mapInstance.fitBounds(bounds, {
+        padding: 50,
+        maxZoom: 17
+      });
+    }
+  };
 
   const exportRoute = () => {
     if (!trail) return;
@@ -200,8 +185,13 @@ export const RouteViewer: React.FC<RouteViewerProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[70vh]">
           {/* Map */}
           <div className="lg:col-span-2">
-            <div 
-              ref={mapContainer} 
+            <MapCore
+              options={{
+                center: [0, 0],
+                zoom: 16,
+                style: 'satellite'
+              }}
+              onMapLoad={handleMapLoad}
               className="w-full h-full rounded-lg border"
             />
           </div>

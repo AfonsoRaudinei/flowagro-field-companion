@@ -1,50 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
-import { Plus, Minus, Navigation, MessageCircle } from 'lucide-react';
+import { Plus, Minus, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CompassDialIcon from '@/components/icons/CompassDialIcon';
+import MapCore, { maplibregl } from '@/components/map/MapCore';
 const LoginMapa: React.FC = () => {
   const navigate = useNavigate();
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<maplibregl.Map | null>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('Localizando...');
   const [bearing, setBearing] = useState(0);
-  useEffect(() => {
-    if (!mapContainer.current) return;
+  const [map, setMap] = useState<maplibregl.Map | null>(null);
 
-    // Initialize map with satellite view
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          'satellite': {
-            type: 'raster',
-            tiles: ['https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=TomRDHESnrtpittgnpuf'],
-            tileSize: 256,
-            attribution: '© MapTiler © OpenStreetMap contributors'
-          }
-        },
-        layers: [{
-          id: 'satellite',
-          type: 'raster',
-          source: 'satellite'
-        }]
-      },
-      center: [-47.8825, -15.7942],
-      // Brasília coordinates
-      zoom: 12,
-      pitch: 0,
-      bearing: 0
-    });
-
-    // Bearing listener
-    const handleMove = () => setBearing(map.current?.getBearing() ?? 0);
-    map.current.on('move', handleMove);
-    map.current.on('rotate', handleMove);
+  const handleMapLoad = (mapInstance: maplibregl.Map) => {
+    setMap(mapInstance);
 
     // Add marketing pins
     const marketingPins = [{
@@ -68,68 +34,59 @@ const LoginMapa: React.FC = () => {
       title: 'Estação Meteorológica',
       description: 'Monitoramento climático'
     }];
-    map.current.on('load', () => {
-      setMapLoaded(true);
-      setStatusMessage('');
 
-      // Add marketing pins
-      marketingPins.forEach((pin, index) => {
-        // Create popup
-        const popup = new maplibregl.Popup({
-          offset: 25,
-          className: 'agricultural-popup'
-        }).setHTML(`
-          <div class="p-2 bg-card rounded-lg shadow-lg border border-border">
-            <h3 class="font-semibold text-sm text-foreground">${pin.title}</h3>
-            <p class="text-xs text-muted-foreground mt-1">${pin.description}</p>
-          </div>
-        `);
+    marketingPins.forEach((pin) => {
+      const popup = new maplibregl.Popup({
+        offset: 25,
+        className: 'agricultural-popup'
+      }).setHTML(`
+        <div class="p-2 bg-card rounded-lg shadow-lg border border-border">
+          <h3 class="font-semibold text-sm text-foreground">${pin.title}</h3>
+          <p class="text-xs text-muted-foreground mt-1">${pin.description}</p>
+        </div>
+      `);
 
-        // Create marker
-        const marker = new maplibregl.Marker({
-          color: '#16a34a',
-          scale: 0.8
-        }).setLngLat([pin.lng, pin.lat]).setPopup(popup).addTo(map.current!);
-      });
+      new maplibregl.Marker({
+        color: '#16a34a',
+        scale: 0.8
+      }).setLngLat([pin.lng, pin.lat]).setPopup(popup).addTo(mapInstance);
     });
-    map.current.on('error', () => {
-      setStatusMessage('Erro de GPS');
-    });
-    return () => {
-      map.current?.remove();
-    };
-  }, []);
-  const handleZoomIn = () => {
-    map.current?.zoomIn();
   };
-  const handleZoomOut = () => {
-    map.current?.zoomOut();
+
+  const handleMapRotate = () => {
+    if (map) {
+      setBearing(map.getBearing());
+    }
   };
+
+  const handleZoomIn = () => map?.zoomIn();
+  const handleZoomOut = () => map?.zoomOut();
   const handleRecenter = () => {
-    setStatusMessage('Localizando...');
-    map.current?.flyTo({
+    map?.flyTo({
       center: [-47.8825, -15.7942],
       zoom: 12,
       essential: true
     });
-    setTimeout(() => setStatusMessage(''), 1500);
   };
-  const handleChat = () => {
-    // Chat functionality will be implemented later
-    console.log('Chat button clicked');
-  };
-  return <div className="relative w-full h-screen overflow-hidden bg-background">
+  return (
+    <div className="relative w-full h-screen overflow-hidden bg-background">
       {/* Map Container */}
-      <div ref={mapContainer} className="absolute inset-0" />
-      
-      {/* Status Message */}
-      {statusMessage && <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
-          
-        </div>}
+      <MapCore
+        options={{
+          center: [-47.8825, -15.7942],
+          zoom: 12,
+          pitch: 0,
+          bearing: 0,
+          style: 'satellite'
+        }}
+        onMapLoad={handleMapLoad}
+        onMapRotate={handleMapRotate}
+        className="absolute inset-0"
+      />
 
       {/* Compass */}
       <div className="absolute top-4 right-4 z-10">
-        <div onClick={() => map.current?.easeTo({ bearing: 0, duration: 500 })} className="cursor-pointer backdrop-blur-sm p-3 rounded-full shadow-ios-md bg-card/80 border border-border">
+        <div onClick={() => map?.easeTo({ bearing: 0, duration: 500 })} className="cursor-pointer backdrop-blur-sm p-3 rounded-full shadow-ios-md bg-card/80 border border-border">
           <CompassDialIcon bearing={bearing} className="h-6 w-6 text-foreground" />
         </div>
       </div>
@@ -147,8 +104,6 @@ const LoginMapa: React.FC = () => {
         <Button onClick={handleRecenter} className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md hover:bg-card border border-border" variant="ghost">
           <Navigation className="h-5 w-5 text-foreground" />
         </Button>
-        
-        
       </div>
 
       {/* FlowAgro Button */}
@@ -157,6 +112,7 @@ const LoginMapa: React.FC = () => {
           FlowAgro
         </Button>
       </div>
-    </div>;
+    </div>
+  );
 };
 export default LoginMapa;
