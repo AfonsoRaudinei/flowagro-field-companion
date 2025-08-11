@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -206,7 +205,6 @@ const MapCore: React.FC<MapCoreProps> = ({
         maxZoom: mergedOptions.maxZoom,
         minZoom: mergedOptions.minZoom,
         // iOS optimizations
-        antialias: true,
         preserveDrawingBuffer: false, // Better performance
         attributionControl: false, // Custom attribution
         logoPosition: 'bottom-right'
