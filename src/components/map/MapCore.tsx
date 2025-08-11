@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -198,14 +199,13 @@ const MapCore: React.FC<MapCoreProps> = ({
       map.current = new maplibregl.Map({
         container: mapContainer.current,
         style,
-        center: mergedOptions.center, // Now correctly [lng, lat]
+        center: mergedOptions.center,
         zoom: mergedOptions.zoom,
         bearing: mergedOptions.bearing,
         pitch: mergedOptions.pitch,
         maxZoom: mergedOptions.maxZoom,
         minZoom: mergedOptions.minZoom,
         // iOS optimizations
-        preserveDrawingBuffer: false, // Better performance
         attributionControl: false, // Custom attribution
         logoPosition: 'bottom-right'
       });
