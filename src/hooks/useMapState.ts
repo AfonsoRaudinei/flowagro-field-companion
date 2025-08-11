@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { maplibregl } from '@/components/map/MapCore';
 
 export interface MapState {
@@ -36,106 +36,130 @@ export const useMapState = () => {
     bounds: null
   });
 
-  // Update state from map events
+  // Simplified update function
   const updateStateFromMap = useCallback(() => {
     if (!mapRef.current) return;
 
-    const map = mapRef.current;
-    setMapState(prev => ({
-      ...prev,
-      center: [map.getCenter().lng, map.getCenter().lat],
-      zoom: map.getZoom(),
-      bearing: map.getBearing(),
-      pitch: map.getPitch(),
-      bounds: map.getBounds()
-    }));
+    try {
+      const map = mapRef.current;
+      const center = map.getCenter();
+      
+      setMapState(prev => ({
+        ...prev,
+        center: [center.lng, center.lat],
+        zoom: map.getZoom(),
+        bearing: map.getBearing(),
+        pitch: map.getPitch(),
+        bounds: map.getBounds()
+      }));
+    } catch (error) {
+      console.warn('Error updating map state:', error);
+    }
   }, []);
 
-  // Map event handlers
+  // Simplified map load handler
   const handleMapLoad = useCallback((map: maplibregl.Map) => {
     mapRef.current = map;
     
-    // Set up event listeners
-    map.on('load', () => {
-      setMapState(prev => ({ ...prev, isLoaded: true }));
-      updateStateFromMap();
-    });
+    // Set up event listeners with error handling
+    try {
+      map.on('load', () => {
+        setMapState(prev => ({ ...prev, isLoaded: true }));
+        updateStateFromMap();
+      });
 
-    map.on('move', () => {
-      setMapState(prev => ({ ...prev, isMoving: true }));
-      updateStateFromMap();
-    });
+      map.on('move', () => {
+        setMapState(prev => ({ ...prev, isMoving: true }));
+        updateStateFromMap();
+      });
 
-    map.on('moveend', () => {
-      setMapState(prev => ({ ...prev, isMoving: false }));
-      updateStateFromMap();
-    });
+      map.on('moveend', () => {
+        setMapState(prev => ({ ...prev, isMoving: false }));
+        updateStateFromMap();
+      });
 
-    map.on('rotate', updateStateFromMap);
-    map.on('pitch', updateStateFromMap);
-    map.on('zoom', updateStateFromMap);
+      map.on('rotate', updateStateFromMap);
+      map.on('pitch', updateStateFromMap);
+      map.on('zoom', updateStateFromMap);
+    } catch (error) {
+      console.error('Error setting up map listeners:', error);
+    }
   }, [updateStateFromMap]);
 
-  // Map actions
+  // Simplified map actions with error handling
   const actions: MapActions = {
     flyTo: useCallback((options) => {
       if (!mapRef.current) return;
-      mapRef.current.flyTo({
-        ...options,
-        essential: true,
-        duration: 1000
-      });
+      try {
+        mapRef.current.flyTo({
+          ...options,
+          essential: true,
+          duration: 1000
+        });
+      } catch (error) {
+        console.error('Error in flyTo:', error);
+      }
     }, []),
 
     fitBounds: useCallback((bounds, options = {}) => {
       if (!mapRef.current) return;
-      mapRef.current.fitBounds(bounds, {
-        padding: 50,
-        maxZoom: 17,
-        duration: 1000,
-        ...options
-      });
+      try {
+        mapRef.current.fitBounds(bounds, {
+          padding: 50,
+          maxZoom: 17,
+          duration: 1000,
+          ...options
+        });
+      } catch (error) {
+        console.error('Error in fitBounds:', error);
+      }
     }, []),
 
     zoomIn: useCallback(() => {
       if (!mapRef.current) return;
-      mapRef.current.zoomIn({ duration: 300 });
+      try {
+        mapRef.current.zoomIn({ duration: 300 });
+      } catch (error) {
+        console.error('Error in zoomIn:', error);
+      }
     }, []),
 
     zoomOut: useCallback(() => {
       if (!mapRef.current) return;
-      mapRef.current.zoomOut({ duration: 300 });
+      try {
+        mapRef.current.zoomOut({ duration: 300 });
+      } catch (error) {
+        console.error('Error in zoomOut:', error);
+      }
     }, []),
 
     resetBearing: useCallback(() => {
       if (!mapRef.current) return;
-      mapRef.current.easeTo({ 
-        bearing: 0, 
-        duration: 500,
-        easing: (t) => t * (2 - t) // Ease out
-      });
+      try {
+        mapRef.current.easeTo({ 
+          bearing: 0, 
+          duration: 500,
+          easing: (t) => t * (2 - t)
+        });
+      } catch (error) {
+        console.error('Error in resetBearing:', error);
+      }
     }, []),
 
     recenter: useCallback((location) => {
       if (!mapRef.current) return;
-      mapRef.current.flyTo({
-        center: location,
-        zoom: 16,
-        duration: 1000,
-        essential: true
-      });
+      try {
+        mapRef.current.flyTo({
+          center: location,
+          zoom: 16,
+          duration: 1000,
+          essential: true
+        });
+      } catch (error) {
+        console.error('Error in recenter:', error);
+      }
     }, [])
   };
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, []);
 
   return {
     mapState,
