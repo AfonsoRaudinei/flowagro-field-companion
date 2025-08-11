@@ -194,8 +194,7 @@ const TechnicalMap: React.FC = () => {
           center: [-47.8919, -15.7975], // Brasília [lng, lat] - FIXED!
           zoom: 12,
           pitch: 0,
-          bearing: 0,
-          style: 'satellite'
+          bearing: 0
         }}
         onMapLoad={handleMapLoadWrapper}
         onMapRotate={() => {}} // Handled by useMapState

@@ -78,8 +78,7 @@ const LoginMapa: React.FC = () => {
           center: [-47.8825, -15.7942], // CORRECTED: [lng, lat]
           zoom: 12,
           pitch: 0,
-          bearing: 0,
-          style: 'satellite'
+          bearing: 0
         }}
         onMapLoad={handleMapLoad}
         onMapRotate={handleMapRotate}

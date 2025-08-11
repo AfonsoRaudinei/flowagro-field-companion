@@ -193,8 +193,7 @@ export const RouteViewer: React.FC<RouteViewerProps> = ({
             <MapCore
               options={{
                 center: [0, 0], // Will be overridden by fitBounds
-                zoom: 16,
-                style: 'satellite'
+                zoom: 16
               }}
               onMapLoad={handleMapLoad}
               className="w-full h-full rounded-xl border shadow-ios-lg"
