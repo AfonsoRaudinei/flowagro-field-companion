@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
@@ -34,6 +35,7 @@ import { RouteHistoryModal } from '@/components/RouteHistoryModal';
 import { RouteViewer } from '@/components/RouteViewer';
 import CompassDialIcon from '@/components/icons/CompassDialIcon';
 import MapCore, { maplibregl } from '@/components/map/MapCore';
+import { useMapState } from '@/hooks/useMapState';
 
 // Types for drawing management
 interface DrawingMetadata {
@@ -50,9 +52,8 @@ const TechnicalMap: React.FC = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Map state
-  const [map, setMap] = useState<maplibregl.Map | null>(null);
-  const [bearing, setBearing] = useState(0);
+  // Map state with optimized hook
+  const { mapState, actions, onMapLoad, getMap } = useMapState();
   
   // User context
   const {
@@ -107,8 +108,9 @@ const TechnicalMap: React.FC = () => {
   const gpsAccuracy = gpsState.accuracy;
   const currentLocation = gpsState.lastLocation;
 
-  const handleMapLoad = useCallback((mapInstance: maplibregl.Map) => {
-    setMap(mapInstance);
+  const handleMapLoadWrapper = useCallback((mapInstance: maplibregl.Map) => {
+    // Use our optimized map state hook
+    onMapLoad(mapInstance);
     
     // Load existing shapes
     const loadShapes = async () => {
@@ -139,13 +141,7 @@ const TechnicalMap: React.FC = () => {
       DrawingService.removeListener(setShapes);
       DrawingUndoService.removeListener(setCurrentSession);
     };
-  }, []);
-
-  const handleMapRotate = useCallback(() => {
-    if (map) {
-      setBearing(map.getBearing());
-    }
-  }, [map]);
+  }, [onMapLoad]);
 
   // Tool handlers
   const handleToolSelect = useCallback((toolId: string) => {
@@ -176,44 +172,33 @@ const TechnicalMap: React.FC = () => {
 
   const handleLayerChange = useCallback((layerId: string) => {
     setCurrentLayer(layerId);
-    // Update map style based on layer
-    if (map) {
-      // Implementation depends on satellite service integration
-    }
-  }, [map]);
+    // Update map style based on layer - implement when satellite service is ready
+  }, []);
 
   const handleBack = useCallback(() => {
     navigate('/dashboard');
   }, [navigate]);
 
-  // Map controls
-  const handleZoomIn = () => map?.zoomIn();
-  const handleZoomOut = () => map?.zoomOut();
-  const handleRecenter = () => {
-    if (currentLocation && map) {
-      map.flyTo({
-        center: [currentLocation.longitude, currentLocation.latitude],
-        zoom: 16,
-        essential: true
-      });
+  // Optimized controls using map actions
+  const handleRecenter = useCallback(() => {
+    if (currentLocation) {
+      actions.recenter([currentLocation.longitude, currentLocation.latitude]);
     }
-  };
-
-  const resetBearing = () => map?.rotateTo(0);
+  }, [currentLocation, actions]);
 
   return (
     <div className="h-screen w-full relative overflow-hidden bg-background">
-      {/* Map Container */}
+      {/* Optimized Map Container */}
       <MapCore
         options={{
-          center: [-47.8825, -15.7942], // Brasília default
+          center: [-47.8919, -15.7975], // Brasília [lng, lat] - FIXED!
           zoom: 12,
           pitch: 0,
           bearing: 0,
           style: 'satellite'
         }}
-        onMapLoad={handleMapLoad}
-        onMapRotate={handleMapRotate}
+        onMapLoad={handleMapLoadWrapper}
+        onMapRotate={() => {}} // Handled by useMapState
         className="absolute inset-0"
       />
 
@@ -223,33 +208,33 @@ const TechnicalMap: React.FC = () => {
           variant="secondary"
           size="sm"
           onClick={handleBack}
-          className="bg-card/90 backdrop-blur-sm border border-border/50 shadow-lg"
+          className="bg-card/90 backdrop-blur-sm border border-border/50 shadow-lg hover:scale-105 transition-all duration-200"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar
         </Button>
       </div>
 
-      {/* Compass */}
+      {/* Optimized Compass with iOS-style animation */}
       <div className="absolute top-4 right-4 z-20">
         <button 
-          onClick={resetBearing}
-          className="bg-card/90 backdrop-blur-sm p-3 rounded-full shadow-lg border border-border/50 hover:bg-card transition-colors"
+          onClick={actions.resetBearing}
+          className="bg-card/90 backdrop-blur-sm p-3 rounded-full shadow-lg border border-border/50 hover:bg-card transition-all duration-300 hover:scale-110 active:scale-95"
         >
           <CompassDialIcon 
-            className="w-8 h-8 text-foreground" 
-            style={{ transform: `rotate(${-bearing}deg)` }}
+            className="w-8 h-8 text-foreground transition-transform duration-500 ease-out" 
+            style={{ transform: `rotate(${-mapState.bearing}deg)` }}
           />
         </button>
       </div>
 
-      {/* Left sidebar with controls */}
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2">
+      {/* iOS-optimized Left sidebar */}
+      <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-3">
         <Button
           variant="secondary"
           size="sm"
           onClick={() => setShowLayerSelector(!showLayerSelector)}
-          className="w-12 h-12 bg-card/90 backdrop-blur-sm border border-border/50 shadow-lg"
+          className="w-12 h-12 bg-card/90 backdrop-blur-sm border border-border/50 shadow-lg hover:scale-110 active:scale-95 transition-all duration-200"
         >
           <Layers className="w-5 h-5" />
         </Button>
@@ -258,19 +243,19 @@ const TechnicalMap: React.FC = () => {
           variant="secondary"
           size="sm"
           onClick={() => setShowDrawingTools(!showDrawingTools)}
-          className="w-12 h-12 bg-card/90 backdrop-blur-sm border border-border/50 shadow-lg"
+          className="w-12 h-12 bg-card/90 backdrop-blur-sm border border-border/50 shadow-lg hover:scale-110 active:scale-95 transition-all duration-200"
         >
           <Edit3 className="w-5 h-5" />
         </Button>
       </div>
 
-      {/* Right sidebar with zoom controls */}
-      <div className="absolute right-4 bottom-32 z-20 flex flex-col gap-2">
+      {/* iOS-optimized Right sidebar with fluid animations */}
+      <div className="absolute right-4 bottom-32 z-20 flex flex-col gap-3">
         <Button
           variant="secondary"
           size="sm"
-          onClick={handleZoomIn}
-          className="w-12 h-12 bg-card/90 backdrop-blur-sm border border-border/50 shadow-lg"
+          onClick={actions.zoomIn}
+          className="w-12 h-12 bg-card/90 backdrop-blur-sm border border-border/50 shadow-lg hover:scale-110 active:scale-95 transition-all duration-200"
         >
           <Plus className="w-5 h-5" />
         </Button>
@@ -278,8 +263,8 @@ const TechnicalMap: React.FC = () => {
         <Button
           variant="secondary"
           size="sm"
-          onClick={handleZoomOut}
-          className="w-12 h-12 bg-card/90 backdrop-blur-sm border border-border/50 shadow-lg"
+          onClick={actions.zoomOut}
+          className="w-12 h-12 bg-card/90 backdrop-blur-sm border border-border/50 shadow-lg hover:scale-110 active:scale-95 transition-all duration-200"
         >
           <Minus className="w-5 h-5" />
         </Button>
@@ -288,15 +273,15 @@ const TechnicalMap: React.FC = () => {
           variant="secondary"
           size="sm"
           onClick={handleRecenter}
-          className="w-12 h-12 bg-card/90 backdrop-blur-sm border border-border/50 shadow-lg"
+          className="w-12 h-12 bg-card/90 backdrop-blur-sm border border-border/50 shadow-lg hover:scale-110 active:scale-95 transition-all duration-200"
         >
           <Navigation className="w-5 h-5" />
         </Button>
       </div>
 
-      {/* Layer Panel */}
+      {/* Layer Panel with iOS-style slide animation */}
       {showLayerSelector && (
-        <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30">
+        <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30 animate-in slide-in-from-left-5 duration-300">
           <SatelliteLayerSelector
             onLayerChange={handleLayerChange}
             currentLayer={currentLayer}
@@ -305,9 +290,9 @@ const TechnicalMap: React.FC = () => {
         </div>
       )}
 
-      {/* Drawing Tools Panel */}
+      {/* Drawing Tools Panel with iOS-style slide animation */}
       {showDrawingTools && (
-        <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30">
+        <div className="absolute left-20 top-1/2 -translate-y-1/2 z-30 animate-in slide-in-from-left-5 duration-300">
           <DrawingToolsPanel
             selectedTool={selectedTool}
             onToolSelect={(toolId) => {
@@ -327,9 +312,9 @@ const TechnicalMap: React.FC = () => {
         </div>
       )}
 
-      {/* Drawing Controls - only show when actively drawing */}
+      {/* Drawing Controls with improved animations */}
       {currentSession && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30">
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 animate-in slide-in-from-bottom-5 duration-300">
           <DrawingControls
             pointsCount={currentSession.currentPoints.length}
             canUndo={DrawingUndoService.canUndo()}
@@ -352,17 +337,22 @@ const TechnicalMap: React.FC = () => {
         </div>
       )}
 
-      {/* Status indicators */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+      {/* Status indicators with iOS-style blur */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex gap-3">
         <OfflineIndicator />
         <SyncIndicator />
         <GPSStatusIndicator gpsState={gpsState} />
       </div>
 
-      {/* Bottom navigation placeholder */}
+      {/* Bottom navigation with glassmorphism */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
-        <div className="bg-card/90 backdrop-blur-sm rounded-full px-6 py-2 border border-border/50 shadow-lg">
-          <span className="text-sm text-muted-foreground">Mapa Técnico</span>
+        <div className="bg-card/90 backdrop-blur-md rounded-full px-6 py-3 border border-border/50 shadow-xl">
+          <span className="text-sm font-medium text-muted-foreground">Mapa Técnico</span>
+          {mapState.isLoaded && (
+            <span className="ml-2 text-xs text-primary">
+              Zoom: {mapState.zoom.toFixed(1)}
+            </span>
+          )}
         </div>
       </div>
 

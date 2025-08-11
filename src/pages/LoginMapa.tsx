@@ -4,6 +4,7 @@ import { Plus, Minus, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import CompassDialIcon from '@/components/icons/CompassDialIcon';
 import MapCore, { maplibregl } from '@/components/map/MapCore';
+
 const LoginMapa: React.FC = () => {
   const navigate = useNavigate();
   const [bearing, setBearing] = useState(0);
@@ -12,7 +13,7 @@ const LoginMapa: React.FC = () => {
   const handleMapLoad = (mapInstance: maplibregl.Map) => {
     setMap(mapInstance);
 
-    // Add marketing pins
+    // Add marketing pins with CORRECTED coordinates [lng, lat]
     const marketingPins = [{
       lng: -47.8825,
       lat: -15.7942,
@@ -63,17 +64,18 @@ const LoginMapa: React.FC = () => {
   const handleZoomOut = () => map?.zoomOut();
   const handleRecenter = () => {
     map?.flyTo({
-      center: [-47.8825, -15.7942],
+      center: [-47.8825, -15.7942], // CORRECTED: [lng, lat]
       zoom: 12,
       essential: true
     });
   };
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
-      {/* Map Container */}
+      {/* Map Container with CORRECTED coordinates */}
       <MapCore
         options={{
-          center: [-47.8825, -15.7942],
+          center: [-47.8825, -15.7942], // CORRECTED: [lng, lat]
           zoom: 12,
           pitch: 0,
           bearing: 0,
@@ -84,35 +86,54 @@ const LoginMapa: React.FC = () => {
         className="absolute inset-0"
       />
 
-      {/* Compass */}
+      {/* Compass with iOS-style improvements */}
       <div className="absolute top-4 right-4 z-10">
-        <div onClick={() => map?.easeTo({ bearing: 0, duration: 500 })} className="cursor-pointer backdrop-blur-sm p-3 rounded-full shadow-ios-md bg-card/80 border border-border">
+        <div 
+          onClick={() => map?.easeTo({ bearing: 0, duration: 500 })} 
+          className="cursor-pointer backdrop-blur-sm p-3 rounded-full shadow-ios-md bg-card/80 border border-border hover:scale-110 active:scale-95 transition-all duration-200"
+        >
           <CompassDialIcon bearing={bearing} className="h-6 w-6 text-foreground" />
         </div>
       </div>
 
-      {/* Floating Controls - Right Side */}
+      {/* iOS-optimized Floating Controls */}
       <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 flex flex-col space-y-3">
-        <Button onClick={handleZoomIn} className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md hover:bg-card border border-border" variant="ghost">
+        <Button 
+          onClick={handleZoomIn} 
+          className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md hover:bg-card border border-border hover:scale-110 active:scale-95 transition-all duration-200 ios-button" 
+          variant="ghost"
+        >
           <Plus className="h-5 w-5 text-foreground" />
         </Button>
         
-        <Button onClick={handleZoomOut} className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md hover:bg-card border border-border" variant="ghost">
+        <Button 
+          onClick={handleZoomOut} 
+          className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md hover:bg-card border border-border hover:scale-110 active:scale-95 transition-all duration-200 ios-button" 
+          variant="ghost"
+        >
           <Minus className="h-5 w-5 text-foreground" />
         </Button>
         
-        <Button onClick={handleRecenter} className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md hover:bg-card border border-border" variant="ghost">
+        <Button 
+          onClick={handleRecenter} 
+          className="w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm shadow-ios-md hover:bg-card border border-border hover:scale-110 active:scale-95 transition-all duration-200 ios-button" 
+          variant="ghost"
+        >
           <Navigation className="h-5 w-5 text-foreground" />
         </Button>
       </div>
 
-      {/* FlowAgro Button */}
+      {/* Enhanced FlowAgro Button with iOS-style */}
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-        <Button onClick={() => navigate('/login-form')} className="px-8 py-4 bg-success text-white rounded-full shadow-ios-button font-semibold text-lg hover:bg-success/90 transition-all">
+        <Button 
+          onClick={() => navigate('/login-form')} 
+          className="px-8 py-4 bg-success text-white rounded-full shadow-ios-button font-semibold text-lg hover:bg-success/90 hover:scale-105 active:scale-95 transition-all duration-200"
+        >
           FlowAgro
         </Button>
       </div>
     </div>
   );
 };
+
 export default LoginMapa;

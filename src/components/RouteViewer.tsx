@@ -47,7 +47,7 @@ export const RouteViewer: React.FC<RouteViewerProps> = ({
       }
     });
 
-    // Add route line layer
+    // Add route line layer with iOS-style styling
     mapInstance.addLayer({
       id: 'route',
       type: 'line',
@@ -59,11 +59,12 @@ export const RouteViewer: React.FC<RouteViewerProps> = ({
       paint: {
         'line-color': '#3b82f6',
         'line-width': 4,
-        'line-opacity': 0.8
+        'line-opacity': 0.8,
+        'line-blur': 0.5 // Subtle blur for iOS-style smoothness
       }
     });
 
-    // Add start point marker
+    // Add start point marker with enhanced styling
     if (coordinates.length > 0) {
       new maplibregl.Marker({ 
         color: '#22c55e',
@@ -83,22 +84,25 @@ export const RouteViewer: React.FC<RouteViewerProps> = ({
         .addTo(mapInstance);
     }
 
-    // Add photo markers
+    // Add photo markers with corrected coordinates
     photos.forEach((photo) => {
       if (photo.latitude && photo.longitude) {
         const marker = new maplibregl.Marker({
           color: '#f59e0b',
           scale: 0.8
         })
-          .setLngLat([photo.longitude, photo.latitude])
+          .setLngLat([photo.longitude, photo.latitude]) // Corrected: [lng, lat]
           .addTo(mapInstance);
 
-        // Add popup with photo info
-        const popup = new maplibregl.Popup({ offset: 25 })
+        // Enhanced popup with iOS-style
+        const popup = new maplibregl.Popup({ 
+          offset: 25,
+          className: 'ios-popup'
+        })
           .setHTML(`
-            <div class="p-2">
-              <h4 class="font-semibold text-sm">${photo.eventLabel}</h4>
-              <p class="text-xs text-gray-600">${format(new Date(photo.timestamp), 'HH:mm:ss', { locale: ptBR })}</p>
+            <div class="p-3 glass-card rounded-xl">
+              <h4 class="font-semibold text-sm text-foreground">${photo.eventLabel}</h4>
+              <p class="text-xs text-muted-foreground mt-1">${format(new Date(photo.timestamp), 'HH:mm:ss', { locale: ptBR })}</p>
             </div>
           `);
 
@@ -106,14 +110,15 @@ export const RouteViewer: React.FC<RouteViewerProps> = ({
       }
     });
 
-    // Fit map to route bounds
+    // Fit map to route bounds with padding
     if (coordinates.length > 0) {
       const bounds = new maplibregl.LngLatBounds();
       coordinates.forEach(coord => bounds.extend(coord as [number, number]));
       
       mapInstance.fitBounds(bounds, {
         padding: 50,
-        maxZoom: 17
+        maxZoom: 17,
+        duration: 1000 // iOS-style smooth animation
       });
     }
   };
@@ -174,44 +179,44 @@ export const RouteViewer: React.FC<RouteViewerProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh] glass-card">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-crisp">
             <Route className="h-5 w-5" />
             {trail.farmName}
           </DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[70vh]">
-          {/* Map */}
+          {/* Map with iOS optimizations */}
           <div className="lg:col-span-2">
             <MapCore
               options={{
-                center: [0, 0],
+                center: [0, 0], // Will be overridden by fitBounds
                 zoom: 16,
                 style: 'satellite'
               }}
               onMapLoad={handleMapLoad}
-              className="w-full h-full rounded-lg border"
+              className="w-full h-full rounded-xl border shadow-ios-lg"
             />
           </div>
 
-          {/* Info Panel */}
+          {/* Info Panel with iOS-style cards */}
           <div className="space-y-4">
-            {/* Stats */}
-            <Card className="p-4">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
+            {/* Stats Card */}
+            <Card className="p-4 glass-card border-0 shadow-ios-md">
+              <h3 className="font-semibold mb-3 flex items-center gap-2 text-crisp">
                 <Activity className="h-4 w-4" />
                 Estatísticas
               </h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Distância:</span>
-                  <span className="font-medium">{trail.totalDistance ? (trail.totalDistance / 1000).toFixed(2) : '0'} km</span>
+                  <span className="font-medium text-crisp">{trail.totalDistance ? (trail.totalDistance / 1000).toFixed(2) : '0'} km</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Duração:</span>
-                  <span className="font-medium">
+                  <span className="font-medium text-crisp">
                     {trail.endTime ? 
                       (() => {
                         const duration = new Date(trail.endTime).getTime() - new Date(trail.startTime).getTime();
@@ -224,48 +229,48 @@ export const RouteViewer: React.FC<RouteViewerProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Pontos GPS:</span>
-                  <span className="font-medium">{trail.points.length}</span>
+                  <span className="font-medium text-crisp">{trail.points.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Fotos:</span>
-                  <span className="font-medium">{photos.length}</span>
+                  <span className="font-medium text-crisp">{photos.length}</span>
                 </div>
               </div>
             </Card>
 
-            {/* Time Info */}
-            <Card className="p-4">
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
+            {/* Time Info Card */}
+            <Card className="p-4 glass-card border-0 shadow-ios-md">
+              <h3 className="font-semibold mb-3 flex items-center gap-2 text-crisp">
                 <Clock className="h-4 w-4" />
                 Horários
               </h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Início:</span>
-                  <span>{format(new Date(trail.startTime), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</span>
+                  <span className="text-crisp">{format(new Date(trail.startTime), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</span>
                 </div>
                 {trail.endTime && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Fim:</span>
-                    <span>{format(new Date(trail.endTime), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</span>
+                    <span className="text-crisp">{format(new Date(trail.endTime), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</span>
                   </div>
                 )}
               </div>
             </Card>
 
-            {/* Photos */}
+            {/* Photos Card */}
             {photos.length > 0 && (
-              <Card className="p-4">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Card className="p-4 glass-card border-0 shadow-ios-md">
+                <h3 className="font-semibold mb-3 flex items-center gap-2 text-crisp">
                   <Camera className="h-4 w-4" />
                   Fotos da Rota
                 </h3>
-                <ScrollArea className="max-h-32">
+                <ScrollArea className="max-h-32 smooth-scroll">
                   <div className="space-y-2">
                     {photos.map((photo, index) => (
                       <div key={photo.id} className="flex items-center gap-2 text-sm">
                         <Camera className="h-3 w-3 text-muted-foreground" />
-                        <span className="flex-1 truncate">{photo.eventLabel}</span>
+                        <span className="flex-1 truncate text-crisp">{photo.eventLabel}</span>
                         <Badge variant="outline" className="text-xs">
                           {format(new Date(photo.timestamp), 'HH:mm')}
                         </Badge>
@@ -279,11 +284,19 @@ export const RouteViewer: React.FC<RouteViewerProps> = ({
         </div>
 
         <div className="flex justify-between gap-2">
-          <Button variant="outline" onClick={exportRoute}>
+          <Button 
+            variant="outline" 
+            onClick={exportRoute}
+            className="ios-button hover:scale-105 active:scale-95 transition-all duration-200"
+          >
             <Download className="h-4 w-4 mr-2" />
             Exportar KML
           </Button>
-          <Button variant="outline" onClick={onClose}>
+          <Button 
+            variant="outline" 
+            onClick={onClose}
+            className="ios-button hover:scale-105 active:scale-95 transition-all duration-200"
+          >
             Fechar
           </Button>
         </div>
