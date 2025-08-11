@@ -36,7 +36,6 @@ const AppLayout = () => {
       <div className={`w-full max-w-md mx-auto bg-background min-h-screen ${showBottomNav ? 'pb-16' : ''}`}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
-            <Route path="/" element={<Navigate to="/login-form" replace />} />
             <Route path="/login-form" element={<LoginForm />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/settings" element={<Settings />} />
