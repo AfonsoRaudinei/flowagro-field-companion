@@ -183,7 +183,7 @@ export class DrawingService {
     this.listeners.forEach(listener => listener([...this.shapes]));
   }
 
-  private static calculateArea(points: DrawingPoint[]): number {
+  static calculateArea(points: DrawingPoint[]): number {
     if (points.length < 3) return 0;
 
     // Use Shoelace formula for geographic coordinates
