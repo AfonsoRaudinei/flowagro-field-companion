@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          app_name: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          updated_at: string
+          use_logo_as_app_icon: boolean | null
+          user_id: string
+        }
+        Insert: {
+          app_name?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          updated_at?: string
+          use_logo_as_app_icon?: boolean | null
+          user_id: string
+        }
+        Update: {
+          app_name?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          updated_at?: string
+          use_logo_as_app_icon?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       document_chunks: {
         Row: {
           chunk_index: number
@@ -91,6 +121,42 @@ export type Database = {
           title?: string
           updated_at?: string
           url?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          cep: string | null
+          created_at: string
+          full_name: string | null
+          logo_url: string | null
+          updated_at: string
+          use_logo_as_app_icon: boolean | null
+          user_id: string
+          user_profile: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          cep?: string | null
+          created_at?: string
+          full_name?: string | null
+          logo_url?: string | null
+          updated_at?: string
+          use_logo_as_app_icon?: boolean | null
+          user_id: string
+          user_profile?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          cep?: string | null
+          created_at?: string
+          full_name?: string | null
+          logo_url?: string | null
+          updated_at?: string
+          use_logo_as_app_icon?: boolean | null
+          user_id?: string
+          user_profile?: string | null
         }
         Relationships: []
       }
