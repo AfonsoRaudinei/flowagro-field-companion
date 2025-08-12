@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Lock, X, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Lock, X, AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
 
 const PASSWORD_MIN = 8;
 
@@ -62,8 +62,9 @@ const AccountSecurity: React.FC = () => {
 
   const [saving, setSaving] = useState(false);
 
-  const [sessionLoginAt, setSessionLoginAt] = useState<string | null>(null);
+const [sessionLoginAt, setSessionLoginAt] = useState<string | null>(null);
   const [sessionDevice, setSessionDevice] = useState<string>(getBrowserOs());
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   const titleRef = useRef<HTMLHeadingElement | null>(null);
 
@@ -82,6 +83,12 @@ const AccountSecurity: React.FC = () => {
       localStorage.setItem(key, now);
       setSessionLoginAt(now);
     }
+}, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
   }, []);
 
   const strength = useMemo(() => passwordStrength(newPassword), [newPassword]);
@@ -179,6 +186,20 @@ const AccountSecurity: React.FC = () => {
     }
   };
 
+  const handleSignOutLocal = async () => {
+    try {
+      setFooterError(null);
+      const { error } = await supabase.auth.signOut({ scope: "local" });
+      if (error) {
+        setFooterError("Falha ao encerrar a sessão deste dispositivo.");
+        return;
+      }
+      navigate("/login-form");
+    } catch (e) {
+      setFooterError("Erro inesperado ao encerrar a sessão local.");
+    }
+  };
+
   const handleSignOutAll = async () => {
     try {
       setFooterError(null);
@@ -205,18 +226,25 @@ const AccountSecurity: React.FC = () => {
 
   return (
     <div className="px-4 py-3 space-y-4">
-      <header className="flex items-center gap-3">
+<header className="flex items-center gap-3">
         <Button variant="ghost" size="icon" aria-label="Voltar" onClick={() => navigate(-1)}>
           <ArrowLeft />
         </Button>
-        <h1
-          ref={titleRef}
-          tabIndex={-1}
-          className="text-lg font-semibold"
-          aria-label="Conta e Segurança"
-        >
-          Conta & Segurança
-        </h1>
+        <div className="flex flex-col">
+          <h1
+            ref={titleRef}
+            tabIndex={-1}
+            className="text-lg font-semibold"
+            aria-label="Conta e Segurança"
+          >
+            Conta & Segurança
+          </h1>
+          {userEmail && (
+            <p className="text-sm text-muted-foreground" aria-label="E-mail do usuário">
+              {userEmail}
+            </p>
+          )}
+        </div>
       </header>
 
       <main className="space-y-6">
@@ -305,8 +333,16 @@ const AccountSecurity: React.FC = () => {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col items-stretch gap-2">
-              <Button onClick={handleSave} disabled={!canSave} aria-label="Botão Salvar nova senha">
-                <Lock className="mr-2" /> Botão Salvar nova senha
+<Button onClick={handleSave} disabled={!canSave} aria-label="Botão Salvar nova senha">
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 animate-spin" /> Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="mr-2" /> Botão Salvar nova senha
+                  </>
+                )}
               </Button>
               {footerError && <p className="text-sm text-destructive">{footerError}</p>}
               {successMsg && <p className="text-sm text-muted-foreground">{successMsg}</p>}
@@ -322,13 +358,13 @@ const AccountSecurity: React.FC = () => {
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <p className="text-sm font-medium">{sessionDevice}</p>
+                  <p className="text-sm font-medium">Este dispositivo — {sessionDevice}</p>
                   <p className="text-xs text-muted-foreground">
                     Login em {formatDateTime(sessionLoginAt)} — Sessão atual
                   </p>
                 </div>
-                <Button size="sm" variant="secondary" disabled aria-label="Encerrar sessão atual desabilitado">
-                  <X className="mr-1" /> Botão Encerrar
+<Button size="sm" variant="secondary" disabled aria-label="Encerrar sessão atual desabilitado">
+                  <X className="mr-1" /> Disponível em breve
                 </Button>
               </div>
               <Separator />
@@ -336,7 +372,10 @@ const AccountSecurity: React.FC = () => {
                 Encerrar sessões remove o acesso em outros dispositivos.
               </p>
             </CardContent>
-            <CardFooter>
+<CardFooter className="flex gap-2">
+              <Button variant="secondary" onClick={handleSignOutLocal} aria-label="Sair deste dispositivo">
+                Sair deste dispositivo
+              </Button>
               <Button variant="outline" onClick={handleSignOutAll} aria-label="Botão Encerrar todas as sessões">
                 <AlertTriangle className="mr-2" /> Botão Encerrar todas as sessões
               </Button>
