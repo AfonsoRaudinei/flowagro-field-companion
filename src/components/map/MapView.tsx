@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, GeoJSON } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -39,6 +39,16 @@ const MAPTILER_STYLES: Record<BaseLayerId, string> = {
   terrain: "maps/topo-v2",
 };
 
+function RecenterOnChange({ center, zoom }: { center: [number, number]; zoom?: number }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.setView(center, zoom ?? map.getZoom());
+    }
+  }, [center, zoom, map]);
+  return null;
+}
+
 export default function MapView({
   center = [-23.55, -46.63],
   zoom = 5,
@@ -50,31 +60,36 @@ export default function MapView({
 }: MapViewProps) {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     let active = true;
-    // Fetch MapTiler API key from Edge Function
     (async () => {
       try {
         const { data, error } = await supabase.functions.invoke("maptiler-token", { method: "GET" });
         if (!active) return;
         if (error) {
           setError("Não foi possível obter a chave do MapTiler.");
+          setApiKey(null);
         } else {
-          setApiKey((data as any)?.key || null);
-          if (!(data as any)?.key) {
+          const key = (data as any)?.key || null;
+          setApiKey(key);
+          if (!key) {
             setError("Chave MAPTILER_API_KEY ausente nas Secrets do Supabase.");
+          } else {
+            setError(null);
           }
         }
       } catch (e: any) {
         if (!active) return;
         setError("Erro ao buscar a chave do MapTiler.");
+        setApiKey(null);
       }
     })();
     return () => {
       active = false;
     };
-  }, []);
+  }, [reload]);
 
   const tileUrl = useMemo(() => {
     const style = MAPTILER_STYLES[baseLayerId] || MAPTILER_STYLES.streets;
@@ -86,11 +101,16 @@ export default function MapView({
   if (!tileUrl) {
     return (
       <div className={cn("relative w-full h-full flex items-center justify-center p-6", className)}>
-        <div className="text-center space-y-2">
-          <p className="text-foreground font-medium">Mapa indisponível</p>
-          <p className="text-muted-foreground text-sm">
-            Configure a secret <strong>MAPTILER_API_KEY</strong> nas Edge Function Secrets do Supabase.
-          </p>
+        <div className="text-center space-y-3">
+          <p className="text-foreground font-medium">Mapa indisponível — configure MAPTILER_API_KEY nas Edge Function Secrets do Supabase.</p>
+          <div className="flex justify-center">
+            <button
+              onClick={() => setReload((c) => c + 1)}
+              className="px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm shadow-ios-sm"
+            >
+              Tentar novamente
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -105,6 +125,8 @@ export default function MapView({
         style={{ background: "hsl(var(--muted))" }}
       >
         <TileLayer url={tileUrl} attribution='&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
+
+        <RecenterOnChange center={center} zoom={zoom} />
 
         {markers?.map((m) => (
           <Marker position={m.position} key={m.id}>

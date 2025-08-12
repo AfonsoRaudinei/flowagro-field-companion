@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Send, Camera, Mic, User, MapPin, Settings, MessageSquare, ChevronDown, Smile, MoreHorizontal, Loader2, Calendar, Radio, Globe, Database, Package, Leaf, Mountain, Cloud } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import useVoiceRecorder from '@/hooks/useVoiceRecorder';
 import { CameraService } from '@/services/cameraService';
 import { IALudmilaIcon } from '@/components/icons/IALudmilaIcon';
 import { supabase as sb } from '@/integrations/supabase/client';
+import TechnicalMapPanel from '@/components/map/TechnicalMapPanel';
 
 type ChatFilter = 'agenda' | 'producer' | 'ai' | 'live-field';
 type ViewMode = 'list' | 'conversation';
@@ -703,6 +704,13 @@ const Dashboard: React.FC = () => {
         </div>
       </div>;
   };
+
+  const location = useLocation();
+  const isMapTab = new URLSearchParams(location.search).get('tab') === 'map';
+
+  if (isMapTab) {
+    return <TechnicalMapPanel />;
+  }
 
   return <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MessageCircle, Settings } from 'lucide-react';
+import { MessageCircle, Settings, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface BottomNavigationProps {
@@ -12,6 +12,12 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ className = '' }) =
   const location = useLocation();
 
   const tabs = [
+    {
+      id: 'map',
+      path: '/dashboard?tab=map',
+      label: 'Mapa',
+      icon: Map
+    },
     {
       id: 'dashboard', 
       path: '/dashboard',
@@ -26,7 +32,10 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ className = '' }) =
     }
   ];
 
-  const isActiveTab = (path: string) => {
+  const isActiveTab = (id: string, path: string) => {
+    const params = new URLSearchParams(location.search);
+    if (id === 'map') return location.pathname === '/dashboard' && params.get('tab') === 'map';
+    if (id === 'dashboard') return location.pathname === '/dashboard' && params.get('tab') !== 'map';
     return location.pathname === path;
   };
 
@@ -36,7 +45,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ className = '' }) =
         <div className="flex items-center justify-around py-2 px-4">
           {tabs.map((tab) => {
             const IconComponent = tab.icon;
-            const isActive = isActiveTab(tab.path);
+            const isActive = isActiveTab(tab.id, tab.path);
             
             return (
               <Button
