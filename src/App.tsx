@@ -15,7 +15,7 @@ const LoginForm = lazy(() => import("./pages/LoginForm"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
-const TechnicalMap = lazy(() => import("./pages/TechnicalMap"));
+
 const Recover = lazy(() => import("./pages/Recover"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Profile = lazy(() => import("./pages/Profile"));
@@ -33,7 +33,7 @@ const RouteFallback = () => (
 const AppLayout = () => {
   const location = useLocation();
   
-  const showBottomNav = ['/dashboard', '/settings', '/technical-map'].includes(location.pathname);
+  const showBottomNav = ['/dashboard', '/settings'].includes(location.pathname);
   
   return (
     <>
@@ -48,7 +48,7 @@ const AppLayout = () => {
             <Route path="/settings/security" element={<AccountSecurity />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/phenological-stages" element={<PhenologicalStages />} />
-            <Route path="/technical-map" element={<TechnicalMap />} />
+            <Route path="/technical-map" element={<Navigate to="/dashboard?tab=map" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
