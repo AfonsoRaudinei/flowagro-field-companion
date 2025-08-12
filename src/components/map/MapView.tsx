@@ -30,6 +30,7 @@ export type MapViewProps = {
   markers?: MapMarker[];
   geojson?: GeoJSON.FeatureCollection;
   className?: string;
+  mapChildren?: React.ReactNode; // inside MapContainer, has map context
   children?: React.ReactNode; // floating overlays
 };
 
@@ -56,6 +57,7 @@ export default function MapView({
   markers = [],
   geojson,
   className,
+  mapChildren,
   children,
 }: MapViewProps) {
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -137,6 +139,8 @@ export default function MapView({
         {geojson ? (
           <GeoJSON data={geojson as any} style={{ color: "hsl(var(--primary))", weight: 2 }} />
         ) : null}
+
+        {mapChildren}
       </MapContainer>
 
       {/* Floating overlays */}

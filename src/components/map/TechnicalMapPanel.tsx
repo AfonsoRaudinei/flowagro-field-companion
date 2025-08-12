@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import MapView from "@/components/map/MapView";
+import MapDrawingControls from "@/components/map/MapDrawingControls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -207,7 +208,23 @@ const TechnicalMapPanel: React.FC = () => {
 
       {/* Map */}
       <div className="absolute inset-0 pt-[88px] pb-[64px]">
-        <MapView center={center} zoom={zoom} baseLayerId={baseLayerId} geojson={geometry ?? undefined} />
+        <MapView
+          center={center}
+          zoom={zoom}
+          baseLayerId={baseLayerId}
+          geojson={geometry ?? undefined}
+          mapChildren={
+            <MapDrawingControls
+              enabled={drawingBar}
+              editing={editing}
+              snapping={snapOn}
+              onChange={(fc) => {
+                setGeometry(fc);
+                if (fc) setPanelOpen(true);
+              }}
+            />
+          }
+        />
       </div>
 
       {/* Floating Quick Actions (left) */}
