@@ -16,6 +16,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
 const TechnicalMap = lazy(() => import("./pages/TechnicalMap"));
+const Recover = lazy(() => import("./pages/Recover"));
 
 const RouteFallback = () => (
   <div className="p-4 space-y-3">
@@ -37,6 +38,7 @@ const AppLayout = () => {
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/login-form" element={<LoginForm />} />
+            <Route path="/recover" element={<Recover />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/phenological-stages" element={<PhenologicalStages />} />
