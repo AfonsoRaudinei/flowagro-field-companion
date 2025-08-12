@@ -15,6 +15,7 @@ const LoginForm = lazy(() => import("./pages/LoginForm"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
+const TechnicalMap = lazy(() => import("./pages/TechnicalMap"));
 
 const RouteFallback = () => (
   <div className="p-4 space-y-3">
@@ -28,8 +29,7 @@ const RouteFallback = () => (
 const AppLayout = () => {
   const location = useLocation();
   
-  // Show bottom navigation only on authenticated screens
-  const showBottomNav = ['/dashboard', '/settings'].includes(location.pathname);
+  const showBottomNav = ['/dashboard', '/settings', '/technical-map'].includes(location.pathname);
   
   return (
     <>
@@ -40,6 +40,7 @@ const AppLayout = () => {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/phenological-stages" element={<PhenologicalStages />} />
+            <Route path="/technical-map" element={<TechnicalMap />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
