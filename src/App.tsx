@@ -18,6 +18,7 @@ const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
 const TechnicalMap = lazy(() => import("./pages/TechnicalMap"));
 const Recover = lazy(() => import("./pages/Recover"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Profile = lazy(() => import("./pages/Profile"));
 
 const RouteFallback = () => (
   <div className="p-4 space-y-3">
@@ -43,6 +44,7 @@ const AppLayout = () => {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/phenological-stages" element={<PhenologicalStages />} />
             <Route path="/technical-map" element={<TechnicalMap />} />
             <Route path="*" element={<NotFound />} />
