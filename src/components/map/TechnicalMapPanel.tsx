@@ -58,10 +58,6 @@ const layerOptions = [
   { id: "talhoes", label: "Talhões" },
 ];
 
-const providers = [
-  { id: "maptiler", label: "MapTiler", disabled: false },
-  { id: "google", label: "Google Maps", disabled: true }, // placeholder
-];
 
 const TechnicalMapPanel: React.FC = () => {
   const [center, setCenter] = useState<[number, number]>([-23.55, -46.63]);
@@ -72,7 +68,7 @@ const TechnicalMapPanel: React.FC = () => {
   const [query, setQuery] = useState("");
   const [layersOpen, setLayersOpen] = useState(false);
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({});
-  const [provider, setProvider] = useState("maptiler");
+  
   const [filterOn, setFilterOn] = useState(false);
 
   // Drawing
@@ -187,12 +183,21 @@ const TechnicalMapPanel: React.FC = () => {
                 </label>
               ))}
             </div>
-            <div className="text-xs font-medium text-muted-foreground mb-1">Provedor</div>
+            <div className="text-xs font-medium text-muted-foreground mb-1">Tipo de mapa</div>
             <div className="flex items-center gap-3">
-              {providers.map(p => (
-                <label key={p.id} className={`flex items-center gap-2 text-sm ${p.disabled ? 'opacity-50' : ''}`}>
-                  <input type="radio" name="prov" disabled={p.disabled} checked={provider===p.id} onChange={() => setProvider(p.id)} />
-                  {p.label}
+              {[
+                { id: "streets", label: "Ruas" },
+                { id: "satellite", label: "Satélite" },
+                { id: "terrain", label: "Terreno" },
+              ].map(opt => (
+                <label key={opt.id} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="base"
+                    checked={baseLayerId === (opt.id as "streets" | "satellite" | "terrain")}
+                    onChange={() => setBaseLayerId(opt.id as "streets" | "satellite" | "terrain")}
+                  />
+                  {opt.label}
                 </label>
               ))}
             </div>
@@ -202,7 +207,7 @@ const TechnicalMapPanel: React.FC = () => {
 
       {/* Map */}
       <div className="absolute inset-0 pt-[88px] pb-[64px]">
-        <MapView center={center} zoom={zoom} baseLayerId={baseLayerId} />
+        <MapView center={center} zoom={zoom} baseLayerId={baseLayerId} geojson={geometry ?? undefined} />
       </div>
 
       {/* Floating Quick Actions (left) */}
