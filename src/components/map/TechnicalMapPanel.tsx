@@ -152,7 +152,7 @@ const TechnicalMapPanel: React.FC = () => {
   return (
     <div className="relative w-full h-screen max-w-md mx-auto bg-background">
       {/* AppBar */}
-      <div className="absolute top-0 left-0 right-0 z-30 bg-card/95 border-b border-border px-3 pt-3 pb-2">
+      <div className="absolute top-0 left-0 right-0 z-[1000] bg-card/95 border-b border-border px-3 pt-3 pb-2">
         <div className="flex items-center justify-center">
           <h1 className="text-base font-semibold">Mapa Técnico</h1>
         </div>
@@ -176,8 +176,8 @@ const TechnicalMapPanel: React.FC = () => {
           </div>
         </div>
         {/* Inline Dropdown */}
-        <div id="layers-dropdown" className={`mt-2 ${layersOpen ? '' : 'hidden'}`}>
-          <div className="rounded-md border border-border bg-popover p-3 shadow-sm">
+        <div id="layers-dropdown" className={`relative z-[1100] mt-2 ${layersOpen ? '' : 'hidden'}`}>
+          <div className="rounded-md border border-border bg-popover p-3 shadow-md">
             <div className="text-xs font-medium text-muted-foreground mb-2">Camadas</div>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {layerOptions.map(o => (
@@ -206,7 +206,7 @@ const TechnicalMapPanel: React.FC = () => {
       </div>
 
       {/* Floating Quick Actions (left) */}
-      <div className="absolute left-2 top-[100px] z-30 flex flex-col gap-2">
+      <div className="absolute left-2 top-[100px] z-[1000] flex flex-col gap-2">
         {[{icon: CloudSun, id:'clima', label:'Clima'}, {icon: Radar, id:'radar', label:'Radar'}, {icon: Megaphone, id:'marketing', label:'Marketing'}, {icon: MessageSquare, id:'interacoes', label:'Interações'}, {icon: Shapes, id:'ocorrencias', label:'Ocorrências'}, {icon: ScanLine, id:'scanner', label:'Scanner'}].map(({icon:Icon,id,label}) => (
           <Button key={id} variant={activeLayers[id] ? 'default' : 'secondary'} size="icon" className="h-10 w-10" onClick={() => handleToggleLayer(id)} aria-label={label} title={label}>
             <Icon className="h-5 w-5" />
@@ -215,7 +215,7 @@ const TechnicalMapPanel: React.FC = () => {
       </div>
 
       {/* Floating Tools Dock (right) */}
-      <div className="absolute right-2 top-[100px] z-30 flex flex-col gap-2">
+      <div className="absolute right-2 top-[100px] z-[1000] flex flex-col gap-2">
         <Button onClick={() => { setLayersOpen(v=>!v); }} variant="secondary" size="icon" className="h-10 w-10" aria-label="Dropdown Camadas">
           <Layers className="h-5 w-5" />
         </Button>
@@ -235,7 +235,7 @@ const TechnicalMapPanel: React.FC = () => {
 
       {/* Drawing sub-toolbar */}
       {drawingBar && (
-        <div className="absolute left-0 right-0 top-[88px] z-30 flex items-center gap-2 px-3 py-2 bg-card/95 border-b border-border">
+        <div className="absolute left-0 right-0 top-[88px] z-[1000] flex items-center gap-2 px-3 py-2 bg-card/95 border-b border-border">
           <Button size="sm" variant="secondary" onClick={createSamplePolygon}>Mão Livre</Button>
           <Button size="sm" variant="secondary" onClick={createSamplePolygon}>Polígono</Button>
           <Button size="sm" variant="secondary" onClick={createSamplePolygon}>Pivô</Button>
@@ -245,7 +245,7 @@ const TechnicalMapPanel: React.FC = () => {
       )}
 
       {/* Bottom Sliding Panel */}
-      <div ref={panelRef} className={`absolute left-0 right-0 bottom-0 z-30 border-t border-border bg-card/95 ${panelOpen ? 'h-[40%]' : 'h-12'} transition-[height]`}>
+      <div ref={panelRef} className={`absolute left-0 right-0 bottom-0 z-[1000] border-t border-border bg-card/95 ${panelOpen ? 'h-[40%]' : 'h-12'} transition-[height]`}>
         <div className="flex items-center justify-between px-4 h-12">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold">Painel Detalhes da Área</h3>
