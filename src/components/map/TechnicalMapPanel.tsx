@@ -8,6 +8,8 @@ import { Layers, Filter, LocateFixed, PenTool, Edit3, Magnet, Save, ChevronDown,
 import { GPSService } from "@/services/gpsService";
 import { useGPSState } from "@/hooks/useGPSState";
 import { GPSStatusIndicator } from "@/components/GPSStatusIndicator";
+import { useMapCapture } from "@/hooks/useMapCapture";
+import { toast } from "@/hooks/use-toast";
 
 // Minimal geo helpers (planar approximation)
 function polygonArea(coords: [number, number][]): number {
@@ -86,7 +88,10 @@ const TechnicalMapPanel: React.FC = () => {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   // GPS Hook
-  const { gpsState, getCurrentLocationWithFallback, checkGPSBeforeAction } = useGPSState();
+  const { gpsState, setGpsState, getCurrentLocationWithFallback, checkGPSBeforeAction } = useGPSState();
+  
+  // Map Capture Hook
+  const { captureMap, shareCapture } = useMapCapture();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -106,18 +111,36 @@ const TechnicalMapPanel: React.FC = () => {
   };
 
   const handleLocate = async () => {
+    console.log("Botão GPS clicado");
+    setGpsState(prev => ({ ...prev, isChecking: true }));
+    
     try {
-      await checkGPSBeforeAction("localizar no mapa");
       const location = await getCurrentLocationWithFallback({ lat: center[0], lng: center[1] });
       if (location) {
+        console.log("Localizando no mapa:", location);
         setCenter([location.latitude, location.longitude]);
         setZoom(16);
-        console.log("GPS localização encontrada:", location);
+        toast({
+          title: "Localização encontrada",
+          description: `${location.accuracy}m de precisão - ${location.source === 'gps' ? 'GPS' : location.source === 'cache' ? 'Cache' : 'Aproximada'}`
+        });
       } else {
-        console.log("Localização não disponível, usando fallback");
+        console.log("Localização não disponível");
+        toast({
+          title: "Localização indisponível", 
+          description: "Não foi possível obter sua localização",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error("Erro ao obter localização:", error);
+      toast({
+        title: "Erro de GPS",
+        description: "Falha ao obter localização",
+        variant: "destructive"
+      });
+    } finally {
+      setGpsState(prev => ({ ...prev, isChecking: false }));
     }
   };
 
@@ -189,11 +212,36 @@ const TechnicalMapPanel: React.FC = () => {
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full" />
               )}
             </Button>
-            <Button onClick={handleLocate} variant="secondary" size="icon" className="h-10 w-10 relative">
-              <LocateFixed className="h-5 w-5" />
+            <Button 
+              onClick={handleLocate} 
+              variant="secondary" 
+              size="icon" 
+              className="h-10 w-10 relative"
+              disabled={gpsState.isChecking}
+            >
+              <LocateFixed className={`h-5 w-5 ${gpsState.isChecking ? 'animate-pulse' : ''}`} />
               <GPSStatusIndicator gpsState={gpsState} className="absolute -top-1 -right-1" />
             </Button>
-            <Button variant="secondary" size="icon" className="h-10 w-10">
+            <Button 
+              variant="secondary" 
+              size="icon" 
+              className="h-10 w-10"
+              onClick={async () => {
+                const mapElement = document.querySelector('.leaflet-container') as HTMLElement;
+                if (mapElement) {
+                  const blob = await captureMap(mapElement);
+                  if (blob) {
+                    await shareCapture(blob);
+                  }
+                } else {
+                  toast({
+                    title: "Captura indisponível",
+                    description: "Mapa ainda não carregado",
+                    variant: "destructive"
+                  });
+                }
+              }}
+            >
               <Camera className="h-5 w-5" />
             </Button>
             <Button onClick={() => setFilterOn(v => !v)} variant={filterOn ? "default" : "secondary"} size="icon" className="h-10 w-10">

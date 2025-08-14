@@ -5,7 +5,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 export interface GPSState {
   isEnabled: boolean;
-  lastLocation: UserLocation | null;
+  lastLocation: (UserLocation & { source?: 'gps' | 'cache' | 'map' }) | null;
   lastCheck: Date;
   accuracy: 'high' | 'medium' | 'low' | 'unknown';
   source: 'gps' | 'cache' | 'map-center' | 'none';
@@ -14,7 +14,7 @@ export interface GPSState {
 
 export interface CachedLocation extends UserLocation {
   expiresAt: Date;
-  source: 'gps' | 'map-center';
+  source: 'gps' | 'cache' | 'map';
 }
 
 const GPS_CHECK_INTERVAL = 30000; // 30 seconds
@@ -49,7 +49,7 @@ export const useGPSState = () => {
   }, []);
 
   // Save location to cache
-  const saveCachedLocation = useCallback((location: UserLocation, source: 'gps' | 'map-center') => {
+  const saveCachedLocation = useCallback((location: UserLocation, source: 'gps' | 'cache' | 'map') => {
     try {
       const cachedLocation: CachedLocation = {
         ...location,
@@ -97,16 +97,31 @@ export const useGPSState = () => {
   }, [gpsState.isEnabled, toast]);
 
   // Get current location with fallback
-  const getCurrentLocationWithFallback = useCallback(async (mapCenter?: { lat: number; lng: number }): Promise<UserLocation | null> => {
+  const getCurrentLocationWithFallback = useCallback(async (mapCenter?: { lat: number; lng: number }): Promise<(UserLocation & { source?: 'gps' | 'cache' | 'map' }) | null> => {
+    console.log('Getting location, GPS enabled:', gpsState.isEnabled);
+    
     try {
-      // First try to get fresh GPS location
+      // First ensure we have GPS permissions
+      if (!gpsState.isEnabled) {
+        console.log('GPS not enabled, requesting permissions...');
+        const hasPermission = await GPSService.requestPermissions();
+        if (hasPermission) {
+          setGpsState(prev => ({ ...prev, isEnabled: true }));
+        }
+      }
+      
+      // Try to get fresh GPS location
       if (gpsState.isEnabled) {
+        console.log('Attempting to get current GPS location...');
         const location = await GPSService.getCurrentLocation();
+        console.log('GPS location obtained:', location);
+        
         const accuracy = location.accuracy < 10 ? 'high' : location.accuracy < 50 ? 'medium' : 'low';
+        const locationWithSource = { ...location, source: 'gps' as const };
         
         setGpsState(prev => ({
           ...prev,
-          lastLocation: location,
+          lastLocation: locationWithSource,
           accuracy,
           source: 'gps'
         }));
@@ -117,31 +132,36 @@ export const useGPSState = () => {
           await Haptics.impact({ style: ImpactStyle.Light });
         } catch (e) {}
         
-        return location;
+        return locationWithSource;
       }
     } catch (error) {
-      console.warn('Fresh GPS location failed:', error);
+      console.warn('Fresh GPS location failed, trying fallbacks:', error);
     }
 
     // Try cached location
+    console.log('Trying cached location...');
     const cached = loadCachedLocation();
     if (cached) {
+      console.log('Using cached location:', cached);
+      const cachedWithSource = { ...cached, source: 'cache' as const };
       setGpsState(prev => ({
         ...prev,
-        lastLocation: cached,
+        lastLocation: cachedWithSource,
         accuracy: cached.source === 'gps' ? 'medium' : 'low',
         source: 'cache'
       }));
-      return cached;
+      return cachedWithSource;
     }
 
     // Use map center as fallback
     if (mapCenter) {
-      const fallbackLocation: UserLocation = {
+      console.log('Using map center as location:', mapCenter);
+      const fallbackLocation: UserLocation & { source: 'map' } = {
         latitude: mapCenter.lat,
         longitude: mapCenter.lng,
         accuracy: 1000, // 1km accuracy for map center
-        timestamp: new Date()
+        timestamp: new Date(),
+        source: 'map'
       };
       
       setGpsState(prev => ({
@@ -151,10 +171,11 @@ export const useGPSState = () => {
         source: 'map-center'
       }));
       
-      saveCachedLocation(fallbackLocation, 'map-center');
+      saveCachedLocation(fallbackLocation, 'map');
       return fallbackLocation;
     }
 
+    console.log('No location available');
     return null;
   }, [gpsState.isEnabled, loadCachedLocation, saveCachedLocation]);
 
@@ -188,9 +209,10 @@ export const useGPSState = () => {
       // Load cached location on startup
       const cached = loadCachedLocation();
       if (cached) {
+        const cachedWithSource = { ...cached, source: cached.source as 'gps' | 'cache' | 'map' };
         setGpsState(prev => ({
           ...prev,
-          lastLocation: cached,
+          lastLocation: cachedWithSource,
           accuracy: cached.source === 'gps' ? 'medium' : 'low',
           source: 'cache'
         }));
@@ -211,6 +233,7 @@ export const useGPSState = () => {
 
   return {
     gpsState,
+    setGpsState,
     checkGPSBeforeAction,
     getCurrentLocationWithFallback,
     checkGPSStatus
