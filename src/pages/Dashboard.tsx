@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +9,13 @@ import SyncIndicator from "@/components/ui/sync-indicator";
 import ProducerChatCard from "@/components/ProducerChatCard";
 import SearchBar from "@/components/SearchBar";
 import TechnicalMapPanel from "@/components/map/TechnicalMapPanel";
+import MessageBubble, { BaseMessage } from "@/components/messages/MessageBubble";
+import ConversationListSkeleton from "@/components/skeletons/ConversationListSkeleton";
+import MessageSkeleton from "@/components/skeletons/MessageSkeleton";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { CameraService } from "@/services/cameraService";
-import useVoiceRecorder from "@/hooks/useVoiceRecorder";
+import useVoiceManager from "@/hooks/useVoiceManager";
+import useRetry from "@/hooks/useRetry";
 import { useProducers } from "@/hooks/useProducers";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
@@ -101,7 +106,7 @@ export default function Dashboard() {
     isTyping: msg.metadata?.isTyping || false
   }));
 
-  const voiceRecorder = useVoiceRecorder();
+  const voiceRecorder = useVoiceManager();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -180,14 +185,16 @@ export default function Dashboard() {
   };
 
   const handleVoiceRecording = async () => {
-    if (voiceRecorder.isRecording) {
-      await voiceRecorder.stop();
-      toast({
-        title: "Gravação finalizada",
-        description: "Áudio salvo com sucesso",
-      });
-    } else {
-      await voiceRecorder.start();
+    if (voiceRecorder.state === 'recording') {
+      const result = await voiceRecorder.stopRecording();
+      if (result) {
+        toast({
+          title: "Gravação finalizada",
+          description: "Áudio salvo com sucesso",
+        });
+      }
+    } else if (voiceRecorder.state === 'idle') {
+      await voiceRecorder.startRecording();
       toast({
         title: "Gravação iniciada",
         description: "Gravando áudio...",
@@ -435,10 +442,12 @@ export default function Dashboard() {
             variant="outline"
             size="sm"
             onClick={handleVoiceRecording}
-            className={`h-10 w-10 p-0 ${voiceRecorder.isRecording ? "bg-red-100 border-red-300" : ""}`}
+            className={`h-10 w-10 p-0 ${voiceRecorder.state === 'recording' ? "bg-red-100 border-red-300" : ""}`}
           >
-            {voiceRecorder.isRecording ? (
+            {voiceRecorder.state === 'recording' ? (
               <MicOff className="h-4 w-4 text-red-600" />
+            ) : voiceRecorder.state === 'processing' ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
             ) : (
               <Mic className="h-4 w-4" />
             )}
