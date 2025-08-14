@@ -88,10 +88,15 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
 
     setLoading(true);
     try {
-      console.log(`Carregando camada ${layer.name} para data ${selectedDate}`);
+      console.log(`=== Carregando camada ${layer.name} ===`);
+      console.log('Data:', selectedDate);
+      console.log('BBox:', bbox);
+      console.log('Layer type:', layer.type);
       
       if (layer.source === 'sentinel') {
-        const { data, error } = await supabase.functions.invoke('sentinel-hub', {
+        console.log('Chamando função sentinel-hub...');
+        
+        const response = await supabase.functions.invoke('sentinel-hub', {
           body: {
             bbox,
             date: selectedDate,
@@ -101,14 +106,29 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
           }
         });
 
-        if (error) {
-          console.error('Erro Sentinel Hub:', error);
-          throw new Error('Falha ao carregar imagem Sentinel');
+        console.log('Resposta da função:', response);
+
+        if (response.error) {
+          console.error('Erro na resposta:', response.error);
+          throw new Error(`Erro Sentinel Hub: ${response.error.message || 'Erro desconhecido'}`);
         }
 
-        // Convert blob to URL for display
-        const imageBlob = new Blob([data], { type: 'image/png' });
+        if (!response.data) {
+          console.error('Sem dados na resposta');
+          throw new Error('Nenhum dado retornado da API Sentinel');
+        }
+
+        // Check if response.data is ArrayBuffer or Uint8Array
+        let imageBlob: Blob;
+        if (response.data instanceof ArrayBuffer || response.data instanceof Uint8Array) {
+          imageBlob = new Blob([response.data], { type: 'image/png' });
+        } else {
+          console.error('Tipo de dados inesperado:', typeof response.data);
+          throw new Error('Formato de dados inválido da API');
+        }
+
         const imageUrl = URL.createObjectURL(imageBlob);
+        console.log('URL da imagem criada:', imageUrl);
         
         setLastResult({
           source: 'Sentinel-2',
@@ -125,12 +145,14 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
         });
 
         toast({
-          title: "Camada carregada",
+          title: "Camada carregada com sucesso",
           description: `${layer.name} para ${selectedDate}`
         });
 
       } else if (layer.source === 'planet') {
-        const { data, error } = await supabase.functions.invoke('planet-labs', {
+        console.log('Chamando função planet-labs...');
+        
+        const response = await supabase.functions.invoke('planet-labs', {
           body: {
             bbox,
             date: selectedDate,
@@ -139,28 +161,37 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
           }
         });
 
-        if (error) {
-          console.error('Erro Planet Labs:', error);
-          throw new Error('Falha ao carregar imagem Planet');
+        console.log('Resposta Planet Labs:', response);
+
+        if (response.error) {
+          console.error('Erro Planet Labs:', response.error);
+          throw new Error(`Erro Planet Labs: ${response.error.message || 'Erro desconhecido'}`);
+        }
+
+        if (!response.data) {
+          throw new Error('Nenhum dado retornado da API Planet Labs');
         }
 
         setLastResult({
           source: 'Planet Labs',
           type: layer.name,
           date: selectedDate,
-          cloudCover: data.cloudCover,
-          imageId: data.imageId
+          cloudCover: response.data.cloudCover,
+          imageId: response.data.imageId
         });
 
         // Planet Labs returns metadata for now
         toast({
           title: "Metadados Planet carregados",
-          description: `Imagem ${data.imageId} - ${(data.cloudCover * 100).toFixed(1)}% nuvens`
+          description: `Imagem ${response.data.imageId} - ${(response.data.cloudCover * 100).toFixed(1)}% nuvens`
         });
       }
 
     } catch (error) {
-      console.error('Erro ao carregar camada:', error);
+      console.error('=== ERRO ao carregar camada ===');
+      console.error('Erro completo:', error);
+      console.error('Stack trace:', error instanceof Error ? error.stack : 'N/A');
+      
       toast({
         title: "Erro ao carregar camada",
         description: error instanceof Error ? error.message : "Erro desconhecido",

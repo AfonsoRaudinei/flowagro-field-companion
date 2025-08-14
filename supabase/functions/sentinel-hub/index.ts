@@ -20,8 +20,14 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== Sentinel Hub Function Called ===');
+    
     const sentinelHubKey = Deno.env.get('SENTINEL_HUB_API_KEY');
+    console.log('API Key available:', !!sentinelHubKey);
+    console.log('API Key length:', sentinelHubKey?.length || 0);
+    
     if (!sentinelHubKey) {
+      console.error('Sentinel Hub API key not configured');
       return new Response(
         JSON.stringify({ error: 'Sentinel Hub API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -29,6 +35,7 @@ serve(async (req) => {
     }
 
     const { bbox, date, layerType, width = 512, height = 512 }: SentinelHubRequest = await req.json();
+    console.log('Request parameters:', { bbox, date, layerType, width, height });
 
     // Evalscript for different layer types
     const evalscripts = {
@@ -117,34 +124,49 @@ serve(async (req) => {
       evalscript: evalscripts[layerType]
     };
 
-    console.log('Sentinel Hub request:', JSON.stringify(requestBody, null, 2));
+    console.log('Sentinel Hub request body:', JSON.stringify(requestBody, null, 2));
 
+    console.log('Making request to Sentinel Hub...');
     const response = await fetch('https://services.sentinel-hub.com/api/v1/process', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${sentinelHubKey}`,
         'Content-Type': 'application/json',
+        'Accept': 'image/png'
       },
       body: JSON.stringify(requestBody)
     });
 
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Sentinel Hub API error:', errorText);
+      console.error('Response status:', response.status);
+      console.error('Response statusText:', response.statusText);
+      
       return new Response(
-        JSON.stringify({ error: `Sentinel Hub API error: ${response.status}` }),
+        JSON.stringify({ 
+          error: `Sentinel Hub API error: ${response.status}`,
+          details: errorText,
+          status: response.status
+        }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Return the image as blob with proper CORS headers
     const imageBuffer = await response.arrayBuffer();
+    console.log('Image buffer size:', imageBuffer.byteLength);
+    console.log('Successfully returning image data');
     
     return new Response(imageBuffer, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=3600'
+        'Cache-Control': 'public, max-age=3600',
+        'Content-Length': imageBuffer.byteLength.toString()
       }
     });
 
