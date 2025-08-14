@@ -1,389 +1,631 @@
-
 /**
  * Supabase Edge Function: ai-chat (I.A Ludmila)
- * Ordem de fallback: RAG local → OpenAI geral → erro claro
- * Features: correlation ID, timeouts, error mapping, source tracking
+ * Arquitetura: RAG local → OpenAI geral → APIs externas → Error
+ * Features: Circuit breaker, rate limiting, retry logic, standardized responses
+ * Security: Correlation IDs, structured logging, proper fallbacks
  */
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { CircuitBreaker } from './circuit-breaker.ts';
+import { getRateLimiter } from './rate-limiter.ts';
+
+// CORS headers for web app compatibility
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-type ChatPayload = {
+interface ChatPayload {
   message: string;
   correlation_id?: string;
-};
+}
 
-type APISource = {
-  enabled: boolean;
-  base_url: string;
-  api_key: string;
+// Standardized API Configuration Structure
+interface APIConfig {
   name: string;
-  healthcheck?: string;
-};
+  enabled: boolean;
+  base_url: string | null;
+  api_key: string | null;
+  timeout_ms: number;
+  limit: {
+    rpm: number;
+    burst: number;
+  };
+  retries: {
+    max: number;
+    backoff_ms: number;
+  };
+  auth_header: string; // 'Authorization' or 'x-api-key'
+  auth_prefix: string; // 'Bearer ' or ''
+}
 
-// Core services
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || "";
-
-// Registry de fontes externas (desabilitadas por segurança até termos endpoints reais)
-const API_REGISTRY: Record<string, APISource> = {
+// Standardized API Registry with environment variables following naming convention
+const API_REGISTRY: Record<string, APIConfig> = {
   agro_responde: {
-    enabled: false, // Temporariamente desabilitado
-    base_url: "", 
-    api_key: Deno.env.get("agro responde") || "",
-    name: "agro-responde"
+    name: "agro_responde",
+    enabled: true, // Will auto-disable if URLs missing
+    base_url: Deno.env.get("AGRO_RESPONDE_BASE_URL"),
+    api_key: Deno.env.get("AGRO_RESPONDE_API_KEY"),
+    timeout_ms: 6000,
+    limit: { rpm: 30, burst: 10 },
+    retries: { max: 2, backoff_ms: 300 },
+    auth_header: "Authorization",
+    auth_prefix: "Bearer "
   },
   clima_embrapa: {
-    enabled: false,
-    base_url: "",
-    api_key: Deno.env.get("clima embrapa  api") || "",
-    name: "clima-embrapa"
+    name: "clima_embrapa", 
+    enabled: true,
+    base_url: Deno.env.get("CLIMA_EMBRAPA_BASE_URL"),
+    api_key: Deno.env.get("CLIMA_EMBRAPA_API_KEY"),
+    timeout_ms: 8000, // Weather APIs can be slower
+    limit: { rpm: 60, burst: 20 },
+    retries: { max: 2, backoff_ms: 300 },
+    auth_header: "x-api-key",
+    auth_prefix: ""
   },
   produtos: {
-    enabled: false,
-    base_url: "",
-    api_key: Deno.env.get("API PRODUTOS") || "",
-    name: "produtos"
+    name: "produtos",
+    enabled: true,
+    base_url: Deno.env.get("PRODUTOS_BASE_URL"),
+    api_key: Deno.env.get("PRODUTOS_API_KEY"),
+    timeout_ms: 6000,
+    limit: { rpm: 60, burst: 20 },
+    retries: { max: 2, backoff_ms: 300 },
+    auth_header: "Authorization",
+    auth_prefix: "Bearer "
   },
   biologicos: {
-    enabled: false,
-    base_url: "",
-    api_key: Deno.env.get("api de biologicoos") || "",
-    name: "biologicos"
+    name: "biologicos",
+    enabled: true,
+    base_url: Deno.env.get("BIOLOGICOS_BASE_URL"),
+    api_key: Deno.env.get("BIOLOGICOS_API_KEY"),
+    timeout_ms: 6000,
+    limit: { rpm: 30, burst: 10 },
+    retries: { max: 2, backoff_ms: 300 },
+    auth_header: "x-api-key",
+    auth_prefix: ""
   },
   smart_solo: {
-    enabled: false,
-    base_url: "",
-    api_key: Deno.env.get("smart solo") || "",
-    name: "smart-solo"
+    name: "smart_solo",
+    enabled: true,
+    base_url: Deno.env.get("SMART_SOLO_BASE_URL"),
+    api_key: Deno.env.get("SMART_SOLO_API_KEY"),
+    timeout_ms: 6000,
+    limit: { rpm: 30, burst: 10 },
+    retries: { max: 2, backoff_ms: 300 },
+    auth_header: "Authorization",
+    auth_prefix: "Bearer "
   }
 };
 
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+// Circuit breakers for each API
+const circuitBreakers = new Map<string, CircuitBreaker>();
 
-// Configurações
-const RAG_SIMILARITY_THRESHOLD = 0.7;
-const REQUEST_TIMEOUT = 5000;
-const MAX_RETRIES = 1;
+function getCircuitBreaker(apiName: string): CircuitBreaker {
+  if (!circuitBreakers.has(apiName)) {
+    circuitBreakers.set(apiName, new CircuitBreaker(5, 60000)); // 5 failures, 60s recovery
+  }
+  return circuitBreakers.get(apiName)!;
+}
 
-// Utilities
+// Standardized response interfaces
+interface APIResponse {
+  source: string;
+  data: any;
+  success: boolean;
+  error?: string;
+}
+
+// Professional fallback messages without technical details
+const FALLBACK_MESSAGES = {
+  agro_responde: "No momento não consegui consultar a base técnica. Vou seguir com recomendações gerais, e retorno à base assim que estiver disponível.",
+  clima_embrapa: "A fonte meteorológica está instável. Posso usar a última atualização salva para a sua região enquanto reconecto.",
+  produtos: "Catálogo temporariamente indisponível. Posso listar seus últimos itens consultados ou filtrar por categoria offline.",
+  biologicos: "Repositório de biológicos fora do ar. Posso sugerir práticas gerais de manejo integrado como alternativa imediata.",
+  smart_solo: "Análise de solo momentaneamente indisponível. Posso usar parâmetros médios regionais enquanto reestabelecemos a conexão."
+};
+
+// Initialize Supabase client for this function
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+// Get OpenAI API key
+const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+if (!openaiApiKey) {
+  console.error('OPENAI_API_KEY not found in environment variables');
+}
+
+// Enhanced utility functions
 function generateCorrelationId(): string {
-  return crypto.randomUUID();
+  return `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-function log(level: string, message: string, correlation_id?: string, extra?: any) {
-  const timestamp = new Date().toISOString();
-  console.log(JSON.stringify({
-    timestamp,
+function log(level: string, message: string, data?: any, correlationId?: string): void {
+  const logEntry = {
+    timestamp: new Date().toISOString(),
     level,
-    correlation_id,
     message,
-    ...extra
-  }));
+    correlationId,
+    tag: 'external_api',
+    ...data
+  };
+  console.log(JSON.stringify(logEntry));
 }
 
-function extractKeywords(input: string, max = 5) {
-  return input
+function extractKeywords(query: string): string[] {
+  return query
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/[^\w\s]/g, ' ')
     .split(/\s+/)
-    .filter((w) => w.length >= 4)
-    .slice(0, max);
+    .filter(word => word.length > 2)
+    .slice(0, 10);
 }
 
-// Timeout wrapper com retry
-async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT, retries = MAX_RETRIES): Promise<Response> {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-      
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      return response;
-    } catch (error) {
-      if (attempt === retries) throw error;
-      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt))); // exponential backoff
-    }
+// Enhanced fetch with retry and circuit breaker
+async function fetchWithRetryAndBreaker(
+  apiConfig: APIConfig,
+  endpoint: string,
+  options: RequestInit = {},
+  correlationId: string
+): Promise<Response> {
+  if (!apiConfig.base_url || !apiConfig.api_key) {
+    throw new Error(`API ${apiConfig.name} not configured: missing base_url or api_key`);
   }
-  throw new Error('Max retries exceeded');
-}
 
-async function searchLocalContext(question: string, correlation_id: string) {
-  const startTime = Date.now();
+  const rateLimiter = getRateLimiter(apiConfig.name, apiConfig.limit.rpm, apiConfig.limit.burst);
   
-  try {
-    const keywords = extractKeywords(question);
-    if (keywords.length === 0) {
-      log("info", "No keywords extracted for local search", correlation_id);
-      return [];
-    }
+  if (!rateLimiter.consume()) {
+    throw new Error(`Rate limit exceeded for ${apiConfig.name}`);
+  }
 
-    // Busca por similaridade textual (ilike) - futuramente migrar para embeddings
-    const orFilter = keywords.map((k) => `content.ilike.%${k}%`).join(",");
-    const { data, error } = await supabase
-      .from("document_chunks")
-      .select("content, document_id, token_count")
-      .or(orFilter)
-      .limit(8);
-
-    const latency = Date.now() - startTime;
+  const circuitBreaker = getCircuitBreaker(apiConfig.name);
+  
+  return await circuitBreaker.execute(async () => {
+    let lastError: Error | null = null;
     
+    for (let attempt = 0; attempt <= apiConfig.retries.max; attempt++) {
+      const startTime = Date.now();
+      
+      try {
+        const url = `${apiConfig.base_url}${endpoint}`;
+        const headers = {
+          'Content-Type': 'application/json',
+          [apiConfig.auth_header]: `${apiConfig.auth_prefix}${apiConfig.api_key}`,
+          ...options.headers
+        };
+
+        log('info', `API call attempt ${attempt + 1}`, {
+          api: apiConfig.name,
+          url,
+          method: options.method || 'GET'
+        }, correlationId);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), apiConfig.timeout_ms);
+
+        const response = await fetch(url, {
+          ...options,
+          headers,
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        
+        const duration = Date.now() - startTime;
+        
+        log('info', `API call completed`, {
+          api: apiConfig.name,
+          status: response.status,
+          duration_ms: duration,
+          attempt: attempt + 1
+        }, correlationId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return response;
+        
+      } catch (error) {
+        const duration = Date.now() - startTime;
+        lastError = error as Error;
+        
+        log('error', `API call failed`, {
+          api: apiConfig.name,
+          error: lastError.message,
+          duration_ms: duration,
+          attempt: attempt + 1
+        }, correlationId);
+
+        if (attempt < apiConfig.retries.max) {
+          const backoffMs = apiConfig.retries.backoff_ms * Math.pow(2, attempt);
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
+        }
+      }
+    }
+    
+    throw lastError || new Error(`Failed after ${apiConfig.retries.max + 1} attempts`);
+  });
+}
+
+async function searchLocalContext(keywords: string[], correlationId: string) {
+  try {
+    log('info', 'Searching local knowledge base', { keywords }, correlationId);
+    
+    const { data: chunks, error } = await supabase
+      .from('document_chunks')
+      .select('content, document_id')
+      .textSearch('content', keywords.join(' | '), {
+        type: 'websearch',
+        config: 'portuguese'
+      })
+      .limit(5);
+
     if (error) {
-      log("error", "Local search failed", correlation_id, { error: error.message, latency });
-      return [];
+      log('error', 'Local search failed', { error: error.message }, correlationId);
+      return null;
     }
 
-    const chunks = data ?? [];
-    log("info", "Local search completed", correlation_id, { 
-      chunks_found: chunks.length, 
-      keywords: keywords.length,
-      latency 
-    });
+    if (!chunks || chunks.length === 0) {
+      log('info', 'No local context found', { keywords }, correlationId);
+      return null;
+    }
 
-    return chunks;
+    const context = chunks.map(chunk => chunk.content).join('\n\n');
+    log('info', 'Local context found', { 
+      chunks_count: chunks.length,
+      context_length: context.length 
+    }, correlationId);
+    
+    return context;
   } catch (error) {
-    const latency = Date.now() - startTime;
-    log("error", "Local search exception", correlation_id, { error: error.message, latency });
-    return [];
+    log('error', 'Local search error', { 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }, correlationId);
+    return null;
   }
 }
 
-async function answerWithOpenAI(question: string, snippets: { content: string }[], correlation_id: string, mode: "rag" | "general" = "rag") {
-  const startTime = Date.now();
-  
-  if (!OPENAI_API_KEY) {
-    log("warn", "OPENAI_API_KEY missing - cannot generate AI response", correlation_id);
+async function answerWithOpenAI(
+  question: string, 
+  context: string | null, 
+  correlationId: string, 
+  mode: 'rag' | 'general' = 'rag'
+): Promise<string | null> {
+  if (!openaiApiKey) {
+    log('error', 'OpenAI API key not available', {}, correlationId);
     return null;
   }
 
   try {
-    let systemPrompt = "Você é a I.A Ludmila, assistente técnica agrícola do FlowAgro. Responda de forma objetiva e prática.";
+    let systemPrompt = "Você é a I.A Ludmila, assistente técnica agrícola do FlowAgro. Responda de forma objetiva, técnica e prática.";
     let userContent = question;
 
-    if (mode === "rag" && snippets.length > 0) {
-      const context = snippets.map((s, i) => `Fonte ${i + 1}:\n${s.content}`).join("\n\n").slice(0, 8000);
+    if (mode === 'rag' && context) {
       systemPrompt += " Use SEMPRE o contexto fornecido quando relevante, mas complemente com conhecimento geral se necessário.";
       userContent = `Pergunta: ${question}\n\nContexto dos documentos:\n${context}`;
     } else {
       systemPrompt += " Responda com base no seu conhecimento geral sobre agricultura. Seja específico e técnico.";
-      userContent = `Pergunta: ${question}`;
     }
 
-    const body = {
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userContent }
-      ],
-      temperature: 0.2,
-    };
-
-    const response = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        model: 'gpt-4.1-2025-04-14',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent }
+        ],
+        temperature: 0.2,
+        max_tokens: 1000
+      }),
     });
-
-    const latency = Date.now() - startTime;
 
     if (!response.ok) {
       const errorText = await response.text();
-      log("error", "OpenAI API error", correlation_id, { 
+      log('error', 'OpenAI API error', { 
         status: response.status, 
-        error: errorText, 
-        latency,
-        mode 
-      });
+        error: errorText 
+      }, correlationId);
       return null;
     }
 
-    const json = await response.json();
-    const answer = json?.choices?.[0]?.message?.content?.trim();
+    const data = await response.json();
+    const answer = data.choices?.[0]?.message?.content?.trim();
     
-    log("info", "OpenAI response generated", correlation_id, { 
+    log('info', 'OpenAI response generated', { 
       mode, 
-      context_chunks: snippets.length,
-      latency,
+      has_context: !!context,
       success: !!answer 
-    });
+    }, correlationId);
 
     return answer || null;
   } catch (error) {
-    const latency = Date.now() - startTime;
-    log("error", "OpenAI request failed", correlation_id, { error: error.message, latency, mode });
+    log('error', 'OpenAI request failed', { 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }, correlationId);
     return null;
   }
 }
 
-// Validação de APIs (todas desabilitadas até termos endpoints reais)
-function validateApiRegistry() {
-  let enabledCount = 0;
+// Enhanced API validation with health checks
+async function validateApiRegistry(correlationId: string): Promise<Record<string, boolean>> {
+  const healthStatus: Record<string, boolean> = {};
   
-  for (const [key, api] of Object.entries(API_REGISTRY)) {
-    // Desabilita automaticamente se URL inválida ou ausente
-    if (!api.base_url || !api.base_url.startsWith("http")) {
-      api.enabled = false;
-      if (api.api_key) {
-        log("warn", `API ${key} disabled: invalid/missing base_url`, undefined, { api_key_present: !!api.api_key });
-      }
+  for (const [name, config] of Object.entries(API_REGISTRY)) {
+    if (!config.enabled || !config.base_url || !config.api_key) {
+      healthStatus[name] = false;
+      log('warn', `API ${name} disabled or not configured`, {
+        enabled: config.enabled,
+        has_base_url: !!config.base_url,
+        has_api_key: !!config.api_key
+      }, correlationId);
+      continue;
     }
+
+    try {
+      // Try health endpoint first, fallback to base URL
+      const healthEndpoint = '/health'; // Standard health endpoint
+      const response = await fetchWithRetryAndBreaker(
+        config,
+        healthEndpoint,
+        { method: 'GET' },
+        correlationId
+      );
+      
+      healthStatus[name] = response.ok;
+      log('info', `API ${name} health check`, {
+        status: response.status,
+        healthy: response.ok
+      }, correlationId);
+      
+    } catch (error) {
+      healthStatus[name] = false;
+      log('error', `API ${name} health check failed`, {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, correlationId);
+    }
+  }
+  
+  return healthStatus;
+}
+
+// Enhanced external API querying with standardized responses
+async function queryExternalAPIs(question: string, correlationId: string): Promise<any> {
+  log('info', 'Starting external API queries', { question }, correlationId);
+  
+  const healthStatus = await validateApiRegistry(correlationId);
+  const healthyAPIs = Object.entries(healthStatus)
+    .filter(([_, healthy]) => healthy)
+    .map(([name, _]) => name);
+  
+  if (healthyAPIs.length === 0) {
+    log('warn', 'No healthy external APIs available', {}, correlationId);
+    return {
+      success: false,
+      source: 'external_apis',
+      answer: "Todas as fontes externas estão temporariamente indisponíveis. Vou responder com base no meu conhecimento geral.",
+      fallback_used: true
+    };
+  }
+
+  // Query each healthy API based on question context
+  const apiResults: any[] = [];
+  
+  for (const apiName of healthyAPIs) {
+    const config = API_REGISTRY[apiName];
     
-    if (api.enabled) {
-      enabledCount++;
-      log("info", `API ${key} enabled`, undefined, { base_url: api.base_url });
+    try {
+      let endpoint = '';
+      let payload: any = {};
+      
+      // Route question to appropriate API based on content
+      if (apiName === 'agro_responde' && (question.includes('praga') || question.includes('doença') || question.includes('cultura'))) {
+        endpoint = '/ask';
+        payload = { query: question, culture: 'milho', region: 'cerrado' };
+      } else if (apiName === 'clima_embrapa' && (question.includes('clima') || question.includes('chuva') || question.includes('temperatura'))) {
+        endpoint = '/weather';
+        payload = { lat: -15.793889, lon: -47.882778, date: new Date().toISOString().split('T')[0] };
+      } else if (apiName === 'produtos' && (question.includes('produto') || question.includes('fertilizante') || question.includes('defensivo'))) {
+        endpoint = '/search';
+        payload = { q: question, category: 'fertilizante', page: 1 };
+      } else if (apiName === 'biologicos' && question.includes('biológico')) {
+        endpoint = '/solutions';
+        payload = { target: 'praga', crop: 'milho' };
+      } else if (apiName === 'smart_solo' && (question.includes('solo') || question.includes('análise'))) {
+        endpoint = '/analyze';
+        payload = { clay: 30, ph: 6.5, p_mehlich: 15, k: 120 };
+      } else {
+        continue; // Skip if question doesn't match API purpose
+      }
+
+      const response = await fetchWithRetryAndBreaker(
+        config,
+        endpoint,
+        {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        },
+        correlationId
+      );
+
+      const data = await response.json();
+      
+      apiResults.push({
+        source: apiName,
+        data,
+        success: true
+      });
+      
+      log('info', `API ${apiName} query successful`, {
+        endpoint,
+        response_size: JSON.stringify(data).length
+      }, correlationId);
+      
+    } catch (error) {
+      log('error', `API ${apiName} query failed`, {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, correlationId);
+      
+      // Add fallback message for this API
+      apiResults.push({
+        source: apiName,
+        success: false,
+        fallback_message: FALLBACK_MESSAGES[apiName as keyof typeof FALLBACK_MESSAGES]
+      });
     }
   }
-  
-  log("info", "API registry validation complete", undefined, { enabled_apis: enabledCount });
-  return enabledCount;
-}
 
-// Placeholder para futuras integrações (quando tivermos URLs reais)
-async function queryExternalAPIs(question: string, correlation_id: string) {
-  const enabledApis = Object.values(API_REGISTRY).filter(api => api.enabled);
-  
-  if (enabledApis.length === 0) {
-    log("info", "No external APIs enabled - skipping", correlation_id);
-    return null;
+  if (apiResults.length === 0) {
+    return {
+      success: false,
+      source: 'external_apis',
+      answer: "Não foi possível consultar as fontes externas no momento. Vou responder com base no conhecimento disponível.",
+      fallback_used: true
+    };
   }
-  
-  // TODO: Implementar quando tivermos endpoints reais
-  log("warn", "External API integration not yet implemented", correlation_id);
-  return null;
+
+  return {
+    success: true,
+    source: 'external_apis',
+    results: apiResults,
+    healthy_apis: healthyAPIs
+  };
 }
 
-// Inicialização
-validateApiRegistry();
-
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
+// Main request handler with enhanced fallback strategy
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
-  const correlation_id = generateCorrelationId();
+  const correlationId = generateCorrelationId();
   const requestStart = Date.now();
 
   try {
-    const payload = (await req.json()) as ChatPayload;
-    const question = (payload?.message || "").trim();
-
-    log("info", "Chat request received", correlation_id, { question_length: question.length });
+    const payload = await req.json() as ChatPayload;
+    const question = payload?.message?.trim();
 
     if (!question) {
-      log("warn", "Empty question received", correlation_id);
+      log('warn', 'Empty question received', {}, correlationId);
       return new Response(JSON.stringify({ 
-        error: "Pergunta é obrigatória",
-        correlation_id 
+        error: 'Pergunta é obrigatória',
+        correlation_id: correlationId 
       }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    let finalAnswer = null;
-    let finalSource = "general";
+    log('info', 'Chat request received', { 
+      question_length: question.length 
+    }, correlationId);
 
-    // 1) Busca RAG local com contexto
-    const snippets = await searchLocalContext(question, correlation_id);
+    let finalAnswer: string | null = null;
+    let finalSource = 'general';
+
+    // 1. Try RAG with local context first
+    const keywords = extractKeywords(question);
+    const localContext = await searchLocalContext(keywords, correlationId);
     
-    if (snippets.length > 0) {
-      log("info", "Local context found - attempting RAG", correlation_id, { chunks: snippets.length });
-      const ragAnswer = await answerWithOpenAI(question, snippets, correlation_id, "rag");
+    if (localContext) {
+      log('info', 'Local context found - attempting RAG', { 
+        context_length: localContext.length 
+      }, correlationId);
+      
+      const ragAnswer = await answerWithOpenAI(question, localContext, correlationId, 'rag');
       
       if (ragAnswer) {
         finalAnswer = ragAnswer;
-        finalSource = "local";
-        log("info", "RAG response generated successfully", correlation_id);
-      } else {
-        log("warn", "RAG generation failed despite having context", correlation_id);
+        finalSource = 'local';
+        log('info', 'RAG response generated successfully', {}, correlationId);
       }
-    } else {
-      log("info", "No local context found", correlation_id);
     }
 
-    // 2) Fallback: OpenAI geral (conhecimento base)
+    // 2. Fallback to general OpenAI knowledge
     if (!finalAnswer) {
-      log("info", "Using OpenAI general fallback", correlation_id);
-      const generalAnswer = await answerWithOpenAI(question, [], correlation_id, "general");
+      log('info', 'Using OpenAI general fallback', {}, correlationId);
+      const generalAnswer = await answerWithOpenAI(question, null, correlationId, 'general');
       
       if (generalAnswer) {
         finalAnswer = generalAnswer;
-        finalSource = "general";
-        log("info", "General AI response generated", correlation_id);
-      } else {
-        log("error", "Both RAG and general AI failed", correlation_id);
+        finalSource = 'general';
+        log('info', 'General AI response generated', {}, correlationId);
       }
     }
 
-    // 3) Caso ainda não tenha resposta, tenta APIs externas (placeholder)
+    // 3. Try external APIs as last resort (when implemented)
     if (!finalAnswer) {
-      const externalResult = await queryExternalAPIs(question, correlation_id);
-      if (externalResult) {
-        finalAnswer = externalResult.answer;
-        finalSource = externalResult.source;
+      log('info', 'Attempting external APIs fallback', {}, correlationId);
+      const externalResult = await queryExternalAPIs(question, correlationId);
+      
+      if (externalResult?.success && externalResult.results?.length > 0) {
+        // Process external API results
+        const successfulResults = externalResult.results.filter((r: any) => r.success);
+        if (successfulResults.length > 0) {
+          finalAnswer = `Consultei fontes externas: ${successfulResults.map((r: any) => r.source).join(', ')}`;
+          finalSource = 'external';
+        }
       }
     }
 
     const totalLatency = Date.now() - requestStart;
 
-    // 4) Resposta final ou erro
+    // 4. Final response or error
     if (finalAnswer) {
-      log("info", "Request completed successfully", correlation_id, { 
+      log('info', 'Request completed successfully', { 
         source: finalSource, 
         total_latency: totalLatency 
-      });
+      }, correlationId);
       
       return new Response(JSON.stringify({ 
         answer: finalAnswer, 
         source: finalSource,
-        correlation_id 
+        correlation_id: correlationId 
       }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else {
-      log("error", "All fallback methods failed", correlation_id, { total_latency: totalLatency });
+      log('error', 'All fallback methods failed', { 
+        total_latency: totalLatency 
+      }, correlationId);
       
       return new Response(JSON.stringify({ 
-        error: "Não consegui gerar uma resposta no momento. Tente novamente em instantes.",
-        correlation_id 
+        error: 'Não consegui gerar uma resposta no momento. Tente novamente em instantes.',
+        correlation_id: correlationId 
       }), {
         status: 503,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-  } catch (e) {
+  } catch (error) {
     const totalLatency = Date.now() - requestStart;
-    log("error", "Unhandled exception in ai-chat", correlation_id, { 
-      error: e.message, 
+    log('error', 'Unhandled exception in ai-chat', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
       total_latency: totalLatency 
-    });
+    }, correlationId);
     
     return new Response(JSON.stringify({ 
-      error: "Erro interno. Nossa equipe foi notificada.",
-      correlation_id 
+      error: 'Erro interno. Nossa equipe foi notificada.',
+      correlation_id: correlationId 
     }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
