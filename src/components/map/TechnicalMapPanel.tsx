@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import MapView from "@/components/map/MapView";
 import MapDrawingControls from "@/components/map/MapDrawingControls";
+import { SatelliteLayerSelector } from "@/components/map/SatelliteLayerSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Layers, Filter, LocateFixed, PenTool, Edit3, Magnet, Save, ChevronDown, ZoomIn, ZoomOut, Plus, Minus, Camera } from "lucide-react";
+import { Layers, Filter, LocateFixed, PenTool, Edit3, Magnet, Save, ChevronDown, ZoomIn, ZoomOut, Plus, Minus, Camera, Satellite } from "lucide-react";
 import { GPSService } from "@/services/gpsService";
 import { useGPSState } from "@/hooks/useGPSState";
 import { GPSStatusIndicator } from "@/components/GPSStatusIndicator";
@@ -56,9 +57,10 @@ function centroid(coords: [number, number][]): [number, number] | null {
 }
 
 const layerOptions = [
+  { id: "satellite", label: "Satélite", color: "bg-blue-500" },
   { id: "ndvi", label: "NDVI", color: "bg-green-500" },
   { id: "solo", label: "Solo", color: "bg-amber-600" },
-  { id: "marketing", label: "Marketing", color: "bg-blue-500" },
+  { id: "marketing", label: "Marketing", color: "bg-blue-400" },
   { id: "ocorrencias", label: "Ocorrências", color: "bg-red-500" },
   { id: "talhoes", label: "Talhões", color: "bg-purple-500" },
   { id: "clima", label: "Clima", color: "bg-sky-400" },
@@ -86,6 +88,14 @@ const TechnicalMapPanel: React.FC = () => {
   // Bottom panel
   const [panelOpen, setPanelOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  
+  // Satellite layers
+  const [satelliteLayersOpen, setSatelliteLayersOpen] = useState(false);
+  const [loadedSatelliteLayers, setLoadedSatelliteLayers] = useState<Array<{
+    id: string;
+    imageUrl: string;
+    metadata: any;
+  }>>([]);
 
   // GPS Hook
   const { gpsState, setGpsState, getCurrentLocationWithFallback, checkGPSBeforeAction } = useGPSState();
@@ -107,8 +117,29 @@ const TechnicalMapPanel: React.FC = () => {
   }, [layersOpen]);
 
   const handleToggleLayer = (id: string) => {
+    if (id === "satellite") {
+      setSatelliteLayersOpen(true);
+      return;
+    }
     setActiveLayers(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const handleSatelliteLayerLoad = (imageUrl: string, metadata: any) => {
+    const layerId = `satellite-${Date.now()}`;
+    setLoadedSatelliteLayers(prev => [
+      ...prev,
+      { id: layerId, imageUrl, metadata }
+    ]);
+    setActiveLayers(prev => ({ ...prev, [layerId]: true }));
+    console.log('Camada de satélite carregada:', { layerId, metadata });
+  };
+
+  // Calculate current map bbox for satellite requests
+  const currentBbox = useMemo((): [number, number, number, number] => {
+    const [lat, lng] = center;
+    const delta = 0.01 * Math.pow(2, 15 - zoom); // Approximate bbox based on zoom
+    return [lng - delta, lat - delta, lng + delta, lat + delta];
+  }, [center, zoom]);
 
   const handleLocate = async () => {
     console.log("Botão GPS clicado");
@@ -272,9 +303,32 @@ const TechnicalMapPanel: React.FC = () => {
                   />
                   <div className={`w-3 h-3 rounded ${layer.color}`} />
                   <span className="flex-1">{layer.label}</span>
+                  {layer.id === "satellite" && <Satellite className="h-3 w-3 text-muted-foreground" />}
                 </label>
               ))}
             </div>
+            
+            {/* Loaded Satellite Layers */}
+            {loadedSatelliteLayers.length > 0 && (
+              <div className="mb-4">
+                <div className="text-xs font-medium text-muted-foreground mb-2">Camadas de Satélite</div>
+                <div className="space-y-1">
+                  {loadedSatelliteLayers.map((layer) => (
+                    <label key={layer.id} className="flex items-center gap-3 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded">
+                      <input 
+                        type="checkbox" 
+                        checked={!!activeLayers[layer.id]} 
+                        onChange={() => setActiveLayers(prev => ({ ...prev, [layer.id]: !prev[layer.id] }))}
+                        className="rounded" 
+                      />
+                      <div className="w-3 h-3 rounded bg-blue-500" />
+                      <span className="flex-1 text-xs">{layer.metadata.source} - {layer.metadata.type}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <div className="text-xs font-medium text-muted-foreground mb-2">Mapa Base</div>
             <div className="grid grid-cols-3 gap-1">
               {[
@@ -300,6 +354,30 @@ const TechnicalMapPanel: React.FC = () => {
             </div>
           </div>
         </div>
+        
+        {/* Satellite Layer Selector Modal */}
+        {satelliteLayersOpen && (
+          <div className="fixed inset-0 z-[2000] bg-black/50 flex items-center justify-center p-4">
+            <div className="bg-background rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="text-lg font-semibold">Camadas de Satélite</h3>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setSatelliteLayersOpen(false)}
+                >
+                  ×
+                </Button>
+              </div>
+              <div className="p-4">
+                <SatelliteLayerSelector
+                  bbox={currentBbox}
+                  onLayerLoad={handleSatelliteLayerLoad}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Map */}
