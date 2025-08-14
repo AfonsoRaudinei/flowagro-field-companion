@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 const queryClient = new QueryClient();
 
 // Lazy-loaded pages for better TTI
+const TelaInicial = lazy(() => import("./pages/TelaInicial"));
 const LoginForm = lazy(() => import("./pages/LoginForm"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -40,6 +41,7 @@ const AppLayout = () => {
       <div className={`w-full max-w-md mx-auto bg-background min-h-screen ${showBottomNav ? 'pb-16' : ''}`}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
+            <Route path="/" element={<TelaInicial />} />
             <Route path="/login-form" element={<LoginForm />} />
             <Route path="/recover" element={<Recover />} />
             <Route path="/reset-password" element={<ResetPassword />} />
