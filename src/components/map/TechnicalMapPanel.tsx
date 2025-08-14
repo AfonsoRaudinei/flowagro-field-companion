@@ -4,7 +4,7 @@ import MapDrawingControls from "@/components/map/MapDrawingControls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Layers, Filter, LocateFixed, PenTool, Edit3, Magnet, Save, ChevronDown, ZoomIn, ZoomOut, Plus, Minus } from "lucide-react";
+import { Layers, Filter, LocateFixed, PenTool, Edit3, Magnet, Save, ChevronDown, ZoomIn, ZoomOut, Plus, Minus, Camera } from "lucide-react";
 import { GPSService } from "@/services/gpsService";
 import { useGPSState } from "@/hooks/useGPSState";
 import { GPSStatusIndicator } from "@/components/GPSStatusIndicator";
@@ -106,11 +106,18 @@ const TechnicalMapPanel: React.FC = () => {
   };
 
   const handleLocate = async () => {
-    await checkGPSBeforeAction("localizar no mapa");
-    const location = await getCurrentLocationWithFallback({ lat: center[0], lng: center[1] });
-    if (location) {
-      setCenter([location.latitude, location.longitude]);
-      setZoom(16);
+    try {
+      await checkGPSBeforeAction("localizar no mapa");
+      const location = await getCurrentLocationWithFallback({ lat: center[0], lng: center[1] });
+      if (location) {
+        setCenter([location.latitude, location.longitude]);
+        setZoom(16);
+        console.log("GPS localização encontrada:", location);
+      } else {
+        console.log("Localização não disponível, usando fallback");
+      }
+    } catch (error) {
+      console.error("Erro ao obter localização:", error);
     }
   };
 
@@ -186,6 +193,9 @@ const TechnicalMapPanel: React.FC = () => {
               <LocateFixed className="h-5 w-5" />
               <GPSStatusIndicator gpsState={gpsState} className="absolute -top-1 -right-1" />
             </Button>
+            <Button variant="secondary" size="icon" className="h-10 w-10">
+              <Camera className="h-5 w-5" />
+            </Button>
             <Button onClick={() => setFilterOn(v => !v)} variant={filterOn ? "default" : "secondary"} size="icon" className="h-10 w-10">
               <Filter className="h-5 w-5" />
             </Button>
@@ -257,6 +267,7 @@ const TechnicalMapPanel: React.FC = () => {
               editing={editing}
               snapping={snapOn}
               onChange={(fc) => {
+                console.log("Geometria alterada:", fc);
                 setGeometry(fc);
                 if (fc) setPanelOpen(true);
               }}
