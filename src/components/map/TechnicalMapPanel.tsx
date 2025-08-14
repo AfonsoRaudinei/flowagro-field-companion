@@ -126,19 +126,53 @@ const TechnicalMapPanel: React.FC = () => {
 
   const handleSatelliteLayerLoad = (imageUrl: string, metadata: any) => {
     const layerId = `satellite-${Date.now()}`;
-    setLoadedSatelliteLayers(prev => [
-      ...prev,
-      { id: layerId, imageUrl, metadata }
-    ]);
-    setActiveLayers(prev => ({ ...prev, [layerId]: true }));
-    console.log('Camada de satélite carregada:', { layerId, metadata });
+    console.log('🛰️ DEBUG - Satellite Layer Load Started:', {
+      imageUrl: imageUrl?.substring(0, 100) + '...',
+      metadata,
+      timestamp: new Date().toISOString()
+    });
+    
+    setLoadedSatelliteLayers(prev => {
+      const newLayers = [...prev, { id: layerId, imageUrl, metadata }];
+      console.log('🛰️ DEBUG - Updated Satellite Layers:', newLayers.length);
+      return newLayers;
+    });
+    
+    setActiveLayers(prev => {
+      const updated = { ...prev, [layerId]: true };
+      console.log('🛰️ DEBUG - Active Layers Updated:', Object.keys(updated).filter(k => updated[k]));
+      return updated;
+    });
+    
+    console.log('✅ Satellite layer loaded successfully:', { layerId, metadata });
   };
 
-  // Calculate current map bbox for satellite requests
+  // Calculate current map bbox for satellite requests - CRITICAL FIX
   const currentBbox = useMemo((): [number, number, number, number] => {
     const [lat, lng] = center;
-    const delta = 0.01 * Math.pow(2, 15 - zoom); // Approximate bbox based on zoom
-    return [lng - delta, lat - delta, lng + delta, lat + delta];
+    // More appropriate zoom-based delta calculation
+    const zoomFactor = Math.pow(2, 15 - zoom);
+    const latDelta = 0.005 * zoomFactor; // Latitude delta
+    const lngDelta = 0.005 * zoomFactor / Math.cos(lat * Math.PI / 180); // Longitude delta adjusted for latitude
+    
+    // Format: [west, south, east, north] = [lng-delta, lat-delta, lng+delta, lat+delta]
+    const bbox: [number, number, number, number] = [
+      lng - lngDelta,  // west (longitude min)
+      lat - latDelta,  // south (latitude min) 
+      lng + lngDelta,  // east (longitude max)
+      lat + latDelta   // north (latitude max)
+    ];
+    
+    console.log('🗺️ DEBUG - Bbox Calculation:', {
+      center: { lat, lng },
+      zoom,
+      zoomFactor,
+      deltas: { latDelta, lngDelta },
+      bbox,
+      bboxFormatted: `[${bbox[0].toFixed(6)}, ${bbox[1].toFixed(6)}, ${bbox[2].toFixed(6)}, ${bbox[3].toFixed(6)}]`
+    });
+    
+    return bbox;
   }, [center, zoom]);
 
   const handleLocate = async () => {

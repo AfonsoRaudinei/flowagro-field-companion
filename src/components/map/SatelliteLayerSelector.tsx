@@ -84,58 +84,114 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
 
   const handleLoadLayer = async () => {
     const layer = SATELLITE_LAYERS.find(l => l.id === selectedLayer);
-    if (!layer) return;
+    if (!layer) {
+      console.error('🚨 Layer not found:', selectedLayer);
+      return;
+    }
 
     setLoading(true);
+    const startTime = Date.now();
+    
+    // Enhanced debugging
+    const debugInfo = {
+      layerId: selectedLayer,
+      layerName: layer.name,
+      layerSource: layer.source,
+      layerType: layer.type,
+      date: selectedDate,
+      bbox,
+      bboxFormatted: `[${bbox[0].toFixed(6)}, ${bbox[1].toFixed(6)}, ${bbox[2].toFixed(6)}, ${bbox[3].toFixed(6)}]`,
+      opacity: opacity[0],
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log('🚀 SATELLITE LAYER DEBUG - Starting load:', debugInfo);
+    
     try {
-      console.log(`=== Carregando camada ${layer.name} ===`);
-      console.log('Data:', selectedDate);
-      console.log('BBox:', bbox);
-      console.log('Layer type:', layer.type);
-      
       if (layer.source === 'sentinel') {
-        console.log('Chamando função sentinel-hub...');
+        console.log('🛰️ SENTINEL DEBUG - Starting Sentinel-2 request...');
         
-        const response = await supabase.functions.invoke('sentinel-hub', {
-          body: {
-            bbox,
-            date: selectedDate,
-            layerType: layer.type,
-            width: 512,
-            height: 512
-          }
+        const requestBody = {
+          bbox,
+          date: selectedDate,
+          layerType: layer.type,
+          width: 512,
+          height: 512
+        };
+        
+        console.log('🛰️ SENTINEL DEBUG - Request body:', requestBody);
+        
+        // Add request timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
+        );
+        
+        const requestPromise = supabase.functions.invoke('sentinel-hub', {
+          body: requestBody
+        });
+        
+        const response = await Promise.race([requestPromise, timeoutPromise]) as any;
+        const duration = Date.now() - startTime;
+        
+        console.log(`🛰️ SENTINEL DEBUG - Response in ${duration}ms:`, {
+          hasError: !!response.error,
+          hasData: !!response.data,
+          errorDetails: response.error,
+          dataType: typeof response.data,
+          dataSize: response.data ? (response.data.byteLength || response.data.length || 'unknown') : 0
         });
 
-        console.log('Resposta da função:', response);
-
         if (response.error) {
-          console.error('Erro na resposta:', response.error);
-          throw new Error(`Erro Sentinel Hub: ${response.error.message || 'Erro desconhecido'}`);
+          console.error('🚨 SENTINEL ERROR:', response.error);
+          throw new Error(`Sentinel Hub Error: ${response.error.message || JSON.stringify(response.error)}`);
         }
 
         if (!response.data) {
-          console.error('Sem dados na resposta');
+          console.error('🚨 SENTINEL ERROR: No data in response');
           throw new Error('Nenhum dado retornado da API Sentinel');
         }
 
-        // Check if response.data is ArrayBuffer or Uint8Array
+        // Enhanced data type checking and processing
         let imageBlob: Blob;
-        if (response.data instanceof ArrayBuffer || response.data instanceof Uint8Array) {
+        console.log('🛰️ SENTINEL DEBUG - Processing data type:', {
+          type: typeof response.data,
+          constructor: response.data.constructor.name,
+          isArrayBuffer: response.data instanceof ArrayBuffer,
+          isUint8Array: response.data instanceof Uint8Array,
+          isBlob: response.data instanceof Blob
+        });
+        
+        if (response.data instanceof ArrayBuffer) {
+          console.log('🛰️ SENTINEL DEBUG - Converting ArrayBuffer to Blob');
           imageBlob = new Blob([response.data], { type: 'image/png' });
+        } else if (response.data instanceof Uint8Array) {
+          console.log('🛰️ SENTINEL DEBUG - Converting Uint8Array to Blob');
+          imageBlob = new Blob([response.data], { type: 'image/png' });
+        } else if (response.data instanceof Blob) {
+          console.log('🛰️ SENTINEL DEBUG - Data is already a Blob');
+          imageBlob = response.data;
         } else {
-          console.error('Tipo de dados inesperado:', typeof response.data);
-          throw new Error('Formato de dados inválido da API');
+          console.error('🚨 SENTINEL ERROR - Unexpected data type:', typeof response.data, response.data.constructor.name);
+          throw new Error(`Formato de dados inválido: ${typeof response.data}`);
         }
 
         const imageUrl = URL.createObjectURL(imageBlob);
-        console.log('URL da imagem criada:', imageUrl);
+        console.log('🛰️ SENTINEL DEBUG - Image URL created:', {
+          url: imageUrl.substring(0, 50) + '...',
+          blobSize: imageBlob.size,
+          blobType: imageBlob.type
+        });
         
-        setLastResult({
+        const metadata = {
           source: 'Sentinel-2',
           type: layer.name,
           date: selectedDate,
-          resolution: '10m'
-        });
+          resolution: '10m',
+          processingTime: duration,
+          blobSize: imageBlob.size
+        };
+        
+        setLastResult(metadata);
 
         onLayerLoad(imageUrl, {
           source: 'sentinel',
@@ -144,61 +200,105 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
           opacity: opacity[0] / 100
         });
 
+        console.log('✅ SENTINEL SUCCESS - Layer loaded successfully');
         toast({
-          title: "Camada carregada com sucesso",
-          description: `${layer.name} para ${selectedDate}`
+          title: "✅ Camada Sentinel-2 carregada",
+          description: `${layer.name} para ${selectedDate} (${duration}ms, ${(imageBlob.size/1024).toFixed(1)}KB)`
         });
 
       } else if (layer.source === 'planet') {
-        console.log('Chamando função planet-labs...');
+        console.log('🌍 PLANET DEBUG - Starting Planet Labs request...');
         
-        const response = await supabase.functions.invoke('planet-labs', {
-          body: {
-            bbox,
-            date: selectedDate,
-            layerType: layer.type,
-            cloudCover: 0.3
-          }
+        const requestBody = {
+          bbox,
+          date: selectedDate,
+          layerType: layer.type,
+          cloudCover: 0.3
+        };
+        
+        console.log('🌍 PLANET DEBUG - Request body:', requestBody);
+        
+        // Add request timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
+        );
+        
+        const requestPromise = supabase.functions.invoke('planet-labs', {
+          body: requestBody
         });
+        
+        const response = await Promise.race([requestPromise, timeoutPromise]) as any;
+        const duration = Date.now() - startTime;
 
-        console.log('Resposta Planet Labs:', response);
+        console.log(`🌍 PLANET DEBUG - Response in ${duration}ms:`, response);
 
         if (response.error) {
-          console.error('Erro Planet Labs:', response.error);
-          throw new Error(`Erro Planet Labs: ${response.error.message || 'Erro desconhecido'}`);
+          console.error('🚨 PLANET ERROR:', response.error);
+          throw new Error(`Planet Labs Error: ${response.error.message || JSON.stringify(response.error)}`);
         }
 
         if (!response.data) {
+          console.error('🚨 PLANET ERROR: No data in response');
           throw new Error('Nenhum dado retornado da API Planet Labs');
         }
 
-        setLastResult({
+        const metadata = {
           source: 'Planet Labs',
           type: layer.name,
           date: selectedDate,
           cloudCover: response.data.cloudCover,
-          imageId: response.data.imageId
+          imageId: response.data.imageId,
+          processingTime: duration
+        };
+        
+        setLastResult(metadata);
+
+        // For Planet Labs, we would need to handle the download URL
+        onLayerLoad(response.data.downloadUrl || '', {
+          source: 'planet',
+          type: layer.type,
+          date: selectedDate,
+          opacity: opacity[0] / 100,
+          imageId: response.data.imageId,
+          cloudCover: response.data.cloudCover
         });
 
-        // Planet Labs returns metadata for now
+        console.log('✅ PLANET SUCCESS - Metadata loaded successfully');
         toast({
-          title: "Metadados Planet carregados",
-          description: `Imagem ${response.data.imageId} - ${(response.data.cloudCover * 100).toFixed(1)}% nuvens`
+          title: "✅ Metadados Planet carregados",
+          description: `Imagem ${response.data.imageId} - ${(response.data.cloudCover * 100).toFixed(1)}% nuvens (${duration}ms)`
         });
+      } else {
+        throw new Error(`Unknown layer source: ${layer.source}`);
       }
 
     } catch (error) {
-      console.error('=== ERRO ao carregar camada ===');
-      console.error('Erro completo:', error);
-      console.error('Stack trace:', error instanceof Error ? error.stack : 'N/A');
+      const duration = Date.now() - startTime;
+      console.error('🚨 SATELLITE ERROR - Load failed:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        duration,
+        debugInfo
+      });
+      
+      setLastResult({
+        source: layer.source === 'sentinel' ? 'Sentinel-2' : 'Planet Labs',
+        type: layer.name,
+        date: selectedDate,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        processingTime: duration
+      });
       
       toast({
-        title: "Erro ao carregar camada",
+        title: "❌ Erro ao carregar camada",
         description: error instanceof Error ? error.message : "Erro desconhecido",
         variant: "destructive"
       });
     } finally {
       setLoading(false);
+      const totalDuration = Date.now() - startTime;
+      console.log(`🏁 SATELLITE DEBUG - Load completed in ${totalDuration}ms`);
     }
   };
 
