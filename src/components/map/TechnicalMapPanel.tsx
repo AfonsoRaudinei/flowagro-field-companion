@@ -4,8 +4,10 @@ import MapDrawingControls from "@/components/map/MapDrawingControls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { CloudSun, Radar, Megaphone, ScanLine, Layers, Filter, LocateFixed, PenTool, Edit3, Magnet, Save, Shapes, MessageSquare, ChevronDown } from "lucide-react";
+import { Layers, Filter, LocateFixed, PenTool, Edit3, Magnet, Save, ChevronDown, ZoomIn, ZoomOut, Plus, Minus } from "lucide-react";
 import { GPSService } from "@/services/gpsService";
+import { useGPSState } from "@/hooks/useGPSState";
+import { GPSStatusIndicator } from "@/components/GPSStatusIndicator";
 
 // Minimal geo helpers (planar approximation)
 function polygonArea(coords: [number, number][]): number {
@@ -52,28 +54,29 @@ function centroid(coords: [number, number][]): [number, number] | null {
 }
 
 const layerOptions = [
-  { id: "ndvi", label: "NDVI" },
-  { id: "solo", label: "Solo" },
-  { id: "marketing", label: "Marketing" },
-  { id: "ocorrencias", label: "Ocorrências" },
-  { id: "talhoes", label: "Talhões" },
+  { id: "ndvi", label: "NDVI", color: "bg-green-500" },
+  { id: "solo", label: "Solo", color: "bg-amber-600" },
+  { id: "marketing", label: "Marketing", color: "bg-blue-500" },
+  { id: "ocorrencias", label: "Ocorrências", color: "bg-red-500" },
+  { id: "talhoes", label: "Talhões", color: "bg-purple-500" },
+  { id: "clima", label: "Clima", color: "bg-sky-400" },
+  { id: "radar", label: "Radar", color: "bg-orange-500" },
 ];
 
 
 const TechnicalMapPanel: React.FC = () => {
   const [center, setCenter] = useState<[number, number]>([-23.55, -46.63]);
-  const [zoom] = useState(5);
-  const [baseLayerId, setBaseLayerId] = useState<"streets" | "satellite" | "terrain">("streets");
+  const [zoom, setZoom] = useState(13);
+  const [baseLayerId, setBaseLayerId] = useState<"streets" | "satellite" | "terrain">("satellite");
 
   // UI states
   const [query, setQuery] = useState("");
   const [layersOpen, setLayersOpen] = useState(false);
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({});
-  
   const [filterOn, setFilterOn] = useState(false);
 
-  // Drawing
-  const [drawingBar, setDrawingBar] = useState(false);
+  // Drawing states
+  const [drawingMode, setDrawingMode] = useState<"polygon" | "rectangle" | "circle" | "freehand" | null>(null);
   const [editing, setEditing] = useState(false);
   const [snapOn, setSnapOn] = useState(false);
   const [geometry, setGeometry] = useState<GeoJSON.FeatureCollection | null>(null);
@@ -81,6 +84,9 @@ const TechnicalMapPanel: React.FC = () => {
   // Bottom panel
   const [panelOpen, setPanelOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
+
+  // GPS Hook
+  const { gpsState, getCurrentLocationWithFallback, checkGPSBeforeAction } = useGPSState();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -100,16 +106,25 @@ const TechnicalMapPanel: React.FC = () => {
   };
 
   const handleLocate = async () => {
-    try {
-      const loc = await GPSService.getCurrentLocation();
-      setCenter([loc.latitude, loc.longitude]);
-    } catch (e) {
-      // silent fallback
+    await checkGPSBeforeAction("localizar no mapa");
+    const location = await getCurrentLocationWithFallback({ lat: center[0], lng: center[1] });
+    if (location) {
+      setCenter([location.latitude, location.longitude]);
+      setZoom(16);
     }
   };
 
-  const handleStartDraw = () => {
-    setDrawingBar(v => !v);
+  const handleZoomIn = () => {
+    setZoom(prev => Math.min(prev + 1, 18));
+  };
+
+  const handleZoomOut = () => {
+    setZoom(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleDrawingMode = (mode: typeof drawingMode) => {
+    setDrawingMode(prev => prev === mode ? null : mode);
+    setEditing(false);
   };
 
   const createSamplePolygon = () => {
@@ -148,7 +163,7 @@ const TechnicalMapPanel: React.FC = () => {
 
   return (
     <div className="relative w-full h-screen max-w-md mx-auto bg-background">
-      {/* AppBar */}
+      {/* Header Otimizado */}
       <div className="absolute top-0 left-0 right-0 z-[1000] bg-card/95 border-b border-border px-3 pt-3 pb-2">
         <div className="flex items-center justify-center">
           <h1 className="text-base font-semibold">Mapa Técnico</h1>
@@ -157,48 +172,71 @@ const TechnicalMapPanel: React.FC = () => {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar fazenda, talhão ou ocorrência"
+            placeholder="Buscar fazenda, talhão..."
             className="h-10 flex-1"
           />
           <div className="flex items-center gap-1">
-            <Button id="layers-btn" onClick={() => setLayersOpen(v=>!v)} variant="secondary" size="icon" className="h-10 w-10">
+            <Button id="layers-btn" onClick={() => setLayersOpen(v=>!v)} variant={layersOpen ? "default" : "secondary"} size="icon" className="h-10 w-10 relative">
               <Layers className="h-5 w-5" />
+              {Object.values(activeLayers).some(Boolean) && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full" />
+              )}
             </Button>
-            <Button onClick={handleLocate} variant="secondary" size="icon" className="h-10 w-10">
+            <Button onClick={handleLocate} variant="secondary" size="icon" className="h-10 w-10 relative">
               <LocateFixed className="h-5 w-5" />
+              <GPSStatusIndicator gpsState={gpsState} className="absolute -top-1 -right-1" />
             </Button>
             <Button onClick={() => setFilterOn(v => !v)} variant={filterOn ? "default" : "secondary"} size="icon" className="h-10 w-10">
               <Filter className="h-5 w-5" />
             </Button>
+            <div className="flex border border-border rounded-md">
+              <Button onClick={handleZoomOut} variant="ghost" size="icon" className="h-10 w-8 rounded-none border-r">
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Button onClick={handleZoomIn} variant="ghost" size="icon" className="h-10 w-8 rounded-none">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
-        {/* Inline Dropdown */}
+        {/* Dropdown de Camadas Melhorado */}
         <div id="layers-dropdown" className={`relative z-[1100] mt-2 ${layersOpen ? '' : 'hidden'}`}>
-          <div className="rounded-md border border-border bg-popover p-3 shadow-md">
-            <div className="text-xs font-medium text-muted-foreground mb-2">Camadas</div>
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              {layerOptions.map(o => (
-                <label key={o.id} className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={!!activeLayers[o.id]} onChange={() => handleToggleLayer(o.id)} />
-                  {o.label}
+          <div className="rounded-md border border-border bg-popover p-3 shadow-lg">
+            <div className="text-xs font-medium text-muted-foreground mb-2">Camadas Disponíveis</div>
+            <div className="space-y-2 mb-4">
+              {layerOptions.map(layer => (
+                <label key={layer.id} className="flex items-center gap-3 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded">
+                  <input 
+                    type="checkbox" 
+                    checked={!!activeLayers[layer.id]} 
+                    onChange={() => handleToggleLayer(layer.id)}
+                    className="rounded" 
+                  />
+                  <div className={`w-3 h-3 rounded ${layer.color}`} />
+                  <span className="flex-1">{layer.label}</span>
                 </label>
               ))}
             </div>
-            <div className="text-xs font-medium text-muted-foreground mb-1">Tipo de mapa</div>
-            <div className="flex items-center gap-3">
+            <div className="text-xs font-medium text-muted-foreground mb-2">Mapa Base</div>
+            <div className="grid grid-cols-3 gap-1">
               {[
-                { id: "streets", label: "Ruas" },
                 { id: "satellite", label: "Satélite" },
+                { id: "streets", label: "Ruas" },
                 { id: "terrain", label: "Terreno" },
               ].map(opt => (
-                <label key={opt.id} className="flex items-center gap-2 text-sm">
+                <label key={opt.id} className="text-center cursor-pointer">
                   <input
                     type="radio"
                     name="base"
                     checked={baseLayerId === (opt.id as "streets" | "satellite" | "terrain")}
                     onChange={() => setBaseLayerId(opt.id as "streets" | "satellite" | "terrain")}
+                    className="sr-only"
                   />
-                  {opt.label}
+                  <div className={`p-2 text-xs rounded border transition-colors ${
+                    baseLayerId === opt.id ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+                  }`}>
+                    {opt.label}
+                  </div>
                 </label>
               ))}
             </div>
@@ -207,7 +245,7 @@ const TechnicalMapPanel: React.FC = () => {
       </div>
 
       {/* Map */}
-      <div className="absolute inset-0 pt-[88px] pb-[64px]">
+      <div className="absolute inset-0 pt-[130px] pb-[64px]">
         <MapView
           center={center}
           zoom={zoom}
@@ -215,7 +253,7 @@ const TechnicalMapPanel: React.FC = () => {
           geojson={geometry ?? undefined}
           mapChildren={
             <MapDrawingControls
-              enabled={drawingBar}
+              enabled={!!drawingMode}
               editing={editing}
               snapping={snapOn}
               onChange={(fc) => {
@@ -227,83 +265,168 @@ const TechnicalMapPanel: React.FC = () => {
         />
       </div>
 
-      {/* Floating Quick Actions (left) */}
-      <div className="absolute left-2 top-[100px] z-[1000] flex flex-col gap-2">
-        {[{icon: CloudSun, id:'clima', label:'Clima'}, {icon: Radar, id:'radar', label:'Radar'}, {icon: Megaphone, id:'marketing', label:'Marketing'}, {icon: MessageSquare, id:'interacoes', label:'Interações'}, {icon: Shapes, id:'ocorrencias', label:'Ocorrências'}, {icon: ScanLine, id:'scanner', label:'Scanner'}].map(({icon:Icon,id,label}) => (
-          <Button key={id} variant={activeLayers[id] ? 'default' : 'secondary'} size="icon" className="h-10 w-10" onClick={() => handleToggleLayer(id)} aria-label={label} title={label}>
-            <Icon className="h-5 w-5" />
-          </Button>
-        ))}
-      </div>
-
-      {/* Floating Tools Dock (right) */}
-      <div className="absolute right-2 top-[100px] z-[1000] flex flex-col gap-2">
-        <Button onClick={() => { setLayersOpen(v=>!v); }} variant="secondary" size="icon" className="h-10 w-10" aria-label="Dropdown Camadas">
-          <Layers className="h-5 w-5" />
-        </Button>
-        <Button onClick={handleStartDraw} variant={drawingBar ? 'default' : 'secondary'} size="icon" className="h-10 w-10" aria-label="Botão Desenhar">
-          <PenTool className="h-5 w-5" />
-        </Button>
-        <Button onClick={() => setEditing(v=>!v)} variant={editing ? 'default' : 'secondary'} size="icon" className="h-10 w-10" aria-label="Botão Editar">
-          <Edit3 className="h-5 w-5" />
-        </Button>
-        <Button onClick={() => setSnapOn(v=>!v)} variant={snapOn ? 'default' : 'secondary'} size="icon" className="h-10 w-10" aria-label="Botão Snap/Imã">
-          <Magnet className="h-5 w-5" />
-        </Button>
-        <Button onClick={() => setPanelOpen(true)} disabled={!geometry} variant="default" size="icon" className="h-10 w-10" aria-label="Botão Salvar">
-          <Save className="h-5 w-5" />
-        </Button>
-      </div>
-
-      {/* Drawing sub-toolbar */}
-      {drawingBar && (
-        <div className="absolute left-0 right-0 top-[88px] z-[1000] flex items-center gap-2 px-3 py-2 bg-card/95 border-b border-border">
-          <Button size="sm" variant="secondary" onClick={createSamplePolygon}>Mão Livre</Button>
-          <Button size="sm" variant="secondary" onClick={createSamplePolygon}>Polígono</Button>
-          <Button size="sm" variant="secondary" onClick={createSamplePolygon}>Pivô</Button>
-          <Button size="sm" variant="secondary" onClick={createSamplePolygon}>Retângulo</Button>
-          <Button size="sm" variant="destructive" onClick={() => { setGeometry(null); setPanelOpen(false); }}>Remover</Button>
+      {/* Toolbar de Desenho Contextual */}
+      {drawingMode && (
+        <div className="absolute left-4 right-4 top-[140px] z-[1000] bg-card/95 border border-border rounded-lg p-3 shadow-lg">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Ferramentas de Desenho</span>
+              <Button onClick={() => setDrawingMode(null)} variant="ghost" size="sm">×</Button>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button 
+                size="sm" 
+                variant={drawingMode === "freehand" ? "default" : "secondary"} 
+                onClick={() => handleDrawingMode("freehand")}
+              >
+                Mão Livre
+              </Button>
+              <Button 
+                size="sm" 
+                variant={drawingMode === "polygon" ? "default" : "secondary"} 
+                onClick={() => handleDrawingMode("polygon")}
+              >
+                Polígono
+              </Button>
+              <Button 
+                size="sm" 
+                variant={drawingMode === "circle" ? "default" : "secondary"} 
+                onClick={() => handleDrawingMode("circle")}
+              >
+                Círculo/Pivô
+              </Button>
+              <Button 
+                size="sm" 
+                variant={drawingMode === "rectangle" ? "default" : "secondary"} 
+                onClick={() => handleDrawingMode("rectangle")}
+              >
+                Retângulo
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                size="sm" 
+                variant={editing ? "default" : "secondary"} 
+                onClick={() => setEditing(v => !v)}
+              >
+                <Edit3 className="h-4 w-4 mr-1" />
+                Editar
+              </Button>
+              <Button 
+                size="sm" 
+                variant={snapOn ? "default" : "secondary"} 
+                onClick={() => setSnapOn(v => !v)}
+              >
+                <Magnet className="h-4 w-4 mr-1" />
+                Snap
+              </Button>
+              <Button 
+                size="sm" 
+                variant="destructive" 
+                onClick={() => { setGeometry(null); setPanelOpen(false); }}
+                disabled={!geometry}
+              >
+                Remover
+              </Button>
+            </div>
+            {metrics && (
+              <div className="text-xs text-muted-foreground border-t pt-2">
+                Área: {metrics.areaHa} ha | Perímetro: {metrics.perimM} m
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Bottom Sliding Panel */}
-      <div ref={panelRef} className={`absolute left-0 right-0 bottom-0 z-[1000] border-t border-border bg-card/95 ${panelOpen ? 'h-[40%]' : 'h-12'} transition-[height]`}>
-        <div className="flex items-center justify-between px-4 h-12">
+      {/* Botão de Desenho Flutuante */}
+      {!drawingMode && (
+        <div className="absolute right-4 bottom-20 z-[1000]">
+          <Button 
+            onClick={() => setDrawingMode("polygon")} 
+            variant="default" 
+            size="icon" 
+            className="h-12 w-12 rounded-full shadow-lg"
+          >
+            <PenTool className="h-6 w-6" />
+          </Button>
+        </div>
+      )}
+
+      {/* Painel Inferior Otimizado */}
+      <div ref={panelRef} className={`absolute left-0 right-0 bottom-0 z-[1000] border-t border-border bg-card/95 shadow-lg ${panelOpen ? 'h-[45%]' : 'h-14'} transition-[height] duration-300`}>
+        <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold">Painel Detalhes da Área</h3>
-            {geometry && <Badge variant="secondary">Selecionado</Badge>}
+            <h3 className="text-sm font-semibold">
+              {geometry ? 'Área Selecionada' : 'Informações do Mapa'}
+            </h3>
+            {geometry && <Badge variant="default" className="text-xs">Ativo</Badge>}
           </div>
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setPanelOpen(v=>!v)}>
-            <ChevronDown className={`h-5 w-5 ${panelOpen ? 'rotate-180' : ''}`} />
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPanelOpen(v=>!v)}>
+            <ChevronDown className={`h-4 w-4 transition-transform ${panelOpen ? 'rotate-180' : ''}`} />
           </Button>
         </div>
         {panelOpen && (
-          <div className="px-4 pb-4 space-y-3 overflow-y-auto h-[calc(100%-48px)]">
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <div className="text-xs text-muted-foreground">Nome do Talhão</div>
-                <Input defaultValue={geometry ? 'Talhão A' : ''} placeholder="Defina um nome" />
+          <div className="px-4 pb-4 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
+            {geometry ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted-foreground">Nome do Talhão</label>
+                    <Input 
+                      defaultValue="Talhão A" 
+                      placeholder="Defina um nome para a área"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Área</label>
+                    <div className="mt-1 p-2 bg-muted rounded text-sm font-medium">
+                      {metrics?.areaHa ?? '-'} ha
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Perímetro</label>
+                    <div className="mt-1 p-2 bg-muted rounded text-sm font-medium">
+                      {metrics?.perimM ?? '-'} m
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted-foreground">Coordenadas do Centro</label>
+                    <div className="mt-1 p-2 bg-muted rounded text-sm font-mono">
+                      {metrics?.centroid ?? '-'}
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted-foreground">Tipo de Cultura</label>
+                    <Input 
+                      placeholder="Ex: Soja, Milho, Café..."
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <Button variant="default" className="flex-1">
+                    <Save className="h-4 w-4 mr-2" />
+                    Salvar Talhão
+                  </Button>
+                  <Button variant="outline">Compartilhar</Button>
+                  <Button variant="outline">Exportar</Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <PenTool className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Desenhe uma área no mapa para ver as informações</p>
+                <Button 
+                  onClick={() => setDrawingMode("polygon")} 
+                  variant="outline" 
+                  size="sm"
+                  className="mt-3"
+                >
+                  Começar a Desenhar
+                </Button>
               </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Área (ha)</div>
-                <div className="font-medium">{metrics?.areaHa ?? '-'} ha</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Perímetro (m)</div>
-                <div className="font-medium">{metrics?.perimM ?? '-'} m</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Centroide (lat/long)</div>
-                <div className="font-medium">{metrics?.centroid ?? '-'}</div>
-              </div>
-              <div className="col-span-2">
-                <div className="text-xs text-muted-foreground">Status de sobreposição</div>
-                <div className="font-medium">{geometry ? 'Sem sobreposição' : '-'}</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="default" disabled={!geometry}>Salvar</Button>
-            </div>
+            )}
           </div>
         )}
       </div>
