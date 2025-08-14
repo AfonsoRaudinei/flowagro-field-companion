@@ -237,9 +237,9 @@ export default function Dashboard() {
     return b.timestamp.getTime() - a.timestamp.getTime();
   });
 
-  // Check for technical map mode
-  const showTechnicalMap = searchParams.get('view') === 'technical-map';
-  if (showTechnicalMap) {
+  // Check for map tab
+  const showMap = searchParams.get('tab') === 'map';
+  if (showMap) {
     return <TechnicalMapPanel />;
   }
 
