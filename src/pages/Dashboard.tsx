@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import SyncIndicator from '@/components/ui/sync-indicator';
 import { useToast } from '@/hooks/use-toast';
 import ProducerChatCard from '@/components/ProducerChatCard';
+import SearchBar from '@/components/SearchBar';
 import { QuickActionsBar } from '@/components/QuickActionsBar';
 import useVoiceRecorder from '@/hooks/useVoiceRecorder';
 import { CameraService } from '@/services/cameraService';
@@ -32,6 +33,7 @@ const Dashboard: React.FC = () => {
   const [message, setMessage] = useState('');
   const [aiMessages, setAiMessages] = useState<any[]>([]);
   const [isAiTyping, setIsAiTyping] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Tipos e estados de chat
   type Sender = 'producer' | 'consultant' | 'user' | 'ai' | 'system';
@@ -63,6 +65,7 @@ const Dashboard: React.FC = () => {
     hasEmoji?: boolean;
     pinned?: boolean;
     avatar?: string | null;
+    isOnline?: boolean;
   }
 
   const [farms] = useState<string[]>(['Fazenda Primavera', 'Fazenda Aurora']);
@@ -84,7 +87,8 @@ const Dashboard: React.FC = () => {
       hasVoice: false,
       hasEmoji: true,
       pinned: true,
-      avatar: '/api/placeholder/40/40'
+      avatar: '/api/placeholder/40/40',
+      isOnline: true
     },
     {
       id: 2,
@@ -98,7 +102,8 @@ const Dashboard: React.FC = () => {
       hasVoice: true,
       hasEmoji: false,
       pinned: false,
-      avatar: '/api/placeholder/40/40'
+      avatar: '/api/placeholder/40/40',
+      isOnline: false
     },
     {
       id: 3,
@@ -112,7 +117,8 @@ const Dashboard: React.FC = () => {
       hasVoice: false,
       hasEmoji: false,
       pinned: false,
-      avatar: '/api/placeholder/40/40'
+      avatar: '/api/placeholder/40/40',
+      isOnline: true
     },
     {
       id: 4,
@@ -126,19 +132,33 @@ const Dashboard: React.FC = () => {
       hasVoice: false,
       hasEmoji: true,
       pinned: false,
-      avatar: '/api/placeholder/40/40'
+      avatar: '/api/placeholder/40/40',
+      isOnline: false
     }
   ]);
 
-  const sortedThreads = React.useMemo(() => {
+  const filteredAndSortedThreads = React.useMemo(() => {
+    // First filter by search query
+    let filtered = producerThreads;
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = producerThreads.filter(thread => 
+        thread.name.toLowerCase().includes(query) ||
+        thread.farmName.toLowerCase().includes(query) ||
+        thread.location.toLowerCase().includes(query) ||
+        thread.lastMessage.toLowerCase().includes(query)
+      );
+    }
+    
+    // Then sort by priority
     const score = (t: ProducerThread) => (t.pinned && t.unreadCount > 0 ? 3 : t.unreadCount > 0 ? 2 : t.pinned ? 1 : 0);
-    return [...producerThreads].sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       const sA = score(a);
       const sB = score(b);
       if (sA !== sB) return sB - sA;
       return 0; // fallback simples
     });
-  }, [producerThreads]);
+  }, [producerThreads, searchQuery]);
 
   // Mensagens da conversa de produtor (mock)
   const initialProducerMessages: ChatMessage[] = [
@@ -442,14 +462,34 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Search Bar for Producer Filter */}
+      {chatFilter === 'producer' && (
+        <div className="px-4 pb-3">
+          <SearchBar
+            placeholder="Buscar conversas..."
+            value={searchQuery}
+            onChange={setSearchQuery}
+          />
+        </div>
+      )}
+
       {/* Chat Cards */}
       <div className="flex-1 overflow-y-auto">
         {chatFilter === 'producer' && (
-            sortedThreads.length === 0 ? (
-              <div className="p-4 text-sm text-muted-foreground">Nenhuma conversa</div>
+            filteredAndSortedThreads.length === 0 ? (
+              <div className="p-6 text-center">
+                <div className="text-muted-foreground">
+                  {searchQuery ? 'Nenhum resultado encontrado' : 'Nenhuma conversa'}
+                </div>
+                {searchQuery && (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Tente buscar por nome, fazenda ou localização
+                  </div>
+                )}
+              </div>
             ) : (
-              <div className="p-2">
-                {sortedThreads.map((chat) => (
+              <div className="px-3 pb-4">
+                {filteredAndSortedThreads.map((chat) => (
                   <ProducerChatCard
                     key={chat.id}
                     chat={chat}
