@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import backgroundImage from "@/assets/tela-inicial-background.jpg";
+import MapView from "@/components/map/MapView";
 
 const TelaInicial = () => {
   const navigate = useNavigate();
@@ -46,13 +46,22 @@ const TelaInicial = () => {
 
   return (
     <div
-      className="min-h-screen w-full relative overflow-hidden bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url(${backgroundImage})` }}
+      className="min-h-screen w-full relative overflow-hidden"
       onWheel={handleSwipeOrScroll}
       onTouchStart={handleSwipeOrScroll}
     >
-      {/* Background overlay with gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
+      {/* Fullscreen satellite map background */}
+      <div className="absolute inset-0">
+        <MapView
+          center={[-14.235, -51.925]}
+          zoom={5}
+          baseLayerId="satellite"
+          markers={[]}
+        />
+      </div>
+      
+      {/* Background overlay with gradient for better text readability */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50 pointer-events-none" />
       
       {/* Logo FlowAgro - Superior esquerdo */}
       <div className="absolute top-8 left-6 z-10">
