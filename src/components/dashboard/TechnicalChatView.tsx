@@ -6,11 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Mini-componente: Header do Chat
-const ChatHeader = ({
-  onBack
-}: {
-  onBack: () => void;
-}) => {
+const ChatHeader: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   return (
     <div className="flex items-center gap-3 p-4 border-b bg-card/50 backdrop-blur-sm">
       <Button variant="ghost" size="sm" onClick={onBack} className="h-8 w-8 p-0">
