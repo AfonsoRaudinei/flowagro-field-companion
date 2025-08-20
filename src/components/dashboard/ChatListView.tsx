@@ -109,7 +109,7 @@ export function ChatListView({
                 <h3 className="text-sm font-medium text-muted-foreground mb-3 px-2">
                   📌 Fixadas ({pinnedThreads.length})
                 </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gridAutoRows: 'min-content' }}>
                   {pinnedThreads.map((thread, index) => (
                     <div
                       key={thread.id}
@@ -132,7 +132,7 @@ export function ChatListView({
                 <h3 className="text-sm font-medium text-muted-foreground mb-3 px-2">
                   💬 Conversas ({unpinnedThreads.length})
                 </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gridAutoRows: 'min-content' }}>
                   {unpinnedThreads.map((thread, index) => (
                     <div
                       key={thread.id}

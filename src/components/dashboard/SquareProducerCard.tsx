@@ -20,7 +20,7 @@ export function SquareProducerCard({
     switch (size) {
       case 'small':
         return { 
-          card: 'h-28 w-28 p-3', 
+          card: 'h-28 min-w-[120px] w-full p-3', 
           avatar: 'h-8 w-8', 
           name: 'text-xs', 
           farm: 'text-xs',
@@ -28,7 +28,7 @@ export function SquareProducerCard({
         };
       case 'medium':
         return { 
-          card: 'h-36 w-36 p-4', 
+          card: 'h-36 min-w-[140px] w-full p-4', 
           avatar: 'h-12 w-12', 
           name: 'text-sm', 
           farm: 'text-xs',
@@ -36,7 +36,7 @@ export function SquareProducerCard({
         };
       case 'large':
         return { 
-          card: 'h-44 w-44 p-5', 
+          card: 'h-44 min-w-[160px] w-full p-5', 
           avatar: 'h-16 w-16', 
           name: 'text-base', 
           farm: 'text-sm',
@@ -44,7 +44,7 @@ export function SquareProducerCard({
         };
       default:
         return { 
-          card: 'h-36 w-36 p-4', 
+          card: 'h-36 min-w-[140px] w-full p-4', 
           avatar: 'h-12 w-12', 
           name: 'text-sm', 
           farm: 'text-xs',
