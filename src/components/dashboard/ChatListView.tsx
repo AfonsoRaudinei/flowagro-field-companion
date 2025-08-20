@@ -70,23 +70,38 @@ export function ChatListView({
         </div>
       </div>
 
-      {/* AI Chat Button - shown only on IA tab */}
+      {/* AI Consultoria Content - shown only on IA tab */}
       {chatFilter === "IA" && (
-        <div className="p-4 border-b bg-gradient-to-r from-primary/5 to-accent/5">
-          <Button 
-            onClick={onStartAIChat}
-            className="w-full bg-gradient-to-r from-primary to-primary-variant hover:from-primary-variant hover:to-primary transition-all duration-300"
-            size="lg"
-          >
-            <Bot className="mr-2 h-5 w-5" />
-            Conversar com I.A Ludmila
-          </Button>
+        <div className="p-4 space-y-4">
+          <div className="p-6 rounded-lg border bg-card">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Bot className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold">Chat Técnico</h2>
+                <p className="text-sm text-muted-foreground">
+                  Converse com nossa IA especializada
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={onStartAIChat}
+              className="w-full bg-gradient-to-r from-primary to-primary-variant hover:from-primary-variant hover:to-primary transition-all duration-300"
+            >
+              <Bot className="mr-2 h-4 w-4" />
+              Iniciar Chat Técnico
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Chat List */}
       <div className="flex-1 overflow-auto">
-        {loading ? (
+        {chatFilter === "IA" ? (
+          // IA tab shows only consultoria content above, no chat list
+          null
+        ) : loading ? (
           <div className="p-4">
             <ConversationListSkeleton count={6} />
           </div>
