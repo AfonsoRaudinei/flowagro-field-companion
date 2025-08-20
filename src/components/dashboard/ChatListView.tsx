@@ -119,8 +119,6 @@ export function ChatListView({
                       <SquareProducerCard
                         chat={thread}
                         onClick={onChatSelect}
-                        onTogglePin={onTogglePin}
-                        density={density}
                       />
                     </div>
                   ))}
@@ -144,8 +142,6 @@ export function ChatListView({
                       <SquareProducerCard
                         chat={thread}
                         onClick={onChatSelect}
-                        onTogglePin={onTogglePin}
-                        density={density}
                       />
                     </div>
                   ))}

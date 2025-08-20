@@ -1,111 +1,107 @@
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Pin, Camera, Mic, MapPin, Clock } from "lucide-react";
+import { Square, SquareCheck, SquareChevronUp, MapPin } from "lucide-react";
 import { ProducerThread } from "@/hooks/useDashboardState";
-import { ChatDensity } from "@/hooks/useChatDensity";
-import { MessageStatusIndicator } from "./MessageStatusIndicator";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { useCardSizes, CardSize } from "@/hooks/useCardSizes";
 
 interface SquareProducerCardProps {
   chat: ProducerThread;
   onClick: (chat: ProducerThread) => void;
-  onTogglePin?: (chatId: string) => void;
-  density: ChatDensity;
 }
 
 export function SquareProducerCard({ 
   chat, 
-  onClick, 
-  onTogglePin, 
-  density 
+  onClick
 }: SquareProducerCardProps) {
+  const { updateCardSize, getCardSize } = useCardSizes();
+  const currentSize = getCardSize(chat.id);
   
-  const getDensityClasses = () => {
-    switch (density) {
-      case 'compact':
-        return 'h-32 w-32 p-3';
-      case 'comfortable':
-        return 'h-36 w-36 p-4';
-      case 'spacious':
-        return 'h-40 w-40 p-5';
+  const getSizeClasses = (size: CardSize) => {
+    switch (size) {
+      case 'small':
+        return { 
+          card: 'h-28 w-28 p-3', 
+          avatar: 'h-8 w-8', 
+          name: 'text-xs', 
+          farm: 'text-xs',
+          icon: 'h-3 w-3'
+        };
+      case 'medium':
+        return { 
+          card: 'h-36 w-36 p-4', 
+          avatar: 'h-12 w-12', 
+          name: 'text-sm', 
+          farm: 'text-xs',
+          icon: 'h-4 w-4'
+        };
+      case 'large':
+        return { 
+          card: 'h-44 w-44 p-5', 
+          avatar: 'h-16 w-16', 
+          name: 'text-base', 
+          farm: 'text-sm',
+          icon: 'h-5 w-5'
+        };
       default:
-        return 'h-36 w-36 p-4';
+        return { 
+          card: 'h-36 w-36 p-4', 
+          avatar: 'h-12 w-12', 
+          name: 'text-sm', 
+          farm: 'text-xs',
+          icon: 'h-4 w-4'
+        };
     }
   };
 
-  const getAvatarSize = () => {
-    switch (density) {
-      case 'compact':
-        return 'h-10 w-10';
-      case 'comfortable':
-        return 'h-12 w-12';
-      case 'spacious':
-        return 'h-14 w-14';
-      default:
-        return 'h-12 w-12';
-    }
+  const sizeClasses = getSizeClasses(currentSize);
+
+  const handleSizeChange = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const sizes: CardSize[] = ['small', 'medium', 'large'];
+    const currentIndex = sizes.indexOf(currentSize);
+    const nextIndex = (currentIndex + 1) % sizes.length;
+    updateCardSize(chat.id, sizes[nextIndex]);
   };
 
-  const getTextSizes = () => {
-    switch (density) {
-      case 'compact':
-        return { name: 'text-xs', farm: 'text-xs', message: 'text-xs' };
-      case 'comfortable':
-        return { name: 'text-sm', farm: 'text-xs', message: 'text-xs' };
-      case 'spacious':
-        return { name: 'text-sm', farm: 'text-sm', message: 'text-xs' };
+  const getSizeIcon = () => {
+    switch (currentSize) {
+      case 'small':
+        return <Square className={sizeClasses.icon} />;
+      case 'medium':
+        return <SquareCheck className={sizeClasses.icon} />;
+      case 'large':
+        return <SquareChevronUp className={sizeClasses.icon} />;
       default:
-        return { name: 'text-sm', farm: 'text-xs', message: 'text-xs' };
+        return <SquareCheck className={sizeClasses.icon} />;
     }
   };
-
-  const textSizes = getTextSizes();
-  const isUnread = chat.unreadCount > 0;
 
   return (
     <Card 
       className={`
-        ${getDensityClasses()}
-        cursor-pointer transition-all duration-300 ease-out
-        hover:scale-102 hover:shadow-lg
-        ${isUnread ? 'ring-2 ring-primary/20 bg-gradient-to-br from-primary/5 to-card' : 'bg-gradient-to-br from-card to-muted/20'}
-        ${chat.isPinned ? 'ring-2 ring-accent/30' : ''}
-        border-0 relative overflow-hidden
-        animate-fade-in
+        ${sizeClasses.card}
+        cursor-pointer transition-all duration-200 ease-out
+        hover:shadow-md hover:scale-105
+        bg-card border border-border/50 rounded-lg
+        relative group
       `}
       onClick={() => onClick(chat)}
     >
-      {/* Pin indicator */}
-      {chat.isPinned && (
-        <div className="absolute top-2 right-2 z-10">
-          <Pin 
-            className="h-3 w-3 text-accent fill-accent/20" 
-            onClick={(e) => {
-              e.stopPropagation();
-              onTogglePin?.(chat.id);
-            }}
-          />
-        </div>
-      )}
-      
-      {/* Unread count badge */}
-      {isUnread && (
-        <Badge 
-          variant="destructive" 
-          className="absolute top-1 left-1 h-5 w-5 p-0 flex items-center justify-center text-xs z-10"
-        >
-          {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
-        </Badge>
-      )}
+      {/* Size control button */}
+      <button
+        onClick={handleSizeChange}
+        className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 rounded-md hover:bg-muted/50"
+        title={`Tamanho: ${currentSize}`}
+      >
+        {getSizeIcon()}
+      </button>
 
-      <div className="flex flex-col items-center h-full justify-between">
-        {/* Avatar with online status */}
+      <div className="flex flex-col items-center h-full justify-center space-y-2">
+        {/* Avatar */}
         <div className="relative flex-shrink-0">
-          <Avatar className={`${getAvatarSize()} border-2 border-background shadow-sm`}>
+          <Avatar className={`${sizeClasses.avatar} border border-border shadow-sm`}>
             <AvatarImage src={chat.avatar} />
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+            <AvatarFallback className="bg-muted text-foreground font-medium">
               {chat.name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -118,47 +114,26 @@ export function SquareProducerCard({
         </div>
 
         {/* Content */}
-        <div className="flex-1 flex flex-col items-center text-center min-h-0 w-full">
+        <div className="text-center space-y-1 w-full">
           {/* Name */}
-          <h3 className={`${textSizes.name} font-semibold text-foreground truncate w-full`}>
+          <h3 className={`${sizeClasses.name} font-medium text-foreground truncate`}>
             {chat.name}
           </h3>
           
           {/* Farm name */}
-          <p className={`${textSizes.farm} text-muted-foreground truncate w-full`}>
+          <p className={`${sizeClasses.farm} text-muted-foreground truncate`}>
             {chat.farmName}
           </p>
 
-          {/* Last message preview */}
-          <div className="flex-1 flex items-center justify-center w-full mt-1">
-            <p className={`${textSizes.message} text-muted-foreground/80 line-clamp-2 text-center`}>
-              {chat.lastMessage}
-            </p>
-          </div>
-        </div>
-
-        {/* Footer with media indicators and timestamp */}
-        <div className="flex items-center justify-between w-full mt-2 gap-1">
-          {/* Media indicators */}
-          <div className="flex items-center gap-1">
-            {chat.hasMedia && <Camera className="h-3 w-3 text-primary/60" />}
-            {chat.hasVoice && <Mic className="h-3 w-3 text-primary/60" />}
-            <MessageStatusIndicator 
-              status="read" 
-              size="sm"
-            />
-          </div>
-
-          {/* Timestamp */}
-          <div className="flex items-center gap-1">
-            <Clock className="h-3 w-3 text-muted-foreground/60" />
-            <span className="text-xs text-muted-foreground/80">
-              {formatDistanceToNow(chat.timestamp, { 
-                addSuffix: false, 
-                locale: ptBR 
-              })}
-            </span>
-          </div>
+          {/* Location */}
+          {chat.location && (
+            <div className="flex items-center justify-center gap-1">
+              <MapPin className="h-3 w-3 text-muted-foreground/60" />
+              <span className={`${sizeClasses.farm} text-muted-foreground/80 truncate`}>
+                {chat.location}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </Card>
