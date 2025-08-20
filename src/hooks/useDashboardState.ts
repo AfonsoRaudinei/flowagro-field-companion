@@ -125,24 +125,10 @@ export function useDashboardState() {
   }, []);
 
   const handleStartAIChat = useCallback(() => {
-    setSelectedChat({
-      id: "ai",
-      name: "I.A Ludmila",
-      farmName: "Assistente Virtual",
-      location: "FlowAgro",
-      lastMessage: "Olá! Como posso ajudar você hoje?",
-      timestamp: new Date(),
-      unreadCount: 0,
-      hasMedia: false,
-      hasVoice: false,
-      hasEmoji: false,
-      isPinned: false,
-      avatar: "https://api.dicebear.com/7.x/bottts/svg?seed=ludmila",
-      isOnline: true
-    });
-    setViewMode("conversation");
-    setSelectedConversationId("ai-chat");
-    setIsAIMode(true);
+    const url = new URL(window.location.href);
+    url.searchParams.set('ai', 'true');
+    window.history.pushState({}, '', url.toString());
+    window.location.reload(); // Força reload para ativar o Chat Técnico
   }, []);
 
   const handleTogglePin = useCallback(async (threadId: string) => {
