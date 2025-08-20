@@ -6,57 +6,113 @@
 
 @layer base {
   :root {
+    /* iOS/Microsoft Design Tokens */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 142 71% 45%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
+    
+    /* Primary - Modern iOS Blue */
+    --primary: 221 83% 53%;
+    --primary-hover: 221 83% 48%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 221 83% 73%;
+    
+    /* Secondary - Subtle iOS Gray */
+    --secondary: 210 20% 96%;
+    --secondary-hover: 210 20% 92%;
     --secondary-foreground: 222.2 84% 4.9%;
+    
+    /* Accent - Microsoft Fluent Green */
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 100%;
+    
     --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 142 71% 45%;
-    --radius: 0.5rem;
+    --ring: 221 83% 53%;
+    
+    /* iOS-style Border Radius */
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+    
+    /* Colors */
+    --success: 142 71% 45%;
+    --warning: 43 96% 56%;
+    --info: 221 83% 53%;
+    --error: 0 84% 60%;
+    
+    /* iOS Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-button: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+    
+    /* iOS Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--muted)));
+    --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted)));
+    
+    /* Microsoft Fluent Transitions */
+    --transition-all: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-colors: color 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Chart colors */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --success: 142 71% 45%;
-    --warning: 43 96% 56%;
-    --info: 221 83% 53%;
-    --error: 0 84% 60%;
   }
 
   .dark {
+    /* Dark Mode - iOS/Microsoft Style */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 142 71% 45%;
+    
+    /* Primary - Brighter in dark mode */
+    --primary: 221 83% 63%;
+    --primary-hover: 221 83% 58%;
     --primary-foreground: 222.2 84% 4.9%;
+    --primary-glow: 221 83% 83%;
+    
     --secondary: 217.2 32.6% 17.5%;
+    --secondary-hover: 217.2 32.6% 22.5%;
     --secondary-foreground: 210 40% 98%;
+    
+    --accent: 142 71% 55%;
+    --accent-foreground: 222.2 84% 4.9%;
+    
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 142 71% 45%;
+    --ring: 221 83% 63%;
+    
+    /* Dark mode shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    --shadow-button: 0 4px 14px 0 rgba(59, 130, 246, 0.6);
+    
+    /* Dark gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--muted)));
+    --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted)));
+    
+    /* Chart colors for dark mode */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
