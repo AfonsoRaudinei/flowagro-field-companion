@@ -17,6 +17,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
 const ConsultoriaComunicacao = lazy(() => import("./pages/ConsultoriaComunicacao"));
+const TechnicalMapPanel = lazy(() => import("./components/map/TechnicalMapPanel"));
 
 const Recover = lazy(() => import("./pages/Recover"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -35,7 +36,7 @@ const RouteFallback = () => (
 const AppLayout = () => {
   const location = useLocation();
   
-  const showBottomNav = ['/dashboard', '/settings'].includes(location.pathname);
+  const showBottomNav = ['/dashboard', '/settings'].includes(location.pathname) && !location.pathname.includes('/technical-map');
   
   return (
     <>
@@ -52,7 +53,7 @@ const AppLayout = () => {
             <Route path="/profile" element={<Profile />} />
             <Route path="/phenological-stages" element={<PhenologicalStages />} />
             <Route path="/consultoria/comunicacao" element={<ConsultoriaComunicacao />} />
-            <Route path="/technical-map" element={<Navigate to="/dashboard?tab=map" replace />} />
+            <Route path="/technical-map" element={<TechnicalMapPanel />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

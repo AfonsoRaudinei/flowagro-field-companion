@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import TechnicalMapPanel from "@/components/map/TechnicalMapPanel";
+// TechnicalMapPanel moved to standalone route
 import { ChatListView } from "@/components/dashboard/ChatListView";
 import { ConversationView } from "@/components/dashboard/ConversationView";
 import TechnicalChatView from "@/components/dashboard/TechnicalChatView";
@@ -47,11 +47,7 @@ export default function Dashboard() {
     }
   };
 
-  // Check for map tab
-  const showMap = searchParams.get('tab') === 'map';
-  if (showMap) {
-    return <TechnicalMapPanel />;
-  }
+  // Map tab has been moved to standalone route /technical-map
 
 
   return (
