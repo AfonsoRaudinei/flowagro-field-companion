@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useProducers } from '@/hooks/useProducers';
 import { useConversations } from '@/hooks/useConversations';
 import { useMessages } from '@/hooks/useMessages';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ProducerThread {
   id: string;
@@ -90,12 +91,31 @@ export function useDashboardState() {
     });
   }, [producerThreads, searchQuery]);
 
+  const markConversationAsSeen = useCallback(async (conversationId: string) => {
+    try {
+      const { error } = await supabase.rpc('update_conversation_last_seen', {
+        conversation_id: conversationId
+      });
+
+      if (error) {
+        console.error('Error updating last seen:', error);
+      }
+    } catch (error) {
+      console.error('Error marking conversation as seen:', error);
+    }
+  }, []);
+
   const handleChatSelect = useCallback((chat: ProducerThread) => {
     setSelectedChat(chat);
     setViewMode("conversation");
     setSelectedConversationId(chat.conversationId || null);
     setIsAIMode(false);
-  }, []);
+    
+    // Mark conversation as seen
+    if (chat.conversationId) {
+      markConversationAsSeen(chat.conversationId);
+    }
+  }, [markConversationAsSeen]);
 
   const handleBackToList = useCallback(() => {
     setViewMode("list");
@@ -156,6 +176,7 @@ export function useDashboardState() {
     handleStartAIChat,
     handleTogglePin,
     sendMessage,
-    sendAIMessage
+    sendAIMessage,
+    markConversationAsSeen
   };
 }

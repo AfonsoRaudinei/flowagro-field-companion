@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -50,6 +50,7 @@ export type Database = {
           id: string
           is_pinned: boolean | null
           last_message_at: string | null
+          last_seen_at: string | null
           producer_id: string
           title: string | null
           unread_count: number | null
@@ -61,6 +62,7 @@ export type Database = {
           id?: string
           is_pinned?: boolean | null
           last_message_at?: string | null
+          last_seen_at?: string | null
           producer_id: string
           title?: string | null
           unread_count?: number | null
@@ -72,6 +74,7 @@ export type Database = {
           id?: string
           is_pinned?: boolean | null
           last_message_at?: string | null
+          last_seen_at?: string | null
           producer_id?: string
           title?: string | null
           unread_count?: number | null
@@ -179,6 +182,7 @@ export type Database = {
           metadata: Json | null
           sender_id: string | null
           sender_type: string
+          status: string | null
         }
         Insert: {
           content: string
@@ -190,6 +194,7 @@ export type Database = {
           metadata?: Json | null
           sender_id?: string | null
           sender_type: string
+          status?: string | null
         }
         Update: {
           content?: string
@@ -201,6 +206,7 @@ export type Database = {
           metadata?: Json | null
           sender_id?: string | null
           sender_type?: string
+          status?: string | null
         }
         Relationships: [
           {
@@ -293,6 +299,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          chat_density: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chat_density?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chat_density?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -365,6 +395,10 @@ export type Database = {
       sparsevec_typmod_in: {
         Args: { "": unknown[] }
         Returns: number
+      }
+      update_conversation_last_seen: {
+        Args: { conversation_id: string }
+        Returns: undefined
       }
       vector_avg: {
         Args: { "": number[] }
