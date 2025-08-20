@@ -2,6 +2,7 @@ import React from "react";
 import SearchBar from "@/components/SearchBar";
 import ProducerChatCard from "@/components/ProducerChatCard";
 import { SquareProducerCard } from "./SquareProducerCard";
+import { SmartProducerCard } from "./SmartProducerCard";
 import ConversationListSkeleton from "@/components/skeletons/ConversationListSkeleton";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -109,14 +110,19 @@ export function ChatListView({
                   📌 Fixadas ({pinnedThreads.length})
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {pinnedThreads.map((thread) => (
-                    <SquareProducerCard
+                  {pinnedThreads.map((thread, index) => (
+                    <div
                       key={thread.id}
-                      chat={thread}
-                      onClick={onChatSelect}
-                      onTogglePin={onTogglePin}
-                      density={density}
-                    />
+                      className="animate-fade-in"
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >
+                      <SquareProducerCard
+                        chat={thread}
+                        onClick={onChatSelect}
+                        onTogglePin={onTogglePin}
+                        density={density}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
@@ -129,31 +135,46 @@ export function ChatListView({
                   💬 Conversas ({unpinnedThreads.length})
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                  {unpinnedThreads.map((thread) => (
-                    <SquareProducerCard
+                  {unpinnedThreads.map((thread, index) => (
+                    <div
                       key={thread.id}
-                      chat={thread}
-                      onClick={onChatSelect}
-                      onTogglePin={onTogglePin}
-                      density={density}
-                    />
+                      className="animate-fade-in"
+                      style={{ animationDelay: `${(pinnedThreads.length + index) * 100}ms` }}
+                    >
+                      <SquareProducerCard
+                        chat={thread}
+                        onClick={onChatSelect}
+                        onTogglePin={onTogglePin}
+                        density={density}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
             )}
           </div>
         ) : (
-          <div className="p-4 space-y-3">
-            {threads.map((thread) => (
-              <ProducerChatCard
+          <div className="space-y-1">
+            {threads.map((thread, index) => (
+              <div 
                 key={thread.id}
-                chat={{
-                  ...thread,
-                  timestamp: thread.timestamp.toISOString()
-                }}
-                onClick={() => onChatSelect(thread)}
-                onTogglePin={onTogglePin}
-              />
+                className="animate-fade-in"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <SmartProducerCard
+                  chat={thread}
+                  onClick={onChatSelect}
+                  onTogglePin={onTogglePin}
+                  onArchive={(id) => {
+                    // Implement archive functionality
+                    console.log('Archive:', id);
+                  }}
+                  onMarkAsRead={(id) => {
+                    // Implement mark as read functionality  
+                    console.log('Mark as read:', id);
+                  }}
+                />
+              </div>
             ))}
           </div>
         )}
