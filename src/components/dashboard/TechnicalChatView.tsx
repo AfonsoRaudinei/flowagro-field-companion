@@ -1,21 +1,18 @@
 import React, { useState } from "react";
 import { ArrowLeft, Send, Plus, MessageCircle, FileText, Image, BarChart3 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Mini-componente: Header do Chat
-const ChatHeader = () => {
-  const navigate = useNavigate();
-
+const ChatHeader = ({ onBack }: { onBack: () => void }) => {
   return (
     <div className="flex items-center gap-3 p-4 border-b bg-background/95 backdrop-blur-sm">
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => navigate("/consultoria/comunicacao")}
+        onClick={onBack}
         className="h-8 w-8 p-0 hover:bg-primary/10"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -154,10 +151,10 @@ const ChatInput = () => {
 };
 
 // Componente principal: Technical Chat View
-export const TechnicalChatView = () => {
+export const TechnicalChatView = ({ onBack }: { onBack: () => void }) => {
   return (
     <div className="flex flex-col h-screen bg-background">
-      <ChatHeader />
+      <ChatHeader onBack={onBack} />
       <ChatTabs />
       <ChatMessages />
       <ChatInput />

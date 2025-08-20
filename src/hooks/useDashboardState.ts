@@ -36,6 +36,7 @@ export function useDashboardState() {
   const [viewMode, setViewMode] = useState<"list" | "conversation">("list");
   const [selectedChat, setSelectedChat] = useState<ProducerThread | null>(null);
   const [isAIMode, setIsAIMode] = useState(false);
+  const [showTechnicalChat, setShowTechnicalChat] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   
   // Real data hooks
@@ -124,11 +125,15 @@ export function useDashboardState() {
     setIsAIMode(false);
   }, []);
 
-  const handleStartAIChat = useCallback(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('ai', 'true');
-    window.history.pushState({}, '', url.toString());
-    window.location.reload(); // Força reload para ativar o Chat Técnico
+  const handleShowTechnicalChat = useCallback(() => {
+    setShowTechnicalChat(true);
+    setIsAIMode(true);
+  }, []);
+
+  const handleBackFromTechnicalChat = useCallback(() => {
+    setShowTechnicalChat(false);
+    setIsAIMode(false);
+    setChatFilter("Produtor");
   }, []);
 
   const handleTogglePin = useCallback(async (threadId: string) => {
@@ -147,6 +152,7 @@ export function useDashboardState() {
     viewMode,
     selectedChat,
     isAIMode,
+    showTechnicalChat,
     selectedConversationId,
     
     // Data
@@ -159,7 +165,8 @@ export function useDashboardState() {
     // Actions
     handleChatSelect,
     handleBackToList,
-    handleStartAIChat,
+    handleShowTechnicalChat,
+    handleBackFromTechnicalChat,
     handleTogglePin,
     sendMessage,
     sendAIMessage,

@@ -7,6 +7,7 @@ import ConversationListSkeleton from "@/components/skeletons/ConversationListSke
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bot } from "lucide-react";
+import TechnicalChatView from "./TechnicalChatView";
 import { ProducerThread } from "@/hooks/useDashboardState";
 import { ChatDensitySelector } from "./ChatDensitySelector";
 import { useChatDensity } from "@/hooks/useChatDensity";
@@ -20,7 +21,8 @@ interface ChatListViewProps {
   loading: boolean;
   onChatSelect: (chat: ProducerThread) => void;
   onTogglePin: (chatId: string) => void;
-  onStartAIChat: () => void;
+  onShowTechnicalChat: () => void;
+  onBackFromTechnicalChat: () => void;
 }
 
 export function ChatListView({
@@ -32,7 +34,8 @@ export function ChatListView({
   loading,
   onChatSelect,
   onTogglePin,
-  onStartAIChat,
+  onShowTechnicalChat,
+  onBackFromTechnicalChat,
 }: ChatListViewProps) {
   const { density } = useChatDensity();
   
@@ -70,30 +73,9 @@ export function ChatListView({
         </div>
       </div>
 
-      {/* AI Consultoria Content - shown only on IA tab */}
+      {/* Technical Chat - shown when IA tab is active */}
       {chatFilter === "IA" && (
-        <div className="p-4 space-y-4">
-          <div className="p-6 rounded-lg border bg-card">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Bot className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="font-semibold">Chat Técnico</h2>
-                <p className="text-sm text-muted-foreground">
-                  Converse com nossa IA especializada
-                </p>
-              </div>
-            </div>
-            <Button
-              onClick={onStartAIChat}
-              className="w-full bg-gradient-to-r from-primary to-primary-variant hover:from-primary-variant hover:to-primary transition-all duration-300"
-            >
-              <Bot className="mr-2 h-4 w-4" />
-              Iniciar Chat Técnico
-            </Button>
-          </div>
-        </div>
+        <TechnicalChatView onBack={onBackFromTechnicalChat} />
       )}
 
       {/* Chat List */}

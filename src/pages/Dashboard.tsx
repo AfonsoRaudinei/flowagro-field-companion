@@ -25,7 +25,8 @@ export default function Dashboard() {
     sendingMessage,
     handleChatSelect,
     handleBackToList,
-    handleStartAIChat,
+    handleShowTechnicalChat,
+    handleBackFromTechnicalChat,
     handleTogglePin,
     sendMessage,
     sendAIMessage
@@ -52,11 +53,6 @@ export default function Dashboard() {
     return <TechnicalMapPanel />;
   }
 
-  // Check for AI mode
-  const showAI = searchParams.get('ai') === 'true';
-  if (showAI) {
-    return <TechnicalChatView />;
-  }
 
   return (
     <div className="h-screen bg-background">
@@ -70,7 +66,8 @@ export default function Dashboard() {
           loading={loadingConversations || loadingProducers}
           onChatSelect={handleChatSelect}
           onTogglePin={handleTogglePin}
-          onStartAIChat={handleStartAIChat}
+          onShowTechnicalChat={handleShowTechnicalChat}
+          onBackFromTechnicalChat={handleBackFromTechnicalChat}
         />
       ) : selectedChat ? (
         <ConversationView
