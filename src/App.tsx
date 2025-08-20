@@ -16,6 +16,7 @@ const LoginForm = lazy(() => import("./pages/LoginForm"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
+const ConsultoriaComunicacao = lazy(() => import("./pages/ConsultoriaComunicacao"));
 
 const Recover = lazy(() => import("./pages/Recover"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -50,6 +51,7 @@ const AppLayout = () => {
             <Route path="/settings/security" element={<AccountSecurity />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/phenological-stages" element={<PhenologicalStages />} />
+            <Route path="/consultoria/comunicacao" element={<ConsultoriaComunicacao />} />
             <Route path="/technical-map" element={<Navigate to="/dashboard?tab=map" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

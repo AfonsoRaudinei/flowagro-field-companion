@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import TechnicalMapPanel from "@/components/map/TechnicalMapPanel";
 import { ChatListView } from "@/components/dashboard/ChatListView";
 import { ConversationView } from "@/components/dashboard/ConversationView";
+import TechnicalChatView from "@/components/dashboard/TechnicalChatView";
 import { useDashboardState } from "@/hooks/useDashboardState";
 import { useSearchParams } from "react-router-dom";
 
@@ -49,6 +50,12 @@ export default function Dashboard() {
   const showMap = searchParams.get('tab') === 'map';
   if (showMap) {
     return <TechnicalMapPanel />;
+  }
+
+  // Check for AI mode
+  const showAI = searchParams.get('ai') === 'true';
+  if (showAI) {
+    return <TechnicalChatView />;
   }
 
   return (
