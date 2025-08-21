@@ -11,7 +11,14 @@ const ChatHeader: React.FC<{
 }> = ({
   onBack
 }) => {
-  return;
+  return (
+    <div className="flex items-center gap-3 p-4 border-b bg-background/95 backdrop-blur-sm">
+      <Button variant="ghost" size="sm" onClick={onBack} className="h-9 w-9 p-0">
+        <ArrowLeft className="h-4 w-4" />
+      </Button>
+      <h1 className="text-lg font-semibold text-foreground">Chat Técnico</h1>
+    </div>
+  );
 };
 
 // Mini-componente: Tabs superiores
