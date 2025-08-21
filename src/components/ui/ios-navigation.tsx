@@ -28,7 +28,7 @@ const IOSNavigation: React.FC<IOSNavigationProps> = ({
   const tabs: NavigationTab[] = [
     {
       id: 'map',
-      path: '/dashboard?tab=map',
+      path: '/technical-map',
       label: 'Mapa',
       icon: Map
     },
@@ -48,9 +48,8 @@ const IOSNavigation: React.FC<IOSNavigationProps> = ({
   ];
 
   const isActiveTab = (id: string, path: string) => {
-    const params = new URLSearchParams(location.search);
-    if (id === 'map') return location.pathname === '/dashboard' && params.get('tab') === 'map';
-    if (id === 'chat') return location.pathname === '/dashboard' && params.get('tab') !== 'map';
+    if (id === 'map') return location.pathname === '/technical-map';
+    if (id === 'chat') return location.pathname === '/dashboard';
     return location.pathname === path;
   };
 
