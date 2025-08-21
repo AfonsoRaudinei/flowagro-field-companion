@@ -1,17 +1,14 @@
 import React from "react";
-import SearchBar from "@/components/SearchBar";
-import ProducerChatCard from "@/components/ProducerChatCard";
+import { DebouncedSearchBar } from "@/components/SearchBar/DebouncedSearchBar";
 import { SquareProducerCard } from "./SquareProducerCard";
-import { SmartProducerCard } from "./SmartProducerCard";
+import OptimizedSmartProducerCard from "./OptimizedSmartProducerCard";
 import ConversationListSkeleton from "@/components/skeletons/ConversationListSkeleton";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bot } from "lucide-react";
 import TechnicalChatView from "./TechnicalChatView";
 import { ProducerThread } from "@/hooks/useDashboardState";
-import { ChatDensitySelector } from "./ChatDensitySelector";
 import { useChatDensity } from "@/hooks/useChatDensity";
 import { IOSHeader } from "@/components/ui/ios-header";
+import ChatErrorBoundary from "@/components/ErrorBoundary/ChatErrorBoundary";
 
 interface ChatListViewProps {
   chatFilter: "Produtor" | "Agenda" | "IA" | "Campo";
@@ -45,36 +42,37 @@ export function ChatListView({
   const unpinnedThreads = threads.filter(thread => !thread.isPinned);
   
   return (
-    <div className="flex flex-col h-screen bg-background">
-      {/* iOS-style Header */}
-      <IOSHeader
-        title="FlowAgro"
-        showBackButton={false}
-        className="border-b-0"
-      />
+    <ChatErrorBoundary>
+      <div className="flex flex-col h-screen bg-background">
+        {/* iOS-style Header */}
+        <IOSHeader
+          title="FlowAgro"
+          showBackButton={false}
+          className="border-b-0"
+        />
 
-      {/* Compact Content Area */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Search and Filters - More compact */}
-        <div className="px-base py-md bg-card/50 backdrop-blur-sm border-b border-border/50">
-          {/* Search */}
-          <SearchBar 
-            value={searchQuery} 
-            onChange={onSearchChange} 
-            placeholder="Buscar conversas..." 
-            className="mb-md" 
-          />
-          
-          {/* Filter Tabs - Compact design */}
-          <Tabs value={chatFilter} onValueChange={onChatFilterChange}>
-            <TabsList className="grid w-full grid-cols-4 h-8 p-1 bg-muted/50">
-              <TabsTrigger value="Produtor" className="text-ios-sm py-1">Produtor</TabsTrigger>
-              <TabsTrigger value="Agenda" className="text-ios-sm py-1">Agenda</TabsTrigger>
-              <TabsTrigger value="IA" className="text-ios-sm py-1">IA</TabsTrigger>
-              <TabsTrigger value="Campo" className="text-ios-sm py-1">Campo</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+        {/* Compact Content Area */}
+        <div className="flex flex-col flex-1 overflow-hidden">
+          {/* Search and Filters - More compact */}
+          <div className="px-base py-md bg-card/50 backdrop-blur-sm border-b border-border/50">
+            {/* Search with debounce */}
+            <DebouncedSearchBar 
+              value={searchQuery} 
+              onChange={onSearchChange} 
+              placeholder="Buscar conversas..." 
+              className="mb-md" 
+            />
+            
+            {/* Filter Tabs - Compact design */}
+            <Tabs value={chatFilter} onValueChange={onChatFilterChange}>
+              <TabsList className="grid w-full grid-cols-4 h-8 p-1 bg-muted/50">
+                <TabsTrigger value="Produtor" className="text-ios-sm py-1">Produtor</TabsTrigger>
+                <TabsTrigger value="Agenda" className="text-ios-sm py-1">Agenda</TabsTrigger>
+                <TabsTrigger value="IA" className="text-ios-sm py-1">IA</TabsTrigger>
+                <TabsTrigger value="Campo" className="text-ios-sm py-1">Campo</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
 
         {/* Technical Chat - shown when IA tab is active */}
         {chatFilter === "IA" && (
@@ -152,31 +150,32 @@ export function ChatListView({
                 </div>
               )}
             </div>
-          ) : (
-            <div className="space-y-1 px-base py-sm">
-              {threads.map((thread, index) => (
-                <div 
-                  key={thread.id} 
-                  className="animate-slide-up" 
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <SmartProducerCard 
-                    chat={thread} 
-                    onClick={onChatSelect} 
-                    onTogglePin={onTogglePin} 
-                    onArchive={(id) => {
-                      console.log('Archive:', id);
-                    }} 
-                    onMarkAsRead={(id) => {
-                      console.log('Mark as read:', id);
-                    }} 
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+            ) : (
+              <div className="space-y-1 px-base py-sm">
+                {threads.map((thread, index) => (
+                  <div 
+                    key={thread.id} 
+                    className="animate-slide-up" 
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <OptimizedSmartProducerCard 
+                      chat={thread} 
+                      onClick={onChatSelect} 
+                      onTogglePin={onTogglePin} 
+                      onArchive={(id) => {
+                        console.log('Archive:', id);
+                      }} 
+                      onMarkAsRead={(id) => {
+                        console.log('Mark as read:', id);
+                      }} 
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </ChatErrorBoundary>
   );
 }

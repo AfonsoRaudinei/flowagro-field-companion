@@ -3,7 +3,7 @@ import { useProducers } from '@/hooks/useProducers';
 import { useConversations } from '@/hooks/useConversations';
 import { useMessages } from '@/hooks/useMessages';
 import { supabase } from '@/integrations/supabase/client';
-import { useDebounce, PerformanceMonitor } from '@/lib/performance';
+import { PerformanceMonitor } from '@/lib/performance';
 import { logger } from '@/lib/logger';
 
 export interface ProducerThread {
@@ -104,11 +104,6 @@ export function useDashboardState() {
     });
   }, [producerThreads, searchQuery]);
 
-  // Debounced search to optimize performance
-  const debouncedSetSearchQuery = useDebounce((query: string) => {
-    setSearchQuery(query);
-  }, 300);
-
   const markConversationAsSeen = useCallback(async (conversationId: string) => {
     try {
       const { error } = await supabase.rpc('update_conversation_last_seen', {
@@ -165,7 +160,7 @@ export function useDashboardState() {
     chatFilter,
     setChatFilter,
     searchQuery,
-    setSearchQuery: debouncedSetSearchQuery,
+    setSearchQuery,
     viewMode,
     selectedChat,
     isAIMode,

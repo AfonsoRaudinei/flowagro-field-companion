@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { CalendarIcon, CloudIcon, SatelliteIcon, ImageIcon } from 'lucide-react'
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { satelliteCache } from '@/lib/cache';
 
 type LayerType = 'ndvi' | 'true-color' | 'false-color' | 'visual' | 'analytic';
 type DataSource = 'sentinel' | 'planet';
@@ -104,140 +105,145 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
     };
     
     logger.info('Starting satellite layer load', debugInfo);
-    
+
     try {
-      if (layer.source === 'sentinel') {
-        logger.info('Starting Sentinel-2 request', { layerType: layer.type });
-        
-        const requestBody = {
-          bbox,
-          date: selectedDate,
-          layerType: layer.type,
-          width: 512,
-          height: 512
-        };
-        
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
-        );
-        
-        const requestPromise = supabase.functions.invoke('sentinel-hub', {
-          body: requestBody
-        });
-        
-        const response = await Promise.race([requestPromise, timeoutPromise]) as any;
-        const duration = Date.now() - startTime;
-        
-        logger.debug('Sentinel response received', {
-          duration,
-          hasError: !!response.error,
-          hasData: !!response.data,
-          dataSize: response.data ? (response.data.byteLength || response.data.length || 'unknown') : 0
-        });
+      // Check cache first
+      const cacheParams = {
+        layerId: selectedLayer,
+        bbox,
+        date: selectedDate,
+        opacity: opacity[0]
+      };
 
-        if (response.error) {
-          throw new Error(`Sentinel Hub Error: ${response.error.message || JSON.stringify(response.error)}`);
+      const cachedResult = await satelliteCache.getSatelliteLayer(
+        cacheParams,
+        async () => {
+          // This function only runs if cache miss
+          logger.info('Cache miss, fetching from API', { layerId: selectedLayer });
+          
+          if (layer.source === 'sentinel') {
+            logger.info('Starting Sentinel-2 request', { layerType: layer.type });
+            
+            const requestBody = {
+              bbox,
+              date: selectedDate,
+              layerType: layer.type,
+              width: 512,
+              height: 512
+            };
+            
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
+            );
+            
+            const requestPromise = supabase.functions.invoke('sentinel-hub', {
+              body: requestBody
+            });
+            
+            const response = await Promise.race([requestPromise, timeoutPromise]) as any;
+            
+            if (response.error) {
+              throw new Error(`Sentinel Hub Error: ${response.error.message || JSON.stringify(response.error)}`);
+            }
+
+            if (!response.data) {
+              throw new Error('Nenhum dado retornado da API Sentinel');
+            }
+
+            let imageBlob: Blob;
+            
+            if (response.data instanceof ArrayBuffer) {
+              imageBlob = new Blob([response.data], { type: 'image/png' });
+            } else if (response.data instanceof Uint8Array) {
+              imageBlob = new Blob([response.data], { type: 'image/png' });
+            } else if (response.data instanceof Blob) {
+              imageBlob = response.data;
+            } else {
+              throw new Error(`Formato de dados inválido: ${typeof response.data}`);
+            }
+
+            const imageUrl = URL.createObjectURL(imageBlob);
+            
+            const metadata = {
+              source: 'Sentinel-2',
+              type: layer.name,
+              date: selectedDate,
+              resolution: '10m',
+              blobSize: imageBlob.size
+            };
+            
+            return { imageUrl, metadata };
+            
+          } else if (layer.source === 'planet') {
+            logger.info('Starting Planet Labs request', { layerType: layer.type });
+            
+            const requestBody = {
+              bbox,
+              date: selectedDate,
+              layerType: layer.type,
+              cloudCover: 0.3
+            };
+            
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
+            );
+            
+            const requestPromise = supabase.functions.invoke('planet-labs', {
+              body: requestBody
+            });
+            
+            const response = await Promise.race([requestPromise, timeoutPromise]) as any;
+
+            if (response.error) {
+              throw new Error(`Planet Labs Error: ${response.error.message || JSON.stringify(response.error)}`);
+            }
+
+            if (!response.data) {
+              throw new Error('Nenhum dado retornado da API Planet Labs');
+            }
+
+            const metadata = {
+              source: 'Planet Labs',
+              type: layer.name,
+              date: selectedDate,
+              cloudCover: response.data.cloudCover,
+              imageId: response.data.imageId
+            };
+            
+            return { 
+              imageUrl: response.data.downloadUrl || '', 
+              metadata 
+            };
+          } else {
+            throw new Error(`Unknown layer source: ${layer.source}`);
+          }
         }
+      );
 
-        if (!response.data) {
-          throw new Error('Nenhum dado retornado da API Sentinel');
-        }
+      const duration = Date.now() - startTime;
+      const { imageUrl, metadata } = cachedResult;
+      
+      setLastResult({
+        ...metadata,
+        processingTime: duration,
+        cached: duration < 100 // If very fast, likely from cache
+      });
 
-        let imageBlob: Blob;
-        
-        if (response.data instanceof ArrayBuffer) {
-          imageBlob = new Blob([response.data], { type: 'image/png' });
-        } else if (response.data instanceof Uint8Array) {
-          imageBlob = new Blob([response.data], { type: 'image/png' });
-        } else if (response.data instanceof Blob) {
-          imageBlob = response.data;
-        } else {
-          throw new Error(`Formato de dados inválido: ${typeof response.data}`);
-        }
+      onLayerLoad(imageUrl, {
+        source: layer.source,
+        type: layer.type,
+        date: selectedDate,
+        opacity: opacity[0] / 100,
+        ...metadata
+      });
 
-        const imageUrl = URL.createObjectURL(imageBlob);
-        
-        const metadata = {
-          source: 'Sentinel-2',
-          type: layer.name,
-          date: selectedDate,
-          resolution: '10m',
-          processingTime: duration,
-          blobSize: imageBlob.size
-        };
-        
-        setLastResult(metadata);
-
-        onLayerLoad(imageUrl, {
-          source: 'sentinel',
-          type: layer.type,
-          date: selectedDate,
-          opacity: opacity[0] / 100
-        });
-
-        logger.info('Sentinel layer loaded successfully', { duration, size: imageBlob.size });
-        toast({
-          title: "✅ Camada Sentinel-2 carregada",
-          description: `${layer.name} para ${selectedDate} (${duration}ms, ${(imageBlob.size/1024).toFixed(1)}KB)`
-        });
-
-      } else if (layer.source === 'planet') {
-        logger.info('Starting Planet Labs request', { layerType: layer.type });
-        
-        const requestBody = {
-          bbox,
-          date: selectedDate,
-          layerType: layer.type,
-          cloudCover: 0.3
-        };
-        
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
-        );
-        
-        const requestPromise = supabase.functions.invoke('planet-labs', {
-          body: requestBody
-        });
-        
-        const response = await Promise.race([requestPromise, timeoutPromise]) as any;
-        const duration = Date.now() - startTime;
-
-        if (response.error) {
-          throw new Error(`Planet Labs Error: ${response.error.message || JSON.stringify(response.error)}`);
-        }
-
-        if (!response.data) {
-          throw new Error('Nenhum dado retornado da API Planet Labs');
-        }
-
-        const metadata = {
-          source: 'Planet Labs',
-          type: layer.name,
-          date: selectedDate,
-          cloudCover: response.data.cloudCover,
-          imageId: response.data.imageId,
-          processingTime: duration
-        };
-        
-        setLastResult(metadata);
-
-        onLayerLoad(response.data.downloadUrl || '', {
-          source: 'planet',
-          type: layer.type,
-          date: selectedDate,
-          opacity: opacity[0] / 100,
-          imageId: response.data.imageId,
-          cloudCover: response.data.cloudCover
-        });
-
-        logger.info('Planet metadata loaded successfully', { duration, imageId: response.data.imageId });
-        toast({
-          title: "✅ Metadados Planet carregados",
-          description: `Imagem ${response.data.imageId} - ${(response.data.cloudCover * 100).toFixed(1)}% nuvens (${duration}ms)`
-        });
-      } else {
-        throw new Error(`Unknown layer source: ${layer.source}`);
-      }
+      const cacheStatus = duration < 100 ? '(cache)' : '(API)';
+      logger.info(`Satellite layer loaded successfully ${cacheStatus}`, { duration });
+      
+      toast({
+        title: `✅ Camada ${layer.source === 'sentinel' ? 'Sentinel-2' : 'Planet'} carregada`,
+        description: `${layer.name} para ${selectedDate} (${duration}ms ${cacheStatus})`
+      });
 
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -360,7 +366,11 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
         {/* Resultado da Última Camada */}
         {lastResult && (
           <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-            <div className="text-xs font-medium text-primary mb-1">Última Camada Carregada:</div>
+            <div className="text-xs font-medium text-primary mb-1 flex items-center gap-2">
+              Última Camada Carregada:
+              {lastResult.cached && <Badge variant="outline" className="text-xs">Cache</Badge>}
+              {lastResult.status === 'error' && <Badge variant="destructive" className="text-xs">Erro</Badge>}
+            </div>
             <div className="text-xs space-y-1">
               <div className="flex justify-between">
                 <span>Fonte:</span>
