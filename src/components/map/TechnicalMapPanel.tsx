@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import IOSNavigation from "@/components/ui/ios-navigation";
 import MapView from "@/components/map/MapView";
 import MapDrawingControls from "@/components/map/MapDrawingControls";
 import { SatelliteLayerSelector } from "@/components/map/SatelliteLayerSelector";
@@ -277,7 +278,7 @@ const TechnicalMapPanel: React.FC = () => {
   }, [geometry]);
 
   return (
-    <div className="relative w-full h-screen max-w-md mx-auto bg-background">
+    <div className="relative w-full h-screen max-w-md mx-auto bg-background pb-ios-tab-bar">
       {/* Header com Voltar */}
       <div className="absolute top-0 left-0 right-0 z-[1001] bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center justify-between px-4 py-3">
@@ -456,7 +457,7 @@ const TechnicalMapPanel: React.FC = () => {
       )}
 
       {/* Map */}
-      <div className="absolute inset-0 pt-[130px] pb-[64px]">
+      <div className="absolute inset-0 pt-[130px] pb-ios-tab-bar">
         <MapView
           center={center}
           zoom={zoom}
@@ -553,6 +554,9 @@ const TechnicalMapPanel: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* iOS Navigation */}
+      <IOSNavigation />
     </div>
   );
 };

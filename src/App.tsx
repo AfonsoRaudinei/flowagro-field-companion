@@ -2,9 +2,8 @@ import React, { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserProvider } from "./contexts/UserContext";
-import BottomNavigation from "./components/ui/bottom-navigation";
 import NotFound from "./pages/NotFound";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -32,34 +31,27 @@ const RouteFallback = () => (
   </div>
 );
 
-// Component to handle conditional bottom navigation
+// Application layout component  
 const AppLayout = () => {
-  const location = useLocation();
-  
-  const showBottomNav = ['/dashboard', '/settings'].includes(location.pathname) && !location.pathname.includes('/technical-map');
-  
   return (
-    <>
-      <div className={`w-full max-w-md mx-auto bg-background min-h-screen ${showBottomNav ? 'pb-16' : ''}`}>
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route path="/" element={<TelaInicial />} />
-            <Route path="/login-form" element={<LoginForm />} />
-            <Route path="/recover" element={<Recover />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/settings/security" element={<AccountSecurity />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/phenological-stages" element={<PhenologicalStages />} />
-            <Route path="/consultoria/comunicacao" element={<ConsultoriaComunicacao />} />
-            <Route path="/technical-map" element={<TechnicalMapPanel />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </div>
-      {showBottomNav && <BottomNavigation />}
-    </>
+    <div className="w-full max-w-md mx-auto bg-background min-h-screen">
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<TelaInicial />} />
+          <Route path="/login-form" element={<LoginForm />} />
+          <Route path="/recover" element={<Recover />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/security" element={<AccountSecurity />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/phenological-stages" element={<PhenologicalStages />} />
+          <Route path="/consultoria/comunicacao" element={<ConsultoriaComunicacao />} />
+          <Route path="/technical-map" element={<TechnicalMapPanel />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </div>
   );
 };
 

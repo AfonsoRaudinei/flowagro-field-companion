@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import IOSNavigation from '@/components/ui/ios-navigation';
 import { ArrowLeft, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -190,7 +191,7 @@ const Settings: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col pb-ios-tab-bar">
       {/* Header */}
       <header className="sticky top-0 z-40">
         <div className="max-w-md mx-auto flex items-center justify-between px-4 py-3">
@@ -316,6 +317,9 @@ const Settings: React.FC = () => {
           </section>
         </div>
       </main>
+
+      {/* iOS Navigation */}
+      <IOSNavigation />
     </div>
   );
 };
