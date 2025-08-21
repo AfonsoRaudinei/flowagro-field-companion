@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { CalendarIcon, CloudIcon, SatelliteIcon, ImageIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 type LayerType = 'ndvi' | 'true-color' | 'false-color' | 'visual' | 'analytic';
 type DataSource = 'sentinel' | 'planet';
@@ -82,34 +83,31 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
   const [loading, setLoading] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
 
-  const handleLoadLayer = async () => {
+  const handleLoadLayer = useCallback(async () => {
     const layer = SATELLITE_LAYERS.find(l => l.id === selectedLayer);
     if (!layer) {
-      console.error('🚨 Layer not found:', selectedLayer);
+      logger.error('Layer not found', { selectedLayer });
       return;
     }
 
     setLoading(true);
     const startTime = Date.now();
     
-    // Enhanced debugging
     const debugInfo = {
       layerId: selectedLayer,
       layerName: layer.name,
       layerSource: layer.source,
       layerType: layer.type,
       date: selectedDate,
-      bbox,
-      bboxFormatted: `[${bbox[0].toFixed(6)}, ${bbox[1].toFixed(6)}, ${bbox[2].toFixed(6)}, ${bbox[3].toFixed(6)}]`,
-      opacity: opacity[0],
-      timestamp: new Date().toISOString()
+      bbox: bbox.map(coord => parseFloat(coord.toFixed(6))),
+      opacity: opacity[0]
     };
     
-    console.log('🚀 SATELLITE LAYER DEBUG - Starting load:', debugInfo);
+    logger.info('Starting satellite layer load', debugInfo);
     
     try {
       if (layer.source === 'sentinel') {
-        console.log('🛰️ SENTINEL DEBUG - Starting Sentinel-2 request...');
+        logger.info('Starting Sentinel-2 request', { layerType: layer.type });
         
         const requestBody = {
           bbox,
@@ -119,9 +117,6 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
           height: 512
         };
         
-        console.log('🛰️ SENTINEL DEBUG - Request body:', requestBody);
-        
-        // Add request timeout
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
         );
@@ -133,54 +128,34 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
         const response = await Promise.race([requestPromise, timeoutPromise]) as any;
         const duration = Date.now() - startTime;
         
-        console.log(`🛰️ SENTINEL DEBUG - Response in ${duration}ms:`, {
+        logger.debug('Sentinel response received', {
+          duration,
           hasError: !!response.error,
           hasData: !!response.data,
-          errorDetails: response.error,
-          dataType: typeof response.data,
           dataSize: response.data ? (response.data.byteLength || response.data.length || 'unknown') : 0
         });
 
         if (response.error) {
-          console.error('🚨 SENTINEL ERROR:', response.error);
           throw new Error(`Sentinel Hub Error: ${response.error.message || JSON.stringify(response.error)}`);
         }
 
         if (!response.data) {
-          console.error('🚨 SENTINEL ERROR: No data in response');
           throw new Error('Nenhum dado retornado da API Sentinel');
         }
 
-        // Enhanced data type checking and processing
         let imageBlob: Blob;
-        console.log('🛰️ SENTINEL DEBUG - Processing data type:', {
-          type: typeof response.data,
-          constructor: response.data.constructor.name,
-          isArrayBuffer: response.data instanceof ArrayBuffer,
-          isUint8Array: response.data instanceof Uint8Array,
-          isBlob: response.data instanceof Blob
-        });
         
         if (response.data instanceof ArrayBuffer) {
-          console.log('🛰️ SENTINEL DEBUG - Converting ArrayBuffer to Blob');
           imageBlob = new Blob([response.data], { type: 'image/png' });
         } else if (response.data instanceof Uint8Array) {
-          console.log('🛰️ SENTINEL DEBUG - Converting Uint8Array to Blob');
           imageBlob = new Blob([response.data], { type: 'image/png' });
         } else if (response.data instanceof Blob) {
-          console.log('🛰️ SENTINEL DEBUG - Data is already a Blob');
           imageBlob = response.data;
         } else {
-          console.error('🚨 SENTINEL ERROR - Unexpected data type:', typeof response.data, response.data.constructor.name);
           throw new Error(`Formato de dados inválido: ${typeof response.data}`);
         }
 
         const imageUrl = URL.createObjectURL(imageBlob);
-        console.log('🛰️ SENTINEL DEBUG - Image URL created:', {
-          url: imageUrl.substring(0, 50) + '...',
-          blobSize: imageBlob.size,
-          blobType: imageBlob.type
-        });
         
         const metadata = {
           source: 'Sentinel-2',
@@ -200,14 +175,14 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
           opacity: opacity[0] / 100
         });
 
-        console.log('✅ SENTINEL SUCCESS - Layer loaded successfully');
+        logger.info('Sentinel layer loaded successfully', { duration, size: imageBlob.size });
         toast({
           title: "✅ Camada Sentinel-2 carregada",
           description: `${layer.name} para ${selectedDate} (${duration}ms, ${(imageBlob.size/1024).toFixed(1)}KB)`
         });
 
       } else if (layer.source === 'planet') {
-        console.log('🌍 PLANET DEBUG - Starting Planet Labs request...');
+        logger.info('Starting Planet Labs request', { layerType: layer.type });
         
         const requestBody = {
           bbox,
@@ -216,9 +191,6 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
           cloudCover: 0.3
         };
         
-        console.log('🌍 PLANET DEBUG - Request body:', requestBody);
-        
-        // Add request timeout
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
         );
@@ -230,15 +202,11 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
         const response = await Promise.race([requestPromise, timeoutPromise]) as any;
         const duration = Date.now() - startTime;
 
-        console.log(`🌍 PLANET DEBUG - Response in ${duration}ms:`, response);
-
         if (response.error) {
-          console.error('🚨 PLANET ERROR:', response.error);
           throw new Error(`Planet Labs Error: ${response.error.message || JSON.stringify(response.error)}`);
         }
 
         if (!response.data) {
-          console.error('🚨 PLANET ERROR: No data in response');
           throw new Error('Nenhum dado retornado da API Planet Labs');
         }
 
@@ -253,7 +221,6 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
         
         setLastResult(metadata);
 
-        // For Planet Labs, we would need to handle the download URL
         onLayerLoad(response.data.downloadUrl || '', {
           source: 'planet',
           type: layer.type,
@@ -263,7 +230,7 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
           cloudCover: response.data.cloudCover
         });
 
-        console.log('✅ PLANET SUCCESS - Metadata loaded successfully');
+        logger.info('Planet metadata loaded successfully', { duration, imageId: response.data.imageId });
         toast({
           title: "✅ Metadados Planet carregados",
           description: `Imagem ${response.data.imageId} - ${(response.data.cloudCover * 100).toFixed(1)}% nuvens (${duration}ms)`
@@ -274,9 +241,8 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
 
     } catch (error) {
       const duration = Date.now() - startTime;
-      console.error('🚨 SATELLITE ERROR - Load failed:', {
+      logger.error('Satellite layer load failed', {
         error: error instanceof Error ? error.message : error,
-        stack: error instanceof Error ? error.stack : undefined,
         duration,
         debugInfo
       });
@@ -297,10 +263,11 @@ export const SatelliteLayerSelector: React.FC<SatelliteLayerSelectorProps> = ({
       });
     } finally {
       setLoading(false);
-      const totalDuration = Date.now() - startTime;
-      console.log(`🏁 SATELLITE DEBUG - Load completed in ${totalDuration}ms`);
+      logger.debug('Satellite layer load completed', { 
+        duration: Date.now() - startTime 
+      });
     }
-  };
+  }, [selectedLayer, selectedDate, bbox, opacity, onLayerLoad]);
 
   const selectedLayerData = SATELLITE_LAYERS.find(l => l.id === selectedLayer);
 

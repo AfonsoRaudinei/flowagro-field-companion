@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useMap } from "react-leaflet";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
+import { logger } from "@/lib/logger";
 import "@geoman-io/leaflet-geoman-free";
 import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
 
@@ -15,65 +16,64 @@ export default function MapDrawingControls({ enabled, editing, snapping, onChang
   const map = useMap();
   const handlersSetupRef = useRef(false);
 
+  // Memoized collect function to avoid recreation on each render
+  const collect = useCallback(() => {
+    try {
+      const m = map as L.Map & { pm?: any };
+      if (!m.pm?.getGeomanLayers) {
+        logger.warn('Geoman getGeomanLayers not available');
+        return;
+      }
+
+      const layers = m.pm.getGeomanLayers() ?? [];
+      logger.debug('Collecting Geoman layers', { count: layers.length });
+      
+      if (!layers.length) {
+        onChange?.(null);
+        return;
+      }
+      
+      const features: Feature[] = layers
+        .map((layer: any) => {
+          try {
+            return layer.toGeoJSON ? layer.toGeoJSON() : null;
+          } catch (error) {
+            logger.warn('Error converting layer to GeoJSON', { error });
+            return null;
+          }
+        })
+        .filter(Boolean);
+      
+      const featureCollection: FeatureCollection = { 
+        type: "FeatureCollection", 
+        features 
+      };
+      
+      logger.debug('Generated FeatureCollection', { featureCount: features.length });
+      onChange?.(featureCollection);
+    } catch (error) {
+      logger.error('Error collecting geometries', { error });
+    }
+  }, [map, onChange]);
+
   useEffect(() => {
-    const m: any = map as any;
+    const m = map as L.Map & { pm?: any };
 
     // Ensure pm is available
     if (!m.pm) {
-      console.warn('Geoman not available on map');
+      logger.warn('Geoman not available on map');
       return;
     }
 
-    console.log('Setting up drawing controls:', { enabled, editing, snapping });
-
-    // Helper to collect all drawn layers to a single FeatureCollection
-    const collect = () => {
-      try {
-        const layers: any[] = m.pm?.getGeomanLayers?.() ?? [];
-        console.log('Geoman layers found:', layers.length);
-        
-        if (!layers.length) {
-          onChange?.(null);
-          return;
-        }
-        
-        const features: Feature<Geometry, any>[] = layers
-          .map((l) => {
-            try {
-              return l.toGeoJSON ? l.toGeoJSON() : null;
-            } catch (error) {
-              console.warn('Error converting layer to GeoJSON:', error);
-              return null;
-            }
-          })
-          .filter(Boolean);
-        
-        const fc: FeatureCollection = { type: "FeatureCollection", features: features as Feature[] };
-        console.log('Generated FeatureCollection:', fc);
-        onChange?.(fc);
-      } catch (error) {
-        console.error('Error collecting geometries:', error);
-      }
-    };
+    logger.debug('Setting up drawing controls', { enabled, editing, snapping });
 
     // Set up event handlers only once
     if (!handlersSetupRef.current) {
-      console.log('Setting up Geoman event handlers');
+      logger.debug('Setting up Geoman event handlers');
       
-      const createHandler = (e: any) => {
-        console.log('Geoman create event:', e);
-        collect();
-      };
-      
-      const editHandler = (e: any) => {
-        console.log('Geoman edit event:', e);
-        collect();
-      };
-      
-      const removeHandler = (e: any) => {
-        console.log('Geoman remove event:', e);
-        collect();
-      };
+      const createHandler = () => collect();
+      const editHandler = () => collect();
+      const removeHandler = () => collect();
 
       map.on("pm:create", createHandler);
       map.on("pm:edit", editHandler);
@@ -83,7 +83,7 @@ export default function MapDrawingControls({ enabled, editing, snapping, onChang
 
       // Cleanup function to remove handlers
       return () => {
-        console.log('Cleaning up Geoman event handlers');
+        logger.debug('Cleaning up Geoman event handlers');
         map.off("pm:create", createHandler);
         map.off("pm:edit", editHandler);
         map.off("pm:remove", removeHandler);
@@ -100,13 +100,13 @@ export default function MapDrawingControls({ enabled, editing, snapping, onChang
         continueDrawing: false
       });
     } catch (error) {
-      console.warn('Error setting global options:', error);
+      logger.warn('Error setting global options', { error });
     }
 
     // Controls visibility
     if (enabled) {
       try {
-        console.log('Adding Geoman controls');
+        logger.debug('Adding Geoman controls');
         m.pm?.addControls?.({
           position: "topright",
           drawMarker: false,
@@ -123,32 +123,32 @@ export default function MapDrawingControls({ enabled, editing, snapping, onChang
           removalMode: true,
         });
       } catch (error) {
-        console.warn('Error adding controls:', error);
+        logger.warn('Error adding controls', { error });
       }
     } else {
       try {
-        console.log('Removing Geoman controls');
+        logger.debug('Removing Geoman controls');
         m.pm?.removeControls?.();
         m.pm?.disableGlobalEditMode?.();
       } catch (error) {
-        console.warn('Error removing controls:', error);
+        logger.warn('Error removing controls', { error });
       }
     }
 
     // Editing mode
     try {
       if (editing) {
-        console.log('Enabling global edit mode');
+        logger.debug('Enabling global edit mode');
         m.pm?.enableGlobalEditMode?.();
       } else {
-        console.log('Disabling global edit mode');
+        logger.debug('Disabling global edit mode');
         m.pm?.disableGlobalEditMode?.();
       }
     } catch (error) {
-      console.warn('Error managing edit mode:', error);
+      logger.warn('Error managing edit mode', { error });
     }
 
-  }, [map, enabled, editing, snapping, onChange]);
+  }, [map, enabled, editing, snapping, collect]);
 
   return null;
 }
