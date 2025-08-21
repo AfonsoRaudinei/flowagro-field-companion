@@ -73,6 +73,28 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				}
 			},
+			/* iOS spacing system */
+			spacing: {
+				'xs': 'var(--space-xs)',
+				'sm': 'var(--space-sm)', 
+				'md': 'var(--space-md)',
+				'base': 'var(--space-base)',
+				'lg': 'var(--space-lg)',
+				'xl': 'var(--space-xl)',
+				'2xl': 'var(--space-2xl)',
+				'3xl': 'var(--space-3xl)',
+				'touch': 'var(--space-3xl)', /* 44px iOS touch target */
+			},
+			/* iOS typography scale */
+			fontSize: {
+				'ios-xs': 'var(--text-xs)',
+				'ios-sm': 'var(--text-sm)',
+				'ios-base': 'var(--text-base)',
+				'ios-lg': 'var(--text-lg)', 
+				'ios-xl': 'var(--text-xl)',
+				'ios-2xl': 'var(--text-2xl)',
+				'ios-3xl': 'var(--text-3xl)',
+			},
 			borderRadius: {
 				lg: 'var(--radius-lg)',
 				md: 'var(--radius)',
@@ -82,7 +104,8 @@ export default {
 				'ios-sm': 'var(--shadow-sm)',
 				'ios-md': 'var(--shadow-md)',
 				'ios-lg': 'var(--shadow-lg)',
-				'ios-button': 'var(--shadow-button)'
+				'ios-button': 'var(--shadow-button)',
+				'ios-card': 'var(--shadow-card)'
 			},
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',
@@ -91,29 +114,36 @@ export default {
 			},
 			transitionProperty: {
 				'all': 'var(--transition-all)',
-				'colors': 'var(--transition-colors)'
+				'colors': 'var(--transition-colors)',
+				'transform': 'var(--transition-transform)'
+			},
+			animation: {
+				'spring': 'spring 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+				'slide-up': 'slideUp 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+				'slide-down': 'slideDown 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
 			},
 			keyframes: {
 				'accordion-down': {
-					from: {
-						height: '0'
-					},
-					to: {
-						height: 'var(--radix-accordion-content-height)'
-					}
+					from: { height: '0' },
+					to: { height: 'var(--radix-accordion-content-height)' }
 				},
 				'accordion-up': {
-					from: {
-						height: 'var(--radix-accordion-content-height)'
-					},
-					to: {
-						height: '0'
-					}
+					from: { height: 'var(--radix-accordion-content-height)' },
+					to: { height: '0' }
+				},
+				'spring': {
+					'0%': { transform: 'scale(0.95) translateY(10px)', opacity: '0' },
+					'60%': { transform: 'scale(1.02) translateY(-2px)', opacity: '0.8' },
+					'100%': { transform: 'scale(1) translateY(0)', opacity: '1' }
+				},
+				'slideUp': {
+					'0%': { transform: 'translateY(10px)', opacity: '0' },
+					'100%': { transform: 'translateY(0)', opacity: '1' }
+				},
+				'slideDown': {
+					'0%': { transform: 'translateY(-10px)', opacity: '0' },
+					'100%': { transform: 'translateY(0)', opacity: '1' }
 				}
-			},
-			animation: {
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
 			}
 		}
 	},
