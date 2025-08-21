@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { reportSupabaseError } from '@/integrations/supabase/errors';
+import { logger } from '@/lib/logger';
 
 export interface Message {
   id: string;
@@ -19,7 +20,7 @@ export function useMessages(conversationId?: string) {
   const [loading, setLoading] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     if (!conversationId) {
       setMessages([]);
       return;
@@ -50,9 +51,9 @@ export function useMessages(conversationId?: string) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [conversationId]);
 
-  const sendMessage = async (
+  const sendMessage = useCallback(async (
     content: string, 
     messageType: 'text' | 'audio' | 'image' | 'file' = 'text',
     senderType: 'user' | 'ai' = 'user',
@@ -106,9 +107,9 @@ export function useMessages(conversationId?: string) {
     } finally {
       setSendingMessage(false);
     }
-  };
+  }, [conversationId]);
 
-  const sendAIMessage = async (userMessage: string) => {
+  const sendAIMessage = useCallback(async (userMessage: string) => {
     if (!userMessage.trim()) return;
 
     try {
@@ -138,7 +139,7 @@ export function useMessages(conversationId?: string) {
       setMessages(prev => prev.filter(m => m.id !== typingMessage.id));
 
       if (error) {
-        console.error('AI Error:', error);
+        logger.error('AI Error', { error });
         await sendMessage(
           'Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.',
           'text',
@@ -170,9 +171,11 @@ export function useMessages(conversationId?: string) {
         'ai'
       );
     }
-  };
+  }, [conversationId, sendMessage]);
 
   useEffect(() => {
+    let isMounted = true;
+    
     fetchMessages();
 
     if (!conversationId) return;
@@ -189,6 +192,8 @@ export function useMessages(conversationId?: string) {
           filter: `conversation_id=eq.${conversationId}`
         },
         (payload) => {
+          if (!isMounted) return;
+          
           const rawMessage = payload.new as any;
           const newMessage: Message = {
             ...rawMessage,
@@ -196,6 +201,7 @@ export function useMessages(conversationId?: string) {
             message_type: rawMessage.message_type as 'text' | 'audio' | 'image' | 'file',
             metadata: rawMessage.metadata as Record<string, any>
           };
+          
           setMessages(prev => {
             // Avoid duplicates
             if (prev.some(m => m.id === newMessage.id)) return prev;
@@ -206,9 +212,11 @@ export function useMessages(conversationId?: string) {
       .subscribe();
 
     return () => {
+      isMounted = false;
+      logger.debug('Cleaning up messages subscription', { conversationId });
       supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, fetchMessages]);
 
   return {
     messages,

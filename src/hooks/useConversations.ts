@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { reportSupabaseError } from '@/integrations/supabase/errors';
+import { logger } from '@/lib/logger';
 
 export interface Conversation {
   id: string;
@@ -31,7 +32,7 @@ export function useConversations() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -72,9 +73,9 @@ export function useConversations() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const togglePin = async (conversationId: string) => {
+  const togglePin = useCallback(async (conversationId: string) => {
     try {
       // Find current conversation
       const conversation = conversations.find(c => c.id === conversationId);
@@ -104,9 +105,9 @@ export function useConversations() {
     } catch (error) {
       reportSupabaseError('useConversations.togglePin', error);
     }
-  };
+  }, [conversations]);
 
-  const createConversation = async (producerId: string, title?: string) => {
+  const createConversation = useCallback(async (producerId: string, title?: string) => {
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('User not authenticated');
@@ -134,9 +135,11 @@ export function useConversations() {
       reportSupabaseError('useConversations.createConversation', error);
       return null;
     }
-  };
+  }, [fetchConversations]);
 
   useEffect(() => {
+    let isMounted = true;
+    
     fetchConversations();
 
     // Set up realtime subscription
@@ -150,15 +153,19 @@ export function useConversations() {
           table: 'conversations'
         },
         () => {
+          if (!isMounted) return;
+          logger.debug('Conversations update received');
           fetchConversations(); // Refresh on any change
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
+      logger.debug('Cleaning up conversations subscription');
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchConversations]);
 
   return {
     conversations,

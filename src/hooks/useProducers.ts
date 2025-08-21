@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { reportSupabaseError } from '@/integrations/supabase/errors';
+import { logger } from '@/lib/logger';
 
 export interface Producer {
   id: string;
@@ -22,7 +23,7 @@ export function useProducers() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchProducers = async () => {
+  const fetchProducers = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -42,9 +43,9 @@ export function useProducers() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const updateProducerOnlineStatus = async (id: string, isOnline: boolean) => {
+  const updateProducerOnlineStatus = useCallback(async (id: string, isOnline: boolean) => {
     try {
       const updateData: any = {
         is_online: isOnline,
@@ -76,9 +77,11 @@ export function useProducers() {
     } catch (error) {
       reportSupabaseError('useProducers.updateOnlineStatus', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    let isMounted = true;
+    
     fetchProducers();
 
     // Set up realtime subscription
@@ -92,16 +95,19 @@ export function useProducers() {
           table: 'producers'
         },
         (payload) => {
-          console.log('Producer update:', payload);
+          if (!isMounted) return;
+          logger.debug('Producer update received', { payload });
           fetchProducers(); // Refresh data on any change
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
+      logger.debug('Cleaning up producers subscription');
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchProducers]);
 
   return {
     producers,
