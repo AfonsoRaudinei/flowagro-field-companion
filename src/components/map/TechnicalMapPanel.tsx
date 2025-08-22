@@ -291,7 +291,6 @@ const TechnicalMapPanel: React.FC = () => {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-lg font-semibold">Mapa Técnico</h1>
           </div>
 
           <div className="flex items-center gap-2">
