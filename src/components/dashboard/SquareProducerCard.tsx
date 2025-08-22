@@ -20,7 +20,7 @@ export function SquareProducerCard({
     switch (size) {
       case 'small':
         return { 
-          card: 'h-28 min-w-[120px] w-full p-3', 
+          card: 'h-28 min-w-[140px] max-w-[180px] w-full p-3', 
           avatar: 'h-8 w-8', 
           name: 'text-xs', 
           farm: 'text-xs',
@@ -28,7 +28,7 @@ export function SquareProducerCard({
         };
       case 'medium':
         return { 
-          card: 'h-36 min-w-[140px] w-full p-4', 
+          card: 'h-36 min-w-[160px] max-w-[200px] w-full p-4', 
           avatar: 'h-12 w-12', 
           name: 'text-sm', 
           farm: 'text-xs',
@@ -36,7 +36,7 @@ export function SquareProducerCard({
         };
       case 'large':
         return { 
-          card: 'h-44 min-w-[160px] w-full p-5', 
+          card: 'h-44 min-w-[180px] max-w-[220px] w-full p-5', 
           avatar: 'h-16 w-16', 
           name: 'text-base', 
           farm: 'text-sm',
@@ -80,14 +80,14 @@ export function SquareProducerCard({
     <Card 
       className={`
         ${sizeClasses.card}
-        cursor-pointer transition-all duration-300 ease-out
-        hover:shadow-md hover:scale-105
+        cursor-pointer transition-all duration-500 ease-out
+        hover:shadow-md hover:scale-[1.02]
         ${chat.unreadCount > 0 
           ? 'bg-gradient-to-br from-primary/10 via-primary/5 to-card border-primary/30 shadow-lg shadow-primary/20' 
           : 'bg-card border-border/50'
         }
         ${chat.isPinned ? 'ring-1 ring-accent/40' : ''}
-        rounded-lg relative group
+        rounded-lg relative group will-change-transform
       `}
       onClick={() => onClick(chat)}
     >

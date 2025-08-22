@@ -138,10 +138,11 @@ export function ChatListView({
                     📌 Fixadas ({pinnedThreads.length})
                   </h3>
                   <div 
-                    className="grid gap-md" 
+                    className="grid gap-lg transition-all duration-300" 
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-                      gridAutoRows: 'min-content'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                      gridAutoRows: 'auto',
+                      alignItems: 'start'
                     }}
                   >
                     {pinnedThreads.map((thread, index) => (
@@ -164,10 +165,11 @@ export function ChatListView({
                     💬 Conversas ({unpinnedThreads.length})
                   </h3>
                   <div 
-                    className="grid gap-md" 
+                    className="grid gap-lg transition-all duration-300" 
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-                      gridAutoRows: 'min-content'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                      gridAutoRows: 'auto',
+                      alignItems: 'start'
                     }}
                   >
                     {unpinnedThreads.map((thread, index) => (
