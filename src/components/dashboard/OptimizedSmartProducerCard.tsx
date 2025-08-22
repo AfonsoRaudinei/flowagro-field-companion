@@ -110,9 +110,15 @@ export const OptimizedSmartProducerCard = memo(function OptimizedSmartProducerCa
         className={`
           p-4 cursor-pointer transition-all duration-300 ease-out
           hover:shadow-md hover:scale-[1.01]
-          ${chat.unreadCount > 0 ? 'ring-1 ring-primary/20 bg-gradient-to-r from-primary/5 to-card' : 'bg-card'}
-          ${chat.isPinned ? 'ring-1 ring-accent/30 bg-gradient-to-r from-accent/5 to-card' : ''}
-          border-0 relative overflow-hidden
+          ${chat.unreadCount > 0 
+            ? 'ring-2 ring-primary/30 bg-gradient-to-r from-primary/8 via-primary/4 to-card border-primary/40 shadow-lg shadow-primary/10' 
+            : 'bg-card border-border/50'
+          }
+          ${chat.isPinned 
+            ? 'ring-1 ring-accent/40 bg-gradient-to-r from-accent/8 to-card border-accent/30' 
+            : ''
+          }
+          relative overflow-hidden
         `}
         onClick={handleClick}
       >

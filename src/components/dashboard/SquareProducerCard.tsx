@@ -80,10 +80,14 @@ export function SquareProducerCard({
     <Card 
       className={`
         ${sizeClasses.card}
-        cursor-pointer transition-all duration-200 ease-out
+        cursor-pointer transition-all duration-300 ease-out
         hover:shadow-md hover:scale-105
-        bg-card border border-border/50 rounded-lg
-        relative group
+        ${chat.unreadCount > 0 
+          ? 'bg-gradient-to-br from-primary/10 via-primary/5 to-card border-primary/30 shadow-lg shadow-primary/20' 
+          : 'bg-card border-border/50'
+        }
+        ${chat.isPinned ? 'ring-1 ring-accent/40' : ''}
+        rounded-lg relative group
       `}
       onClick={() => onClick(chat)}
     >

@@ -5,12 +5,14 @@ import OptimizedSmartProducerCard from "./OptimizedSmartProducerCard";
 import ConversationListSkeleton from "@/components/skeletons/ConversationListSkeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TechnicalChatView from "./TechnicalChatView";
+import { EmptyStateView } from "./EmptyStateView";
 import { ProducerThread } from "@/hooks/useDashboardState";
 import { useChatDensity } from "@/hooks/useChatDensity";
 import { IOSHeader } from "@/components/ui/ios-header";
 import ChatErrorBoundary from "@/components/ErrorBoundary/ChatErrorBoundary";
 import { DebugPanel } from "@/components/Debug/DebugPanel";
 import { logger } from "@/lib/logger";
+import { Users, Calendar, Bot, Wheat } from "lucide-react";
 
 interface ChatListViewProps {
   chatFilter: "Produtor" | "Agenda" | "IA" | "Campo";
@@ -75,40 +77,59 @@ export function ChatListView({
               className="mb-md" 
             />
             
-            {/* Filter Tabs - Compact design */}
+            {/* Filter Tabs - iOS style with icons */}
             <Tabs value={chatFilter} onValueChange={onChatFilterChange}>
-              <TabsList className="grid w-full grid-cols-4 h-8 p-1 bg-muted/50">
-                <TabsTrigger value="Produtor" className="text-ios-sm py-1">Produtor</TabsTrigger>
-                <TabsTrigger value="Agenda" className="text-ios-sm py-1">Agenda</TabsTrigger>
-                <TabsTrigger value="IA" className="text-ios-sm py-1">IA</TabsTrigger>
-                <TabsTrigger value="Campo" className="text-ios-sm py-1">Campo</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 h-10 p-1 bg-muted/50">
+                <TabsTrigger 
+                  value="Produtor" 
+                  className="flex items-center justify-center gap-1 text-ios-sm py-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-200"
+                >
+                  <Users className="h-4 w-4" />
+                  {chatFilter === "Produtor" && <span>Produtor</span>}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="Agenda" 
+                  className="flex items-center justify-center gap-1 text-ios-sm py-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-200"
+                >
+                  <Calendar className="h-4 w-4" />
+                  {chatFilter === "Agenda" && <span>Agenda</span>}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="IA" 
+                  className="flex items-center justify-center gap-1 text-ios-sm py-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-200"
+                >
+                  <Bot className="h-4 w-4" />
+                  {chatFilter === "IA" && <span>IA</span>}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="Campo" 
+                  className="flex items-center justify-center gap-1 text-ios-sm py-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-200"
+                >
+                  <Wheat className="h-4 w-4" />
+                  {chatFilter === "Campo" && <span>Campo</span>}
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
 
-        {/* Technical Chat - shown when IA tab is active */}
-        {chatFilter === "IA" && (
-          <TechnicalChatView onBack={onBackFromTechnicalChat} />
-        )}
-
         {/* Chat List - Optimized spacing */}
         <div className="flex-1 overflow-auto pb-20"> {/* Account for bottom nav */}
-          {chatFilter === "IA" ? null : loading ? (
+          {/* Technical Chat - shown when IA tab is active */}
+          {chatFilter === "IA" ? (
+            <TechnicalChatView onBack={onBackFromTechnicalChat} />
+          ) : /* Empty states for Agenda and Campo */
+          chatFilter === "Agenda" || chatFilter === "Campo" ? (
+            <EmptyStateView type={chatFilter} />
+          ) : /* Loading state */
+          loading ? (
             <div className="p-base">
               <ConversationListSkeleton count={6} />
             </div>
-          ) : threads.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center p-xl">
-              <div className="text-center">
-                <h3 className="text-ios-lg font-medium text-muted-foreground mb-sm">
-                  Nenhuma conversa encontrada
-                </h3>
-                <p className="text-ios-sm text-muted-foreground">
-                  {searchQuery ? "Tente ajustar sua busca" : "Suas conversas aparecerão aqui"}
-                </p>
-              </div>
-            </div>
-          ) : chatFilter === "Produtor" ? (
+          ) : /* No conversations found */
+          threads.length === 0 ? (
+            <EmptyStateView type="Produtor" />
+          ) : /* Produtor view - Square cards */
+          chatFilter === "Produtor" ? (
             <div className="p-base space-y-lg">
               {/* Pinned Conversations */}
               {pinnedThreads.length > 0 && (
