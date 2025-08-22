@@ -4,6 +4,7 @@ import { SquareProducerCard } from "./SquareProducerCard";
 import OptimizedSmartProducerCard from "./OptimizedSmartProducerCard";
 import ConversationListSkeleton from "@/components/skeletons/ConversationListSkeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import TechnicalChatView from "./TechnicalChatView";
 import { EmptyStateView } from "./EmptyStateView";
 import { ProducerThread } from "@/hooks/useDashboardState";
@@ -12,7 +13,7 @@ import { IOSHeader } from "@/components/ui/ios-header";
 import ChatErrorBoundary from "@/components/ErrorBoundary/ChatErrorBoundary";
 import { DebugPanel } from "@/components/Debug/DebugPanel";
 import { logger } from "@/lib/logger";
-import { Users, Calendar, Bot, Wheat } from "lucide-react";
+import { Users, Calendar, Bot, Wheat, Bell, MessageCircle } from "lucide-react";
 
 interface ChatListViewProps {
   chatFilter: "Produtor" | "Agenda" | "IA" | "Campo";
@@ -41,10 +42,18 @@ export function ChatListView({
 }: ChatListViewProps) {
   const { density } = useChatDensity();
   const [showDebug, setShowDebug] = useState(false);
+  const [showOnlyUnread, setShowOnlyUnread] = useState(false);
 
-  // Separate pinned and unpinned threads
-  const pinnedThreads = threads.filter(thread => thread.isPinned);
-  const unpinnedThreads = threads.filter(thread => !thread.isPinned);
+  // Apply unread filter if active, then separate pinned and unpinned threads
+  const filteredThreads = showOnlyUnread 
+    ? threads.filter(thread => thread.unreadCount > 0)
+    : threads;
+  
+  const pinnedThreads = filteredThreads.filter(thread => thread.isPinned);
+  const unpinnedThreads = filteredThreads.filter(thread => !thread.isPinned);
+  
+  // Count unread conversations for the toggle
+  const unreadCount = threads.filter(thread => thread.unreadCount > 0).length;
   
   // Log user interactions for monitoring
   React.useEffect(() => {
@@ -76,6 +85,30 @@ export function ChatListView({
               placeholder="Buscar conversas..." 
               className="mb-md" 
             />
+            
+            {/* Unread Filter Toggle */}
+            <div className="flex items-center justify-between mb-md p-3 bg-card rounded-lg border border-border/30">
+              <div className="flex items-center gap-2">
+                {showOnlyUnread ? (
+                  <Bell className="h-4 w-4 text-primary" />
+                ) : (
+                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className="text-sm font-medium">
+                  {showOnlyUnread ? 'Apenas não lidas' : 'Todas as conversas'}
+                </span>
+                {unreadCount > 0 && (
+                  <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+              <Switch
+                checked={showOnlyUnread}
+                onCheckedChange={setShowOnlyUnread}
+                className="data-[state=checked]:bg-primary"
+              />
+            </div>
             
             {/* Filter Tabs - iOS style with icons */}
             <Tabs value={chatFilter} onValueChange={onChatFilterChange}>
@@ -126,8 +159,22 @@ export function ChatListView({
               <ConversationListSkeleton count={6} />
             </div>
           ) : /* No conversations found */
-          threads.length === 0 ? (
-            <EmptyStateView type="Produtor" />
+          filteredThreads.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-center p-base">
+              {showOnlyUnread ? (
+                <>
+                  <Bell className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    Nenhuma conversa não lida
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Todas as suas conversas estão em dia! 🎉
+                  </p>
+                </>
+              ) : (
+                <EmptyStateView type="Produtor" />
+              )}
+            </div>
           ) : /* Produtor view - Square cards */
           chatFilter === "Produtor" ? (
             <div className="p-base space-y-lg">
@@ -135,7 +182,7 @@ export function ChatListView({
               {pinnedThreads.length > 0 && (
                 <div>
                   <h3 className="text-ios-sm font-semibold text-muted-foreground mb-md px-sm">
-                    📌 Fixadas ({pinnedThreads.length})
+                    📌 Fixadas {showOnlyUnread ? 'não lidas' : ''} ({pinnedThreads.length})
                   </h3>
                   <div 
                     className="grid gap-lg transition-all duration-300" 
@@ -162,7 +209,7 @@ export function ChatListView({
               {unpinnedThreads.length > 0 && (
                 <div>
                   <h3 className="text-ios-sm font-semibold text-muted-foreground mb-md px-sm">
-                    💬 Conversas ({unpinnedThreads.length})
+                    💬 Conversas {showOnlyUnread ? 'não lidas' : ''} ({unpinnedThreads.length})
                   </h3>
                   <div 
                     className="grid gap-lg transition-all duration-300" 
@@ -187,7 +234,7 @@ export function ChatListView({
             </div>
             ) : (
               <div className="space-y-1 px-base py-sm">
-                {threads.map((thread, index) => (
+                {filteredThreads.map((thread, index) => (
                   <div 
                     key={thread.id} 
                     className="animate-slide-up" 
