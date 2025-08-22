@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { DebouncedSearchBar } from "@/components/SearchBar/DebouncedSearchBar";
 import { SquareProducerCard } from "./SquareProducerCard";
 import OptimizedSmartProducerCard from "./OptimizedSmartProducerCard";
@@ -9,6 +9,8 @@ import { ProducerThread } from "@/hooks/useDashboardState";
 import { useChatDensity } from "@/hooks/useChatDensity";
 import { IOSHeader } from "@/components/ui/ios-header";
 import ChatErrorBoundary from "@/components/ErrorBoundary/ChatErrorBoundary";
+import { DebugPanel } from "@/components/Debug/DebugPanel";
+import { logger } from "@/lib/logger";
 
 interface ChatListViewProps {
   chatFilter: "Produtor" | "Agenda" | "IA" | "Campo";
@@ -36,10 +38,20 @@ export function ChatListView({
   onBackFromTechnicalChat
 }: ChatListViewProps) {
   const { density } = useChatDensity();
+  const [showDebug, setShowDebug] = useState(false);
 
   // Separate pinned and unpinned threads
   const pinnedThreads = threads.filter(thread => thread.isPinned);
   const unpinnedThreads = threads.filter(thread => !thread.isPinned);
+  
+  // Log user interactions for monitoring
+  React.useEffect(() => {
+    logger.userAction('chat_list_view', 'dashboard', {
+      threadsCount: threads.length,
+      pinnedCount: pinnedThreads.length,
+      filter: chatFilter
+    });
+  }, [threads.length, pinnedThreads.length, chatFilter]);
   
   return (
     <ChatErrorBoundary>
@@ -176,6 +188,11 @@ export function ChatListView({
           </div>
         </div>
       </div>
+      
+      {/* Debug Panel - Only in development */}
+      {import.meta.env.DEV && (
+        <DebugPanel isVisible={showDebug} onToggle={() => setShowDebug(!showDebug)} />
+      )}
     </ChatErrorBoundary>
   );
 }

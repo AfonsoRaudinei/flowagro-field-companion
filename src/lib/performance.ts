@@ -1,4 +1,6 @@
-import { useCallback, useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
+import { logger } from '@/lib/logger';
+import { recordMetric } from '@/lib/metrics';
 
 /**
  * Debounce hook for optimizing performance on rapid input changes
