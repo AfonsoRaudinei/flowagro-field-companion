@@ -17,6 +17,7 @@ const Settings = lazy(() => import("./pages/Settings"));
 const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
 const ConsultoriaComunicacao = lazy(() => import("./pages/ConsultoriaComunicacao"));
 const TechnicalMapPanel = lazy(() => import("./components/map/TechnicalMapPanel"));
+const WebhookSettings = lazy(() => import("./pages/WebhookSettings"));
 
 const Recover = lazy(() => import("./pages/Recover"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -44,6 +45,7 @@ const AppLayout = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/settings/security" element={<AccountSecurity />} />
+          <Route path="/settings/webhooks" element={<WebhookSettings />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/phenological-stages" element={<PhenologicalStages />} />
           <Route path="/consultoria/comunicacao" element={<ConsultoriaComunicacao />} />

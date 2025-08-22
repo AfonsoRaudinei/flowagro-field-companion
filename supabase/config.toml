@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.planet-labs]
 verify_jwt = false
+
+[functions.webhook-handler]
+verify_jwt = false
+
+[functions.webhook-sender]
+verify_jwt = true

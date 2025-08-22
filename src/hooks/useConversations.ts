@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { reportSupabaseError } from '@/integrations/supabase/errors';
 import { logger } from '@/lib/logger';
+import { WebhookTrigger } from '@/lib/webhookTrigger';
 
 export interface Conversation {
   id: string;
