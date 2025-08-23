@@ -20,46 +20,68 @@ export const IOSHeader: React.FC<IOSHeaderProps> = ({
   subtitle,
   className
 }) => {
+  // Clean layout when no back button and no right actions
+  const isCleanLayout = !showBackButton && !rightActions && !onBack;
+  
   return (
     <header className={cn(
-      "flex items-center justify-between",
-      "h-touch px-base py-md", // iOS standard 44px height with proper padding
+      "flex items-center",
+      isCleanLayout ? "justify-center" : "justify-between",
+      "h-touch px-base py-md",
       "bg-card/95 backdrop-blur-md border-b border-border/50",
       "shadow-ios-sm",
       className
     )}>
-      {/* Left side - Back button */}
-      <div className="flex items-center min-w-0 flex-1">
-        {showBackButton && onBack && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="ios-button h-8 w-8 p-0 mr-md hover:bg-accent/50 active:scale-95"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        )}
-      </div>
+      {!isCleanLayout && (
+        <>
+          {/* Left side - Back button */}
+          <div className="flex items-center min-w-0 flex-1">
+            {showBackButton && onBack && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBack}
+                className="ios-button h-8 w-8 p-0 mr-md hover:bg-accent/50 active:scale-95"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
 
-      {/* Center - Title */}
-      <div className="flex-2 flex flex-col items-center text-center min-w-0">
-        <h1 className="text-ios-lg font-semibold text-foreground truncate max-w-48">
-          {title}
-        </h1>
-        {subtitle && (
-          <p className="text-ios-sm text-muted-foreground truncate max-w-40">
-            {subtitle}
-          </p>
-        )}
-      </div>
+          {/* Center - Title */}
+          <div className="flex-2 flex flex-col items-center text-center min-w-0">
+            <h1 className="text-ios-lg font-semibold text-foreground truncate max-w-48">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="text-ios-sm text-muted-foreground truncate max-w-40">
+                {subtitle}
+              </p>
+            )}
+          </div>
 
-      {/* Right side - Actions */}
-      <div className="flex items-center justify-end min-w-0 flex-1">
-        {rightActions || (
-          <div className="w-8 h-8" /> // Spacer to balance layout when no actions
-        )}
-      </div>
+          {/* Right side - Actions */}
+          <div className="flex items-center justify-end min-w-0 flex-1">
+            {rightActions || (
+              <div className="w-8 h-8" />
+            )}
+          </div>
+        </>
+      )}
+      
+      {/* Clean centered layout */}
+      {isCleanLayout && (
+        <div className="flex flex-col items-center text-center">
+          <h1 className="text-xl font-semibold text-foreground">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="text-sm text-muted-foreground">
+              {subtitle}
+            </p>
+          )}
+        </div>
+      )}
     </header>
   );
 };
