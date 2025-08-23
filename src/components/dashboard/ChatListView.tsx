@@ -1,10 +1,8 @@
 import React, { useState } from "react";
-import { DebouncedSearchBar } from "@/components/SearchBar/DebouncedSearchBar";
 import { SquareProducerCard } from "./SquareProducerCard";
 import OptimizedSmartProducerCard from "./OptimizedSmartProducerCard";
 import ConversationListSkeleton from "@/components/skeletons/ConversationListSkeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
 import TechnicalChatView from "./TechnicalChatView";
 import { EmptyStateView } from "./EmptyStateView";
 import { ProducerThread } from "@/hooks/useDashboardState";
@@ -13,7 +11,7 @@ import { IOSHeader } from "@/components/ui/ios-header";
 import ChatErrorBoundary from "@/components/ErrorBoundary/ChatErrorBoundary";
 import { DebugPanel } from "@/components/Debug/DebugPanel";
 import { logger } from "@/lib/logger";
-import { Users, Calendar, Bot, Wheat, Bell, MessageCircle } from "lucide-react";
+import { Users, Calendar, Bot, Wheat, Bell, MessageCircle, Search } from "lucide-react";
 
 interface ChatListViewProps {
   chatFilter: "Produtor" | "Agenda" | "IA" | "Campo";
@@ -76,38 +74,32 @@ export function ChatListView({
 
         {/* Compact Content Area */}
         <div className="flex flex-col flex-1 overflow-hidden">
-          {/* Search and Filters - More compact */}
+          {/* Compact Info Bar */}
           <div className="px-base py-md bg-card/50 backdrop-blur-sm border-b border-border/50">
-            {/* Search with debounce */}
-            <DebouncedSearchBar 
-              value={searchQuery} 
-              onChange={onSearchChange} 
-              placeholder="Buscar conversas..." 
-              className="mb-md" 
-            />
-            
-            {/* Unread Filter Toggle */}
-            <div className="flex items-center justify-between mb-md p-3 bg-card rounded-lg border border-border/30">
+            {/* Horizontal Bar with Search Icon + Fixadas | Todas as conversas + Toggle */}
+            <div className="flex items-center justify-between mb-md">
               <div className="flex items-center gap-2">
-                {showOnlyUnread ? (
-                  <Bell className="h-4 w-4 text-primary" />
-                ) : (
-                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                )}
+                <Search className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">
-                  {showOnlyUnread ? 'Apenas não lidas' : 'Todas as conversas'}
+                  📌 Fixadas ({pinnedThreads.length})
                 </span>
-                {unreadCount > 0 && (
-                  <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-full">
-                    {unreadCount}
-                  </span>
-                )}
               </div>
-              <Switch
-                checked={showOnlyUnread}
-                onCheckedChange={setShowOnlyUnread}
-                className="data-[state=checked]:bg-primary"
-              />
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">
+                  Todas as conversas {threads.length}
+                </span>
+                <button
+                  onClick={() => setShowOnlyUnread(!showOnlyUnread)}
+                  className={`p-1 rounded-full transition-colors ${
+                    showOnlyUnread 
+                      ? 'text-primary bg-primary/10' 
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  aria-label="Toggle unread conversations"
+                >
+                  <Bell className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             
             {/* Filter Tabs - iOS style with icons */}
