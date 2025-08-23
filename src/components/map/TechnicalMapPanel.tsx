@@ -483,7 +483,7 @@ const TechnicalMapPanel: React.FC = () => {
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold">
-              {geometry ? 'Informações da Área' : 'Mapa Técnico'}
+              {geometry ? 'Informações da Área' : 'Informações'}
             </h3>
             {geometry && <Badge variant="default" className="text-xs">Ativo</Badge>}
           </div>
