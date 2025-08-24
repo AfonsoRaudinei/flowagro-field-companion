@@ -30,21 +30,16 @@ export class FileImportService {
         const target = event.target as HTMLInputElement;
         const file = target.files?.[0];
         if (file) {
-          console.log('File selected:', {
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            extension: file.name.split('.').pop()?.toLowerCase()
-          });
+          // File selected for import
           resolve(file);
         } else {
-          console.log('No file selected');
+          // Archive action
           resolve(null);
         }
       };
 
       input.oncancel = () => {
-        console.log('File selection cancelled');
+        // File selection cancelled
         resolve(null);
       };
 
@@ -54,34 +49,29 @@ export class FileImportService {
 
   static async saveImportedFile(file: File, farmId: string, farmName: string): Promise<ImportedFile> {
     try {
-      console.log('Processing file:', {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      });
+      // Processing file for import
 
       // Ensure OfflineStorage is initialized
       await OfflineStorageService.ensureInitialized();
-      console.log('OfflineStorage initialized for import');
+      // Initialize storage and process content
       
       // Read file content based on type
       let content: string;
       const isKMZ = file.name.toLowerCase().endsWith('.kmz');
       
       if (isKMZ) {
-        console.log('Processing KMZ file...');
+        // Processing KMZ file
         content = await this.processKMZFile(file);
       } else {
-        console.log('Processing KML file...');
+        // Processing KML file
         content = await this.readFileContent(file);
       }
       
-      console.log('File content length:', content.length);
-      console.log('Content preview:', content.substring(0, 200));
+      // Extract bounding box from content
       
       // Extract bounding box
       const boundingBox = this.extractBoundingBox(content);
-      console.log('Extracted bounding box:', boundingBox);
+      // Bounding box extracted successfully
 
       const importedFile: ImportedFile = {
         id: `import_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -96,7 +86,7 @@ export class FileImportService {
       };
 
       await this.saveToStorage(importedFile);
-      console.log('File saved to storage successfully:', importedFile.id);
+      // File saved successfully
       
       return importedFile;
     } catch (error) {
@@ -124,7 +114,7 @@ export class FileImportService {
       const kmlFile = contents.files[kmlFiles[0]];
       const kmlContent = await kmlFile.async('text');
       
-      console.log(`Extracted KML from KMZ: ${kmlFiles[0]}`);
+      // KML extracted from KMZ
       return kmlContent;
     } catch (error) {
       console.error('Error processing KMZ file:', error);
@@ -150,7 +140,7 @@ export class FileImportService {
 
   private static extractBoundingBox(content: string): ImportedFile['boundingBox'] {
     try {
-      console.log('Extracting bounding box from content...');
+      // Extracting bounding box from content
       
       // Multiple regex patterns to catch different KML coordinate formats
       const patterns = [

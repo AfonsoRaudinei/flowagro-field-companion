@@ -6,6 +6,7 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { performanceMonitor } from "@/lib/performanceMonitor";
 
 // Fix default marker icons for Vite bundling
 L.Icon.Default.mergeOptions({
@@ -96,11 +97,14 @@ export default function MapView({
     let active = true;
 
     const loadApiKey = async () => {
+      const startTime = performance.now();
+      
       // Try cached key first
       const cached = getCachedApiKey();
       if (cached) {
         setApiKey(cached);
         setError(null);
+        performanceMonitor.recordAPICall('maptiler-token', performance.now() - startTime, 200, true);
         return;
       }
 
@@ -109,23 +113,30 @@ export default function MapView({
         const { data, error } = await supabase.functions.invoke("maptiler-token", { method: "GET" });
         if (!active) return;
         
+        const duration = performance.now() - startTime;
+        
         if (error) {
           setError("Não foi possível obter a chave do MapTiler.");
           setApiKey(null);
+          performanceMonitor.recordAPICall('maptiler-token', duration, 500, false);
         } else {
           const key = (data as any)?.key || null;
           setApiKey(key);
           if (!key) {
             setError("Chave MAPTILER_API_KEY ausente nas Secrets do Supabase.");
+            performanceMonitor.recordAPICall('maptiler-token', duration, 404, false);
           } else {
             setError(null);
             setCachedApiKey(key);
+            performanceMonitor.recordAPICall('maptiler-token', duration, 200, false);
           }
         }
       } catch (e: any) {
         if (!active) return;
+        const duration = performance.now() - startTime;
         setError("Erro ao buscar a chave do MapTiler.");
         setApiKey(null);
+        performanceMonitor.recordAPICall('maptiler-token', duration, 0, false);
       }
     };
 

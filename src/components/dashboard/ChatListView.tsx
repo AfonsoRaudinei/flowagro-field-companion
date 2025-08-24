@@ -22,6 +22,8 @@ interface ChatListViewProps {
   loading: boolean;
   onChatSelect: (chat: ProducerThread) => void;
   onTogglePin: (chatId: string) => void;
+  onArchive?: (chatId: string) => void;
+  onMarkAsRead?: (chatId: string) => void;
   onShowTechnicalChat: () => void;
   onBackFromTechnicalChat: () => void;
 }
@@ -35,6 +37,8 @@ export function ChatListView({
   loading,
   onChatSelect,
   onTogglePin,
+  onArchive,
+  onMarkAsRead,
   onShowTechnicalChat,
   onBackFromTechnicalChat
 }: ChatListViewProps) {
@@ -236,12 +240,8 @@ export function ChatListView({
                       chat={thread} 
                       onClick={onChatSelect} 
                       onTogglePin={onTogglePin} 
-                      onArchive={(id) => {
-                        console.log('Archive:', id);
-                      }} 
-                      onMarkAsRead={(id) => {
-                        console.log('Mark as read:', id);
-                      }} 
+                      onArchive={onArchive} 
+                      onMarkAsRead={onMarkAsRead} 
                     />
                   </div>
                 ))}

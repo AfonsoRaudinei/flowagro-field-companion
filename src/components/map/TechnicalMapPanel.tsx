@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import IOSNavigation from "@/components/ui/ios-navigation";
 import MapView from "@/components/map/MapView";
@@ -14,6 +14,7 @@ import { useGPSState } from "@/hooks/useGPSState";
 import { GPSStatusIndicator } from "@/components/GPSStatusIndicator";
 import { useMapCapture } from "@/hooks/useMapCapture";
 import { useToast } from "@/hooks/use-toast";
+import { performanceMonitor, usePerformanceMonitoring } from "@/lib/performanceMonitor";
 import * as turf from '@turf/turf';
 
 // Using Turf.js for precise geospatial calculations
@@ -50,6 +51,8 @@ const layerOptions = [
 
 const TechnicalMapPanel: React.FC = () => {
   const navigate = useNavigate();
+  const { measureRender } = usePerformanceMonitoring('TechnicalMapPanel');
+  
   const [center, setCenter] = useState<[number, number]>([-23.55, -46.63]);
   const [zoom, setZoom] = useState(13);
   const [baseLayerId, setBaseLayerId] = useState<"streets" | "satellite" | "terrain">("satellite");
@@ -107,23 +110,25 @@ const TechnicalMapPanel: React.FC = () => {
     return () => document.removeEventListener("click", onDocClick);
   }, [layersOpen]);
 
-  const handleToggleLayer = (id: string) => {
+  const handleToggleLayer = useCallback((id: string) => {
     if (id === "satellite") {
       setSatelliteLayersOpen(true);
       return;
     }
     setActiveLayers(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  }, []);
 
-  const handleSatelliteLayerLoad = (imageUrl: string, metadata: any) => {
+  const handleSatelliteLayerLoad = useCallback((imageUrl: string, metadata: any) => {
     const layerId = `satellite-${Date.now()}`;
     
     setLoadedSatelliteLayers(prev => [...prev, { id: layerId, imageUrl, metadata }]);
     setActiveLayers(prev => ({ ...prev, [layerId]: true }));
-  };
+  }, []);
 
-  // Calculate current map bbox for satellite requests
+  // Calculate current map bbox for satellite requests - memoized for performance
   const currentBbox = useMemo((): [number, number, number, number] => {
+    const endRender = measureRender('bbox_calculation');
+    
     const [lat, lng] = center;
     // More appropriate zoom-based delta calculation
     const zoomFactor = Math.pow(2, 15 - zoom);
@@ -138,22 +143,31 @@ const TechnicalMapPanel: React.FC = () => {
       lat + latDelta   // north (latitude max)
     ];
     
+    endRender();
     return bbox;
-  }, [center, zoom]);
+  }, [center, zoom, measureRender]);
 
-  const handleLocate = async () => {
+  const handleLocate = useCallback(async () => {
+    const startTime = performance.now();
     setGpsState(prev => ({ ...prev, isChecking: true }));
     
     try {
       const location = await getCurrentLocationWithFallback({ lat: center[0], lng: center[1] });
+      const duration = performance.now() - startTime;
+      
       if (location) {
         setCenter([location.latitude, location.longitude]);
         setZoom(16);
+        
+        // Record GPS performance
+        performanceMonitor.recordGPSMetrics('locate_user', duration, location.accuracy);
+        
         toast({
           title: "Localização encontrada",
           description: `${location.accuracy}m de precisão - ${location.source === 'gps' ? 'GPS' : location.source === 'cache' ? 'Cache' : 'Aproximada'}`
         });
       } else {
+        performanceMonitor.recordGPSMetrics('locate_user_failed', duration);
         toast({
           title: "Localização indisponível", 
           description: "Não foi possível obter sua localização",
@@ -161,6 +175,9 @@ const TechnicalMapPanel: React.FC = () => {
         });
       }
     } catch (error) {
+      const duration = performance.now() - startTime;
+      performanceMonitor.recordGPSMetrics('locate_user_error', duration);
+      
       toast({
         title: "Erro de GPS",
         description: "Falha ao obter localização",
@@ -169,30 +186,30 @@ const TechnicalMapPanel: React.FC = () => {
     } finally {
       setGpsState(prev => ({ ...prev, isChecking: false }));
     }
-  };
+  }, [center, getCurrentLocationWithFallback, setGpsState, toast]);
 
-  const handleZoomIn = () => {
+  const handleZoomIn = useCallback(() => {
     setZoom(prev => Math.min(prev + 1, 18));
-  };
+  }, []);
 
-  const handleZoomOut = () => {
+  const handleZoomOut = useCallback(() => {
     setZoom(prev => Math.max(prev - 1, 1));
-  };
+  }, []);
 
-  const handleDrawingMode = (mode: DrawingMode) => {
+  const handleDrawingMode = useCallback((mode: DrawingMode) => {
     if (mode === drawingMode) {
       setDrawingMode(null);
     } else {
       setDrawingMode(mode);
       setEditing(false);
     }
-  };
+  }, [drawingMode]);
 
-  const handleClearGeometry = () => {
+  const handleClearGeometry = useCallback(() => {
     setGeometry(null);
     setPanelOpen(false);
     setDrawingMode(null);
-  };
+  }, []);
 
   const createSamplePolygon = () => {
     const [lat, lng] = center;

@@ -43,7 +43,7 @@ export const useGPSState = () => {
         }
       }
     } catch (error) {
-      console.warn('Error loading cached location:', error);
+      // Silent error handling for cached location
     }
     return null;
   }, []);
@@ -58,7 +58,7 @@ export const useGPSState = () => {
       };
       localStorage.setItem('flowagro_cached_location', JSON.stringify(cachedLocation));
     } catch (error) {
-      console.warn('Error saving cached location:', error);
+      // Silent error handling for cached location
     }
   }, []);
 
