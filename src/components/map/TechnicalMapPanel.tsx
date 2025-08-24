@@ -432,10 +432,22 @@ const TechnicalMapPanel: React.FC = () => {
 
 
       {/* Painel Inferior - Apenas Informações */}
-      <div ref={panelRef} className="absolute left-0 right-0 bottom-0 z-[1000] border-t border-border bg-card/95 backdrop-blur-sm shadow-lg h-[50%] rounded-t-lg">
-        <div className="px-4 py-4 space-y-4 overflow-y-auto h-full">
-          {/* Informações da Área */}
-          {geometry ? (
+      <div ref={panelRef} className={`absolute left-0 right-0 bottom-0 z-[1000] border-t border-border bg-card/95 backdrop-blur-sm shadow-lg ${panelOpen ? 'h-[50%]' : 'h-14'} transition-[height] duration-300 rounded-t-lg`}>
+        <div className="flex items-center justify-between px-4 h-14">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold">
+              {geometry ? 'Informações da Área' : 'Informações'}
+            </h3>
+            {geometry && <Badge variant="default" className="text-xs">Ativo</Badge>}
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPanelOpen(v=>!v)}>
+            <ChevronDown className={`h-4 w-4 transition-transform ${panelOpen ? 'rotate-180' : ''}`} />
+          </Button>
+        </div>
+        {panelOpen && (
+          <div className="px-4 pb-4 space-y-4 overflow-y-auto h-[calc(100%-56px)]">
+            {/* Informações da Área */}
+            {geometry ? (
               <div className="space-y-4">
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground mb-3">Informações da Área</h4>
@@ -491,7 +503,8 @@ const TechnicalMapPanel: React.FC = () => {
                 <p className="text-xs text-muted-foreground">Use o botão "Desenhar" à esquerda para começar</p>
               </div>
             )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* iOS Navigation */}
