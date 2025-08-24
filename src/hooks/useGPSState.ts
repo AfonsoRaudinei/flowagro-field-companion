@@ -17,7 +17,7 @@ export interface CachedLocation extends UserLocation {
   source: 'gps' | 'cache' | 'map';
 }
 
-const GPS_CHECK_INTERVAL = 30000; // 30 seconds
+const GPS_CHECK_INTERVAL = 120000; // 2 minutes - reduced frequency
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const useGPSState = () => {
@@ -98,12 +98,9 @@ export const useGPSState = () => {
 
   // Get current location with fallback
   const getCurrentLocationWithFallback = useCallback(async (mapCenter?: { lat: number; lng: number }): Promise<(UserLocation & { source?: 'gps' | 'cache' | 'map' }) | null> => {
-    console.log('Getting location, GPS enabled:', gpsState.isEnabled);
-    
     try {
       // First ensure we have GPS permissions
       if (!gpsState.isEnabled) {
-        console.log('GPS not enabled, requesting permissions...');
         const hasPermission = await GPSService.requestPermissions();
         if (hasPermission) {
           setGpsState(prev => ({ ...prev, isEnabled: true }));
@@ -112,9 +109,7 @@ export const useGPSState = () => {
       
       // Try to get fresh GPS location
       if (gpsState.isEnabled) {
-        console.log('Attempting to get current GPS location...');
         const location = await GPSService.getCurrentLocation();
-        console.log('GPS location obtained:', location);
         
         const accuracy = location.accuracy < 10 ? 'high' : location.accuracy < 50 ? 'medium' : 'low';
         const locationWithSource = { ...location, source: 'gps' as const };
@@ -135,14 +130,12 @@ export const useGPSState = () => {
         return locationWithSource;
       }
     } catch (error) {
-      console.warn('Fresh GPS location failed, trying fallbacks:', error);
+      // GPS failed, try fallbacks silently
     }
 
     // Try cached location
-    console.log('Trying cached location...');
     const cached = loadCachedLocation();
     if (cached) {
-      console.log('Using cached location:', cached);
       const cachedWithSource = { ...cached, source: 'cache' as const };
       setGpsState(prev => ({
         ...prev,
@@ -155,7 +148,6 @@ export const useGPSState = () => {
 
     // Use map center as fallback
     if (mapCenter) {
-      console.log('Using map center as location:', mapCenter);
       const fallbackLocation: UserLocation & { source: 'map' } = {
         latitude: mapCenter.lat,
         longitude: mapCenter.lng,
@@ -175,7 +167,6 @@ export const useGPSState = () => {
       return fallbackLocation;
     }
 
-    console.log('No location available');
     return null;
   }, [gpsState.isEnabled, loadCachedLocation, saveCachedLocation]);
 

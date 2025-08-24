@@ -13,50 +13,27 @@ import { GPSService } from "@/services/gpsService";
 import { useGPSState } from "@/hooks/useGPSState";
 import { GPSStatusIndicator } from "@/components/GPSStatusIndicator";
 import { useMapCapture } from "@/hooks/useMapCapture";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import * as turf from '@turf/turf';
 
-// Minimal geo helpers (planar approximation)
-function polygonArea(coords: [number, number][]): number {
+// Using Turf.js for precise geospatial calculations
+function polygonAreaTurf(coords: [number, number][]): number {
   if (coords.length < 3) return 0;
-  let area = 0;
-  for (let i = 0; i < coords.length; i++) {
-    const [x1, y1] = coords[i];
-    const [x2, y2] = coords[(i + 1) % coords.length];
-    area += x1 * y2 - x2 * y1;
-  }
-  return Math.abs(area / 2);
+  const polygon = turf.polygon([coords.map(([lat, lng]) => [lng, lat])]);
+  return turf.area(polygon) / 10000; // Convert to hectares
 }
 
-function perimeter(coords: [number, number][]): number {
+function perimeterTurf(coords: [number, number][]): number {
   if (coords.length < 2) return 0;
-  let p = 0;
-  for (let i = 0; i < coords.length - 1; i++) {
-    const [x1, y1] = coords[i];
-    const [x2, y2] = coords[i + 1];
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    p += Math.sqrt(dx * dx + dy * dy);
-  }
-  return p;
+  const lineString = turf.lineString(coords.map(([lat, lng]) => [lng, lat]));
+  return turf.length(lineString, { units: 'meters' });
 }
 
-function centroid(coords: [number, number][]): [number, number] | null {
+function centroidTurf(coords: [number, number][]): [number, number] | null {
   if (coords.length < 3) return null;
-  let x = 0,
-    y = 0,
-    f: number;
-  let A = 0;
-  for (let i = 0; i < coords.length - 1; i++) {
-    f = coords[i][0] * coords[i + 1][1] - coords[i + 1][0] * coords[i][1];
-    x += (coords[i][0] + coords[i + 1][0]) * f;
-    y += (coords[i][1] + coords[i + 1][1]) * f;
-    A += f;
-  }
-  A *= 0.5;
-  if (A === 0) return null;
-  x /= 6 * A;
-  y /= 6 * A;
-  return [y, x];
+  const polygon = turf.polygon([coords.map(([lat, lng]) => [lng, lat])]);
+  const center = turf.centroid(polygon);
+  return [center.geometry.coordinates[1], center.geometry.coordinates[0]]; // [lat, lng]
 }
 
 const layerOptions = [
@@ -113,6 +90,9 @@ const TechnicalMapPanel: React.FC = () => {
   
   // Map Capture Hook
   const { captureMap, shareCapture } = useMapCapture();
+  
+  // Toast Hook
+  const { toast } = useToast();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -137,34 +117,18 @@ const TechnicalMapPanel: React.FC = () => {
 
   const handleSatelliteLayerLoad = (imageUrl: string, metadata: any) => {
     const layerId = `satellite-${Date.now()}`;
-    console.log('🛰️ DEBUG - Satellite Layer Load Started:', {
-      imageUrl: imageUrl?.substring(0, 100) + '...',
-      metadata,
-      timestamp: new Date().toISOString()
-    });
     
-    setLoadedSatelliteLayers(prev => {
-      const newLayers = [...prev, { id: layerId, imageUrl, metadata }];
-      console.log('🛰️ DEBUG - Updated Satellite Layers:', newLayers.length);
-      return newLayers;
-    });
-    
-    setActiveLayers(prev => {
-      const updated = { ...prev, [layerId]: true };
-      console.log('🛰️ DEBUG - Active Layers Updated:', Object.keys(updated).filter(k => updated[k]));
-      return updated;
-    });
-    
-    console.log('✅ Satellite layer loaded successfully:', { layerId, metadata });
+    setLoadedSatelliteLayers(prev => [...prev, { id: layerId, imageUrl, metadata }]);
+    setActiveLayers(prev => ({ ...prev, [layerId]: true }));
   };
 
-  // Calculate current map bbox for satellite requests - CRITICAL FIX
+  // Calculate current map bbox for satellite requests
   const currentBbox = useMemo((): [number, number, number, number] => {
     const [lat, lng] = center;
     // More appropriate zoom-based delta calculation
     const zoomFactor = Math.pow(2, 15 - zoom);
-    const latDelta = 0.005 * zoomFactor; // Latitude delta
-    const lngDelta = 0.005 * zoomFactor / Math.cos(lat * Math.PI / 180); // Longitude delta adjusted for latitude
+    const latDelta = 0.005 * zoomFactor;
+    const lngDelta = 0.005 * zoomFactor / Math.cos(lat * Math.PI / 180);
     
     // Format: [west, south, east, north] = [lng-delta, lat-delta, lng+delta, lat+delta]
     const bbox: [number, number, number, number] = [
@@ -174,26 +138,15 @@ const TechnicalMapPanel: React.FC = () => {
       lat + latDelta   // north (latitude max)
     ];
     
-    console.log('🗺️ DEBUG - Bbox Calculation:', {
-      center: { lat, lng },
-      zoom,
-      zoomFactor,
-      deltas: { latDelta, lngDelta },
-      bbox,
-      bboxFormatted: `[${bbox[0].toFixed(6)}, ${bbox[1].toFixed(6)}, ${bbox[2].toFixed(6)}, ${bbox[3].toFixed(6)}]`
-    });
-    
     return bbox;
   }, [center, zoom]);
 
   const handleLocate = async () => {
-    console.log("Botão GPS clicado");
     setGpsState(prev => ({ ...prev, isChecking: true }));
     
     try {
       const location = await getCurrentLocationWithFallback({ lat: center[0], lng: center[1] });
       if (location) {
-        console.log("Localizando no mapa:", location);
         setCenter([location.latitude, location.longitude]);
         setZoom(16);
         toast({
@@ -201,7 +154,6 @@ const TechnicalMapPanel: React.FC = () => {
           description: `${location.accuracy}m de precisão - ${location.source === 'gps' ? 'GPS' : location.source === 'cache' ? 'Cache' : 'Aproximada'}`
         });
       } else {
-        console.log("Localização não disponível");
         toast({
           title: "Localização indisponível", 
           description: "Não foi possível obter sua localização",
@@ -209,7 +161,6 @@ const TechnicalMapPanel: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error("Erro ao obter localização:", error);
       toast({
         title: "Erro de GPS",
         description: "Falha ao obter localização",
@@ -269,12 +220,15 @@ const TechnicalMapPanel: React.FC = () => {
     if (!geometry || geometry.features.length === 0) return null;
     const poly = geometry.features[0].geometry as GeoJSON.Polygon;
     const ll = poly.coordinates[0].map(([lng, lat]) => [lat, lng]) as [number, number][];
-    const A = polygonArea(ll);
-    const P = perimeter(ll);
-    const C = centroid(ll);
-    return { areaHa: (A * 12365).toFixed(2), // fake conversion just for UI
-             perimM: (P * 111000).toFixed(0),
-             centroid: C ? `${C[0].toFixed(5)}, ${C[1].toFixed(5)}` : "-" };
+    const areaHa = polygonAreaTurf(ll);
+    const perimM = perimeterTurf(ll);
+    const centroidCoords = centroidTurf(ll);
+    
+    return { 
+      areaHa: areaHa.toFixed(2),
+      perimM: perimM.toFixed(0),
+      centroid: centroidCoords ? `${centroidCoords[0].toFixed(5)}, ${centroidCoords[1].toFixed(5)}` : "-" 
+    };
   }, [geometry]);
 
   return (
@@ -468,7 +422,6 @@ const TechnicalMapPanel: React.FC = () => {
               editing={editing}
               snapping={snapOn}
               onChange={(fc) => {
-                console.log("Geometria alterada:", fc);
                 setGeometry(fc);
                 if (fc) setPanelOpen(true);
               }}

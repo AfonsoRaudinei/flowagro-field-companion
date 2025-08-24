@@ -63,12 +63,52 @@ export default function MapView({
   const [error, setError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
 
+  // Cache MapTiler API key with 1 hour TTL
+  const getCachedApiKey = (): string | null => {
+    try {
+      const cached = localStorage.getItem('maptiler_api_key_cache');
+      if (cached) {
+        const { key, expiresAt } = JSON.parse(cached);
+        if (Date.now() < expiresAt) {
+          return key;
+        }
+        localStorage.removeItem('maptiler_api_key_cache');
+      }
+    } catch {
+      localStorage.removeItem('maptiler_api_key_cache');
+    }
+    return null;
+  };
+
+  const setCachedApiKey = (key: string) => {
+    try {
+      const cache = {
+        key,
+        expiresAt: Date.now() + (60 * 60 * 1000) // 1 hour TTL
+      };
+      localStorage.setItem('maptiler_api_key_cache', JSON.stringify(cache));
+    } catch {
+      // Fail silently if localStorage is not available
+    }
+  };
+
   useEffect(() => {
     let active = true;
-    (async () => {
+
+    const loadApiKey = async () => {
+      // Try cached key first
+      const cached = getCachedApiKey();
+      if (cached) {
+        setApiKey(cached);
+        setError(null);
+        return;
+      }
+
+      // Fetch fresh key
       try {
         const { data, error } = await supabase.functions.invoke("maptiler-token", { method: "GET" });
         if (!active) return;
+        
         if (error) {
           setError("Não foi possível obter a chave do MapTiler.");
           setApiKey(null);
@@ -79,6 +119,7 @@ export default function MapView({
             setError("Chave MAPTILER_API_KEY ausente nas Secrets do Supabase.");
           } else {
             setError(null);
+            setCachedApiKey(key);
           }
         }
       } catch (e: any) {
@@ -86,7 +127,10 @@ export default function MapView({
         setError("Erro ao buscar a chave do MapTiler.");
         setApiKey(null);
       }
-    })();
+    };
+
+    loadApiKey();
+    
     return () => {
       active = false;
     };

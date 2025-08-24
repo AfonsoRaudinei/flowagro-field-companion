@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import html2canvas from 'html2canvas';
 
 interface MapCaptureOptions {
   width?: number;
@@ -9,43 +10,32 @@ interface MapCaptureOptions {
 }
 
 export const useMapCapture = () => {
-  const captureMap = useCallback(async (mapContainer: HTMLElement, options: MapCaptureOptions = {}) => {
+  const { toast } = useToast();
+  
+  const captureMap = useCallback(async (mapContainer: HTMLElement, options: MapCaptureOptions = {}): Promise<Blob | null> => {
     try {
-      // Try to use html2canvas if available (would need to be installed)
-      // For now, we'll use a simpler approach with modern browser APIs
-      
-      if ('html2canvas' in window) {
-        // @ts-ignore - html2canvas would be dynamically imported
-        const canvas = await window.html2canvas(mapContainer, {
-          useCORS: true,
-          allowTaint: true,
-          scale: window.devicePixelRatio || 1,
-          width: options.width,
-          height: options.height,
-        });
+      const canvas = await html2canvas(mapContainer, {
+        useCORS: true,
+        allowTaint: true,
+        scale: window.devicePixelRatio || 1,
+        width: options.width,
+        height: options.height,
+      });
 
-        // Convert canvas to blob
-        return new Promise<Blob>((resolve, reject) => {
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                resolve(blob);
-              } else {
-                reject(new Error('Failed to create blob from canvas'));
-              }
-            },
-            `image/${options.format || 'png'}`,
-            options.quality || 0.9
-          );
-        });
-      } else {
-        // Fallback: Simple screenshot using browser APIs
-        toast({
-          title: "Captura em desenvolvimento",
-          description: "A captura de tela do mapa está sendo implementada",
-        });
-        return null;
-      }
+      // Convert canvas to blob
+      return new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to create blob from canvas'));
+            }
+          },
+          `image/${options.format || 'png'}`,
+          options.quality || 0.9
+        );
+      });
     } catch (error) {
       console.error('Map capture failed:', error);
       toast({
@@ -55,7 +45,7 @@ export const useMapCapture = () => {
       });
       return null;
     }
-  }, []);
+  }, [toast]);
 
   const downloadCapture = useCallback(async (blob: Blob, filename: string = 'mapa-tecnico') => {
     try {
@@ -80,7 +70,7 @@ export const useMapCapture = () => {
         variant: "destructive"
       });
     }
-  }, []);
+  }, [toast]);
 
   const shareCapture = useCallback(async (blob: Blob) => {
     try {
