@@ -8,6 +8,7 @@ import {
   browserLocalPersistence
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { SecurityService } from '@/lib/securityService';
 
 export interface AuthUser {
   uid: string;
@@ -42,8 +43,22 @@ export class FirebaseAuthService {
 
   static async signIn(email: string, password: string): Promise<AuthUser> {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // Verificar rate limiting
+      if (!SecurityService.checkRateLimit('login', 5)) {
+        throw new Error('Muitas tentativas de login. Tente novamente em 15 minutos.');
+      }
+
+      // Sanitizar entrada
+      const sanitizedEmail = SecurityService.sanitizeInput(email);
+      
+      const userCredential = await signInWithEmailAndPassword(auth, sanitizedEmail, password);
       const user = userCredential.user;
+      
+      // Log de sucesso
+      await SecurityService.logSecurityEvent({
+        eventType: 'successful_login',
+        details: { userId: user.uid, email: sanitizedEmail }
+      });
       
       return {
         uid: user.uid,
@@ -51,6 +66,12 @@ export class FirebaseAuthService {
         displayName: user.displayName || undefined
       };
     } catch (error) {
+      // Log de falha
+      await SecurityService.logSecurityEvent({
+        eventType: 'failed_login',
+        details: { email: SecurityService.sanitizeInput(email), error: (error as Error).message }
+      });
+      
       console.error('Erro ao fazer login:', error);
       throw error;
     }

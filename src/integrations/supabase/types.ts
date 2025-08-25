@@ -440,6 +440,10 @@ export type Database = {
         Args: { "": string } | { "": unknown }
         Returns: unknown
       }
+      check_suspicious_activity: {
+        Args: { p_minutes?: number; p_user_id?: string }
+        Returns: number
+      }
       halfvec_avg: {
         Args: { "": number[] }
         Returns: unknown
@@ -491,6 +495,10 @@ export type Database = {
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: string
+      }
+      log_security_event: {
+        Args: { p_details?: Json; p_event_type: string }
+        Returns: undefined
       }
       sparsevec_out: {
         Args: { "": unknown }
