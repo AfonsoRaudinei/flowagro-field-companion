@@ -33,28 +33,28 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
     
-    /* Primary - Modern iOS Blue */
-    --primary: 221 83% 53%;
-    --primary-hover: 221 83% 48%;
+    /* Primary - FlowAgro Blue #0057FF */
+    --primary: 221 100% 50%;  /* #0057FF */
+    --primary-hover: 221 100% 45%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 221 83% 73%;
+    --primary-glow: 221 100% 70%;
     
-    /* Secondary - Subtle iOS Gray */
-    --secondary: 210 20% 96%;
-    --secondary-hover: 210 20% 92%;
+    /* Secondary - FlowAgro Gray #F5F5F5 */
+    --secondary: 0 0% 96.1%;  /* #F5F5F5 */
+    --secondary-hover: 0 0% 92%;
     --secondary-foreground: 222.2 84% 4.9%;
     
-    /* Accent - Microsoft Fluent Green */
-    --accent: 142 71% 45%;
+    /* Accent - FlowAgro Green #00C4B4 */
+    --accent: 178 100% 38.4%;  /* #00C4B4 */
     --accent-foreground: 0 0% 100%;
     
-    --muted: 210 40% 96%;
+    --muted: 0 0% 96.1%;  /* #F5F5F5 */
     --muted-foreground: 215.4 16.3% 46.9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221 83% 53%;
+    --ring: 221 100% 50%;  /* #0057FF */
     
     /* iOS-style Border Radius */
     --radius: 12px;

@@ -167,6 +167,16 @@ export const useMapPins = () => {
     }
   }, [isAddingPin, addPin, pins.length, map]);
 
+  // Get pin type icon
+  const getPinTypeIcon = (type: string) => {
+    switch (type) {
+      case 'farm': return '🚜';
+      case 'measurement': return '📏';
+      case 'custom': return '⚙️';
+      default: return '📍';
+    }
+  };
+
   // Create markers on map
   useEffect(() => {
     if (!map || !isReady) return;
@@ -175,36 +185,85 @@ export const useMapPins = () => {
       if (!markers.has(pin.id)) {
         const el = document.createElement('div');
         el.className = 'map-pin-marker';
-        el.style.cssText = `
-          width: 24px;
-          height: 24px;
-          background: ${pin.color || '#3b82f6'};
-          border: 2px solid white;
-          border-radius: 50%;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        
+        // Create pin with icon and background
+        const pinIcon = getPinTypeIcon(pin.type || 'default');
+        el.innerHTML = `
+          <div style="
+            width: 32px;
+            height: 32px;
+            background: ${pin.color || '#0057FF'};
+            border: 3px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            position: relative;
+            transition: all 0.2s ease;
+          " class="pin-marker">
+            ${pinIcon}
+          </div>
         `;
+
+        // Add hover effects
+        el.addEventListener('mouseenter', () => {
+          const pinEl = el.querySelector('.pin-marker') as HTMLElement;
+          if (pinEl) {
+            pinEl.style.transform = 'scale(1.1)';
+            pinEl.style.boxShadow = '0 6px 16px rgba(0,0,0,0.3)';
+          }
+        });
+        
+        el.addEventListener('mouseleave', () => {
+          const pinEl = el.querySelector('.pin-marker') as HTMLElement;
+          if (pinEl) {
+            pinEl.style.transform = 'scale(1)';
+            pinEl.style.boxShadow = '0 4px 12px rgba(0,0,0,0.25)';
+          }
+        });
 
         const marker = new mapboxgl.Marker(el)
           .setLngLat(pin.coordinates)
           .addTo(map);
 
-        // Add popup
-        if (pin.title || pin.description) {
-          const popup = new mapboxgl.Popup({ offset: 25 })
-            .setHTML(`
-              <div class="p-2">
-                ${pin.title ? `<h3 class="font-semibold text-sm">${pin.title}</h3>` : ''}
-                ${pin.description ? `<p class="text-xs text-gray-600 mt-1">${pin.description}</p>` : ''}
-                <div class="text-xs text-gray-500 mt-2">
-                  ${pin.coordinates[1].toFixed(6)}, ${pin.coordinates[0].toFixed(6)}
-                </div>
-              </div>
-            `);
-          
-          marker.setPopup(popup);
-        }
-
+        // Add popup with enhanced styling
+        const typeLabels = {
+          farm: 'Fazenda',
+          measurement: 'Medição', 
+          custom: 'Personalizado',
+          default: 'Pin'
+        };
+        
+        const popup = new mapboxgl.Popup({ 
+          offset: 35,
+          className: 'pin-popup'
+        }).setHTML(`
+          <div style="padding: 12px; min-width: 180px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <div style="
+                width: 16px; 
+                height: 16px; 
+                background: ${pin.color || '#0057FF'};
+                border: 2px solid white;
+                border-radius: 50%;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+              "></div>
+              <span style="font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">
+                ${typeLabels[pin.type as keyof typeof typeLabels] || 'Pin'}
+              </span>
+            </div>
+            ${pin.title ? `<h3 style="font-weight: 600; font-size: 14px; margin: 0 0 4px 0; color: #1a1a1a;">${pin.title}</h3>` : ''}
+            ${pin.description ? `<p style="font-size: 12px; color: #666; margin: 0 0 8px 0; line-height: 1.4;">${pin.description}</p>` : ''}
+            <div style="font-size: 10px; color: #999; font-family: monospace;">
+              ${pin.coordinates[1].toFixed(6)}, ${pin.coordinates[0].toFixed(6)}
+            </div>
+          </div>
+        `);
+        
+        marker.setPopup(popup);
         setMarkers(prev => new Map(prev).set(pin.id, marker));
       }
     });

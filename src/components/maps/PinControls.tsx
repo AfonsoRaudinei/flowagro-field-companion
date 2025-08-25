@@ -1,25 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useMapPins } from '@/hooks/useMapPins';
+import { PinEditDialog } from './PinEditDialog';
 import { 
   MapPin, 
   Plus, 
   Trash2, 
-  Navigation,
-  X
+  Edit3,
+  X,
+  Tractor,
+  Ruler,
+  Settings
 } from 'lucide-react';
+
+const getPinIcon = (type: string) => {
+  switch (type) {
+    case 'farm': return Tractor;
+    case 'measurement': return Ruler;
+    case 'custom': return Settings;
+    default: return MapPin;
+  }
+};
 
 export const PinControls: React.FC = () => {
   const { 
     pins, 
     isAddingPin, 
     removePin, 
+    updatePin,
     clearAllPins, 
     toggleAddingMode 
   } = useMapPins();
+  
+  const [editingPin, setEditingPin] = useState<typeof pins[0] | null>(null);
 
   return (
     <Card>
@@ -39,7 +55,7 @@ export const PinControls: React.FC = () => {
             onClick={toggleAddingMode}
             variant={isAddingPin ? "destructive" : "default"}
             size="sm"
-            className="flex-1"
+            className="flex-1 rounded-xl"
           >
             {isAddingPin ? (
               <>
@@ -59,6 +75,7 @@ export const PinControls: React.FC = () => {
               onClick={clearAllPins}
               variant="outline"
               size="sm"
+              className="rounded-xl"
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -66,8 +83,8 @@ export const PinControls: React.FC = () => {
         </div>
 
         {isAddingPin && (
-          <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
-            <p className="text-sm text-blue-800">
+          <div className="bg-primary/10 border border-primary/20 p-3 rounded-xl">
+            <p className="text-sm text-primary font-medium">
               Clique no mapa para adicionar um pin
             </p>
           </div>
@@ -84,39 +101,60 @@ export const PinControls: React.FC = () => {
               Nenhum pin adicionado ainda
             </p>
           ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {pins.map((pin) => (
-                <div
-                  key={pin.id}
-                  className="flex items-center justify-between p-2 bg-muted/50 rounded-lg"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <div 
-                        className="w-3 h-3 rounded-full border border-white"
-                        style={{ backgroundColor: pin.color || '#3b82f6' }}
-                      />
-                      <span className="text-sm font-medium truncate">
-                        {pin.title}
-                      </span>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {pins.map((pin) => {
+                const PinIcon = getPinIcon(pin.type || 'default');
+                return (
+                  <div
+                    key={pin.id}
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-xl hover:bg-muted/70 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
+                          <div 
+                            className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                            style={{ backgroundColor: pin.color || '#0057FF' }}
+                          />
+                          <PinIcon className="w-3 h-3 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium truncate block">
+                            {pin.title || 'Pin sem título'}
+                          </span>
+                          <div className="text-xs text-muted-foreground">
+                            {pin.type === 'farm' && 'Fazenda'}
+                            {pin.type === 'measurement' && 'Medição'}
+                            {pin.type === 'custom' && 'Personalizado'}
+                            {pin.type === 'default' && 'Padrão'}
+                            {' • '}
+                            {pin.coordinates[1].toFixed(4)}, {pin.coordinates[0].toFixed(4)}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {pin.coordinates[1].toFixed(4)}, {pin.coordinates[0].toFixed(4)}
+                    
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditingPin(pin)}
+                        className="h-8 w-8 p-0 rounded-lg hover:bg-primary/10"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removePin(pin.id)}
+                        className="h-8 w-8 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removePin(pin.id)}
-                      className="h-6 w-6 p-0"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -124,7 +162,7 @@ export const PinControls: React.FC = () => {
         {pins.length > 0 && (
           <>
             <Separator />
-            <div className="bg-muted/50 p-3 rounded-lg">
+            <div className="bg-muted/50 p-3 rounded-xl">
               <p className="text-xs text-muted-foreground">
                 Total: {pins.length} pin{pins.length !== 1 ? 's' : ''} no mapa
               </p>
@@ -132,6 +170,14 @@ export const PinControls: React.FC = () => {
           </>
         )}
       </CardContent>
+
+      {/* Edit Dialog */}
+      <PinEditDialog
+        pin={editingPin}
+        open={!!editingPin}
+        onClose={() => setEditingPin(null)}
+        onSave={updatePin}
+      />
     </Card>
   );
 };
