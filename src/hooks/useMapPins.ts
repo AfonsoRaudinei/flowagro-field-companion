@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useMapInstance } from './useMapInstance';
+import { supabase } from '@/integrations/supabase/client';
 import mapboxgl from 'mapbox-gl';
 
 export interface MapPin {
@@ -18,20 +19,77 @@ export const useMapPins = () => {
   const [isAddingPin, setIsAddingPin] = useState(false);
   const [markers, setMarkers] = useState<Map<string, mapboxgl.Marker>>(new Map());
 
-  // Add pin to map
-  const addPin = useCallback((pin: Omit<MapPin, 'id' | 'createdAt'>) => {
+  // Load pins from Supabase
+  const loadPins = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('pins')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error loading pins:', error);
+      return;
+    }
+
+    const loadedPins: MapPin[] = data.map(pin => ({
+      id: pin.id,
+      coordinates: pin.coordinates as [number, number],
+      title: pin.title || undefined,
+      description: pin.description || undefined,
+      color: pin.color || '#3b82f6',
+      type: (pin.pin_type as MapPin['type']) || 'default',
+      createdAt: new Date(pin.created_at)
+    }));
+
+    setPins(loadedPins);
+  }, []);
+
+  // Add pin to map and save to Supabase
+  const addPin = useCallback(async (pin: Omit<MapPin, 'id' | 'createdAt'>) => {
+    const { data, error } = await supabase
+      .from('pins')
+      .insert({
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+        coordinates: pin.coordinates,
+        title: pin.title,
+        description: pin.description,
+        color: pin.color || '#3b82f6',
+        pin_type: pin.type || 'default'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving pin:', error);
+      return null;
+    }
+
     const newPin: MapPin = {
-      ...pin,
-      id: `pin-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date(),
+      id: data.id,
+      coordinates: data.coordinates as [number, number],
+      title: data.title || undefined,
+      description: data.description || undefined,
+      color: data.color || '#3b82f6',
+      type: (data.pin_type as MapPin['type']) || 'default',
+      createdAt: new Date(data.created_at)
     };
 
     setPins(prev => [...prev, newPin]);
     return newPin;
   }, []);
 
-  // Remove pin
-  const removePin = useCallback((pinId: string) => {
+  // Remove pin and delete from Supabase
+  const removePin = useCallback(async (pinId: string) => {
+    const { error } = await supabase
+      .from('pins')
+      .delete()
+      .eq('id', pinId);
+
+    if (error) {
+      console.error('Error deleting pin:', error);
+      return;
+    }
+
     setPins(prev => prev.filter(pin => pin.id !== pinId));
     
     // Remove marker from map
@@ -46,15 +104,41 @@ export const useMapPins = () => {
     }
   }, [markers]);
 
-  // Update pin
-  const updatePin = useCallback((pinId: string, updates: Partial<MapPin>) => {
+  // Update pin and save to Supabase
+  const updatePin = useCallback(async (pinId: string, updates: Partial<MapPin>) => {
+    const { error } = await supabase
+      .from('pins')
+      .update({
+        title: updates.title,
+        description: updates.description,
+        color: updates.color,
+        pin_type: updates.type,
+        coordinates: updates.coordinates
+      })
+      .eq('id', pinId);
+
+    if (error) {
+      console.error('Error updating pin:', error);
+      return;
+    }
+
     setPins(prev => prev.map(pin => 
       pin.id === pinId ? { ...pin, ...updates } : pin
     ));
   }, []);
 
-  // Clear all pins
-  const clearAllPins = useCallback(() => {
+  // Clear all pins and delete from Supabase
+  const clearAllPins = useCallback(async () => {
+    const { error } = await supabase
+      .from('pins')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all user's pins
+
+    if (error) {
+      console.error('Error clearing pins:', error);
+      return;
+    }
+
     setPins([]);
     markers.forEach(marker => marker.remove());
     setMarkers(new Map());
@@ -138,6 +222,13 @@ export const useMapPins = () => {
     });
   }, [pins, map, isReady, markers]);
 
+  // Load pins on initialization
+  useEffect(() => {
+    if (isReady) {
+      loadPins();
+    }
+  }, [isReady, loadPins]);
+
   // Add click listener for pin adding
   useEffect(() => {
     if (!map || !isReady) return;
@@ -160,6 +251,7 @@ export const useMapPins = () => {
     removePin,
     updatePin,
     clearAllPins,
-    toggleAddingMode
+    toggleAddingMode,
+    loadPins
   };
 };

@@ -218,6 +218,42 @@ export type Database = {
           },
         ]
       }
+      pins: {
+        Row: {
+          color: string | null
+          coordinates: Json
+          created_at: string
+          description: string | null
+          id: string
+          pin_type: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          coordinates: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          pin_type?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          coordinates?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          pin_type?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       producers: {
         Row: {
           avatar_url: string | null
