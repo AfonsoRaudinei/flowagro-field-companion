@@ -1,96 +1,98 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { MapProvider } from "@/components/maps/MapProvider";
+import { BaseMap } from "@/components/maps/BaseMap";
+import { LogIn } from "lucide-react";
 
 const TelaInicial = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/dashboard", { replace: true });
+        navigate("/dashboard");
       }
     };
     
-    checkAuth();
+    checkSession();
   }, [navigate]);
 
   const handleLoginClick = () => {
     navigate("/login-form");
   };
 
-  const handleSwipeOrScroll = (e: React.TouchEvent | React.WheelEvent) => {
-    if ('deltaY' in e && e.deltaY > 0) {
-      // Scroll down
+  const handleSwipeOrScroll = (event: React.WheelEvent | React.TouchEvent) => {
+    // Navigate to login on scroll down or swipe up
+    if ('deltaY' in event && event.deltaY > 0) {
       navigate("/login-form");
-    } else if ('touches' in e) {
-      // Touch event - handle swipe up
-      const touch = e.touches[0];
-      if (touch) {
-        const startY = touch.clientY;
-        const handleTouchEnd = (endEvent: TouchEvent) => {
-          const endY = endEvent.changedTouches[0].clientY;
-          if (startY - endY > 50) { // Swipe up
-            navigate("/login-form");
-          }
-          document.removeEventListener('touchend', handleTouchEnd);
-        };
-        document.addEventListener('touchend', handleTouchEnd);
-      }
+    } else if ('touches' in event && event.touches.length === 1) {
+      // Handle touch events for swipe
+      navigate("/login-form");
     }
   };
 
   return (
-    <div
-      className="min-h-screen w-full relative overflow-hidden bg-gradient-to-b from-primary/10 to-primary/30"
-      onWheel={handleSwipeOrScroll}
-      onTouchStart={handleSwipeOrScroll}
-    >
-      {/* Background overlay with gradient for better visual appeal */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 pointer-events-none" />
-      
-      {/* Logo FlowAgro - Superior esquerdo */}
-      <div className="absolute top-8 left-6 z-10">
-        <h1 className="text-2xl font-bold text-foreground drop-shadow-lg">
-          FlowAgro
-        </h1>
-      </div>
+    <MapProvider>
+      <div 
+        className="min-h-screen flex flex-col relative overflow-hidden"
+        onWheel={handleSwipeOrScroll}
+        onTouchStart={handleSwipeOrScroll}
+      >
+        {/* Map Background */}
+        <div className="absolute inset-0">
+          <BaseMap 
+            className="w-full h-full"
+            showNavigation={false}
+            showFullscreen={false}
+            showGeolocate={false}
+            interactive={false}
+          />
+          {/* Overlay gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-background/50 to-secondary/30" />
+        </div>
 
-      {/* Mensagem de boas-vindas centralizada */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center z-10">
-        <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4 drop-shadow-lg">
-          Bem-vindo ao FlowAgro
-        </h2>
-        <p className="text-lg md:text-xl text-muted-foreground max-w-md drop-shadow-md">
-          Tecnologia para o campo na palma da sua mão
-        </p>
-      </div>
+        {/* Logo/Brand */}
+        <div className="absolute top-8 left-8 z-10">
+          <h1 className="text-2xl font-bold text-white drop-shadow-lg">FlowAgro</h1>
+        </div>
 
-      {/* Botão circular verde - Inferior direito */}
-      <div className="absolute bottom-8 right-6 z-10">
-        <Button
-          onClick={handleLoginClick}
-          size="lg"
-          className="w-16 h-16 rounded-full bg-primary hover:bg-primary/90 shadow-lg transition-all duration-200 active:scale-95"
-          aria-label="Fazer login"
-        >
-          <LogIn className="w-6 h-6 text-primary-foreground" />
-        </Button>
-      </div>
+        {/* Main Content */}
+        <div className="flex-1 flex items-center justify-center px-8 z-10">
+          <div className="text-center space-y-6 max-w-lg">
+            <h2 className="text-4xl md:text-6xl font-bold text-white drop-shadow-lg">
+              Bem-vindo ao FlowAgro
+            </h2>
+            <p className="text-lg text-white/90 drop-shadow">
+              Sua plataforma completa para gestão agrícola inteligente
+            </p>
+          </div>
+        </div>
 
-      {/* Link auxiliar discreto */}
-      <div className="absolute bottom-8 left-6 z-10">
-        <button 
-          onClick={() => navigate("/login-form")}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors underline"
-        >
-          Saiba mais
-        </button>
+        {/* Login Button */}
+        <div className="absolute bottom-8 right-8 z-10">
+          <Button
+            onClick={handleLoginClick}
+            size="lg"
+            className="rounded-full w-16 h-16 p-0 text-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            <LogIn className="w-6 h-6" />
+          </Button>
+        </div>
+
+        {/* Saiba mais link */}
+        <div className="absolute bottom-8 left-8 z-10">
+          <button 
+            className="text-sm text-white/80 hover:text-white transition-colors drop-shadow"
+            onClick={() => navigate("/technical-map")}
+          >
+            Saiba mais
+          </button>
+        </div>
       </div>
-    </div>
+    </MapProvider>
   );
 };
 
