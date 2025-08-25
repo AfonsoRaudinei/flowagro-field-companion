@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import MapView from "@/components/map/MapView";
 
 const TelaInicial = () => {
   const navigate = useNavigate();
@@ -46,36 +45,26 @@ const TelaInicial = () => {
 
   return (
     <div
-      className="min-h-screen w-full relative overflow-hidden"
+      className="min-h-screen w-full relative overflow-hidden bg-gradient-to-b from-primary/10 to-primary/30"
       onWheel={handleSwipeOrScroll}
       onTouchStart={handleSwipeOrScroll}
     >
-      {/* Fullscreen satellite map background */}
-      <div className="absolute inset-0">
-        <MapView
-          center={[-14.235, -51.925]}
-          zoom={5}
-          baseLayerId="satellite"
-          markers={[]}
-        />
-      </div>
-      
-      {/* Background overlay with gradient for better text readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50 pointer-events-none" />
+      {/* Background overlay with gradient for better visual appeal */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40 pointer-events-none" />
       
       {/* Logo FlowAgro - Superior esquerdo */}
       <div className="absolute top-8 left-6 z-10">
-        <h1 className="text-2xl font-bold text-white drop-shadow-lg">
+        <h1 className="text-2xl font-bold text-foreground drop-shadow-lg">
           FlowAgro
         </h1>
       </div>
 
       {/* Mensagem de boas-vindas centralizada */}
       <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center z-10">
-        <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
+        <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4 drop-shadow-lg">
           Bem-vindo ao FlowAgro
         </h2>
-        <p className="text-lg md:text-xl text-white/90 max-w-md drop-shadow-md">
+        <p className="text-lg md:text-xl text-muted-foreground max-w-md drop-shadow-md">
           Tecnologia para o campo na palma da sua mão
         </p>
       </div>
@@ -96,7 +85,7 @@ const TelaInicial = () => {
       <div className="absolute bottom-8 left-6 z-10">
         <button 
           onClick={() => navigate("/login-form")}
-          className="text-sm text-white/70 hover:text-white transition-colors underline"
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors underline"
         >
           Saiba mais
         </button>
