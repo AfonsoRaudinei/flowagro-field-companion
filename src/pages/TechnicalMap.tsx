@@ -13,8 +13,12 @@ import {
   Navigation, 
   Ruler,
   CloudRain,
-  Route
+  Route,
+  MapPin,
+  Leaf
 } from "lucide-react";
+import { PinControls } from "@/components/maps/PinControls";
+import { NDVIControls } from "@/components/maps/NDVIControls";
 
 const TechnicalMap = () => {
   const navigate = useNavigate();
@@ -51,17 +55,24 @@ const TechnicalMap = () => {
           </div>
 
           {/* Sidebar */}
-          <div className="w-80 bg-card border-l p-4 overflow-y-auto">
+          <div className="w-80 bg-card border-l p-4 overflow-y-auto space-y-4">
+            {/* Pin Controls */}
+            <PinControls />
+            
+            {/* NDVI Controls */}
+            <NDVIControls />
+            
+            {/* Map Tools */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Map className="w-5 h-5" />
-                  <span>Ferramentas do Mapa</span>
+                  <span>Camadas Base</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Camadas Disponíveis</h4>
+                  <h4 className="text-sm font-medium">Estilos Disponíveis</h4>
                   <div className="grid grid-cols-2 gap-2">
                     <Badge variant="secondary" className="justify-start">
                       <Layers className="w-3 h-3 mr-1" />
@@ -95,15 +106,6 @@ const TechnicalMap = () => {
                       <Badge variant="outline" className="ml-auto">Em Breve</Badge>
                     </div>
                   </div>
-                </div>
-
-                <Separator />
-
-                <div className="bg-muted/50 p-3 rounded-lg">
-                  <p className="text-xs text-muted-foreground">
-                    ✨ Sistema de mapas profissional implementado com sucesso!
-                    As funcionalidades avançadas serão adicionadas gradualmente.
-                  </p>
                 </div>
               </CardContent>
             </Card>
