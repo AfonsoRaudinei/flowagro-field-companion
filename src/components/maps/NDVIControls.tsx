@@ -172,8 +172,8 @@ export const NDVIControls: React.FC = () => {
         {config.visible && (
           <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
             <p className="text-xs text-green-800">
-              ⚠️ <strong>Demonstração:</strong> Dados NDVI simulados. 
-              A integração real com Sentinel-2 será implementada.
+              ✅ <strong>Integração Real:</strong> Dados NDVI do Sentinel Hub e Planet Labs. 
+              Processamento em tempo real via APIs.
             </p>
           </div>
         )}
