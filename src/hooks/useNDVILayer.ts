@@ -196,9 +196,17 @@ export const useNDVILayer = () => {
   // Remove layer when component unmounts
   useEffect(() => {
     return () => {
-      if (map && map.getLayer('ndvi-layer')) {
-        map.removeLayer('ndvi-layer');
-        map.removeSource('ndvi-data');
+      if (map && map.getCanvas && map.getStyle) {
+        try {
+          if (map.getLayer('ndvi-layer')) {
+            map.removeLayer('ndvi-layer');
+          }
+          if (map.getSource('ndvi-data')) {
+            map.removeSource('ndvi-data');
+          }
+        } catch (error) {
+          console.warn('Error cleaning up NDVI layer:', error);
+        }
       }
     };
   }, [map]);
