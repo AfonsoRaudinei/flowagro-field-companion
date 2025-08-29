@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { useMapInstance } from '@/hooks/useMapInstance';
 import { useNDVILayer } from '@/hooks/useNDVILayer';
+import { DataExportDialog } from './DataExportDialog';
 import { 
   BarChart, 
   Bar, 
@@ -61,6 +62,7 @@ export const NDVIAnalysis: React.FC = () => {
   const [timeSeries, setTimeSeries] = useState<NDVITimeSeriesData[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedArea, setSelectedArea] = useState<number | null>(null);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   // Generate sample NDVI data for demonstration
   const generateSampleData = useMemo(() => {
@@ -192,13 +194,22 @@ export const NDVIAnalysis: React.FC = () => {
           </Button>
           
           {stats && (
-            <Button
-              onClick={exportReport}
-              variant="outline"
-              size="sm"
-            >
-              <Download className="w-4 h-4" />
-            </Button>
+            <>
+              <Button
+                onClick={exportReport}
+                variant="outline"
+                size="sm"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+              <Button
+                onClick={() => setShowExportDialog(true)}
+                variant="secondary"
+                size="sm"
+              >
+                <FileText className="w-4 h-4" />
+              </Button>
+            </>
           )}
         </div>
 
@@ -430,6 +441,14 @@ export const NDVIAnalysis: React.FC = () => {
             </TabsContent>
           </Tabs>
         )}
+        
+        {/* Export Dialog */}
+        <DataExportDialog
+          open={showExportDialog}
+          onClose={() => setShowExportDialog(false)}
+          ndviStats={stats}
+          ndviTimeSeries={timeSeries}
+        />
       </CardContent>
     </Card>
   );

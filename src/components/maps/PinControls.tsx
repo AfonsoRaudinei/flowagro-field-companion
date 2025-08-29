@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useMapPins } from '@/hooks/useMapPins';
 import { PinEditDialog } from './PinEditDialog';
+import { DataExportDialog } from './DataExportDialog';
 import { 
   MapPin, 
   Plus, 
@@ -14,7 +15,8 @@ import {
   Tractor,
   Ruler,
   Settings,
-  Filter
+  Filter,
+  Download
 } from 'lucide-react';
 
 const getPinIcon = (type: string) => {
@@ -40,6 +42,7 @@ export const PinControls: React.FC = () => {
   } = useMapPins();
   
   const [editingPin, setEditingPin] = useState<typeof pins[0] | null>(null);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   return (
     <Card>
@@ -74,15 +77,25 @@ export const PinControls: React.FC = () => {
             )}
           </Button>
           
-          {pins.length > 0 && (
-            <Button
-              onClick={clearAllPins}
-              variant="outline"
-              size="sm"
-              className="rounded-xl"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+          {allPins.length > 0 && (
+            <>
+              <Button
+                onClick={clearAllPins}
+                variant="outline"
+                size="sm"
+                className="rounded-xl"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+              <Button
+                onClick={() => setShowExportDialog(true)}
+                variant="outline"
+                size="sm"
+                className="rounded-xl"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+            </>
           )}
         </div>
 
@@ -213,6 +226,12 @@ export const PinControls: React.FC = () => {
         open={!!editingPin}
         onClose={() => setEditingPin(null)}
         onSave={updatePin}
+      />
+
+      {/* Export Dialog */}
+      <DataExportDialog
+        open={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
       />
     </Card>
   );
