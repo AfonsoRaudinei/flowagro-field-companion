@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { PinControls } from "@/components/maps/PinControls";
 import { NDVIControls } from "@/components/maps/NDVIControls";
+import { NDVIAnalysis } from "@/components/maps/NDVIAnalysis";
 
 const TechnicalMap = () => {
   const navigate = useNavigate();
@@ -61,6 +62,9 @@ const TechnicalMap = () => {
             
             {/* NDVI Controls */}
             <NDVIControls />
+            
+            {/* NDVI Analysis */}
+            <NDVIAnalysis />
             
             {/* Map Tools */}
             <Card>
