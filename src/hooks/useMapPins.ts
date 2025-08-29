@@ -18,6 +18,7 @@ export const useMapPins = () => {
   const [pins, setPins] = useState<MapPin[]>([]);
   const [isAddingPin, setIsAddingPin] = useState(false);
   const [markers, setMarkers] = useState<Map<string, mapboxgl.Marker>>(new Map());
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(['default', 'farm', 'measurement', 'custom']));
 
   // Load pins from Supabase
   const loadPins = useCallback(async () => {
@@ -177,11 +178,43 @@ export const useMapPins = () => {
     }
   };
 
+  // Toggle filter for pin type
+  const toggleFilter = useCallback((pinType: string) => {
+    setActiveFilters(prev => {
+      const newFilters = new Set(prev);
+      if (newFilters.has(pinType)) {
+        newFilters.delete(pinType);
+      } else {
+        newFilters.add(pinType);
+      }
+      return newFilters;
+    });
+  }, []);
+
+  // Get filtered pins
+  const getFilteredPins = useCallback(() => {
+    return pins.filter(pin => activeFilters.has(pin.type || 'default'));
+  }, [pins, activeFilters]);
+
   // Create markers on map
   useEffect(() => {
     if (!map || !isReady) return;
 
-    pins.forEach(pin => {
+    const filteredPins = getFilteredPins();
+
+    // Update marker visibility based on filters
+    markers.forEach((marker, pinId) => {
+      const pin = pins.find(p => p.id === pinId);
+      if (pin) {
+        const shouldShow = activeFilters.has(pin.type || 'default');
+        const element = marker.getElement();
+        if (element) {
+          element.style.display = shouldShow ? 'block' : 'none';
+        }
+      }
+    });
+
+    filteredPins.forEach(pin => {
       if (!markers.has(pin.id)) {
         const el = document.createElement('div');
         el.className = 'map-pin-marker';
@@ -279,7 +312,7 @@ export const useMapPins = () => {
         });
       }
     });
-  }, [pins, map, isReady, markers]);
+  }, [pins, map, isReady, markers, activeFilters, getFilteredPins]);
 
   // Load pins on initialization
   useEffect(() => {
@@ -304,13 +337,16 @@ export const useMapPins = () => {
   }, [map, isReady, isAddingPin, handleMapClick]);
 
   return {
-    pins,
+    pins: getFilteredPins(),
+    allPins: pins,
     isAddingPin,
+    activeFilters,
     addPin,
     removePin,
     updatePin,
     clearAllPins,
     toggleAddingMode,
+    toggleFilter,
     loadPins
   };
 };

@@ -13,7 +13,8 @@ import {
   X,
   Tractor,
   Ruler,
-  Settings
+  Settings,
+  Filter
 } from 'lucide-react';
 
 const getPinIcon = (type: string) => {
@@ -28,11 +29,14 @@ const getPinIcon = (type: string) => {
 export const PinControls: React.FC = () => {
   const { 
     pins, 
+    allPins,
     isAddingPin, 
+    activeFilters,
     removePin, 
     updatePin,
     clearAllPins, 
-    toggleAddingMode 
+    toggleAddingMode,
+    toggleFilter
   } = useMapPins();
   
   const [editingPin, setEditingPin] = useState<typeof pins[0] | null>(null);
@@ -87,6 +91,35 @@ export const PinControls: React.FC = () => {
             <p className="text-sm text-primary font-medium">
               Clique no mapa para adicionar um pin
             </p>
+          </div>
+        )}
+
+        {/* Filter Controls */}
+        {allPins.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtrar por Tipo</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { type: 'default', label: 'Padrão', icon: MapPin },
+                { type: 'farm', label: 'Fazenda', icon: Tractor },
+                { type: 'measurement', label: 'Medição', icon: Ruler },
+                { type: 'custom', label: 'Personalizado', icon: Settings }
+              ].map(({ type, label, icon: Icon }) => (
+                <Button
+                  key={type}
+                  size="sm"
+                  variant={activeFilters.has(type) ? "default" : "outline"}
+                  onClick={() => toggleFilter(type)}
+                  className="h-8 px-3 rounded-lg text-xs"
+                >
+                  <Icon className="w-3 h-3 mr-1.5" />
+                  {label}
+                </Button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -159,12 +192,15 @@ export const PinControls: React.FC = () => {
           )}
         </div>
 
-        {pins.length > 0 && (
+        {allPins.length > 0 && (
           <>
             <Separator />
             <div className="bg-muted/50 p-3 rounded-xl">
               <p className="text-xs text-muted-foreground">
-                Total: {pins.length} pin{pins.length !== 1 ? 's' : ''} no mapa
+                {pins.length === allPins.length 
+                  ? `Total: ${allPins.length} pin${allPins.length !== 1 ? 's' : ''} no mapa`
+                  : `Mostrando: ${pins.length} de ${allPins.length} pin${allPins.length !== 1 ? 's' : ''}`
+                }
               </p>
             </div>
           </>
