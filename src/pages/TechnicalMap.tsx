@@ -20,6 +20,7 @@ import {
 import { PinControls } from "@/components/maps/PinControls";
 import { NDVIControls } from "@/components/maps/NDVIControls";
 import { NDVIAnalysis } from "@/components/maps/NDVIAnalysis";
+import NDVIHistory from "@/components/maps/NDVIHistory";
 
 const TechnicalMap = () => {
   const navigate = useNavigate();
@@ -65,6 +66,9 @@ const TechnicalMap = () => {
             
             {/* NDVI Analysis */}
             <NDVIAnalysis />
+            
+            {/* NDVI History */}
+            <NDVIHistory />
             
             {/* Map Tools */}
             <Card>
