@@ -10,7 +10,8 @@ import {
   Maximize2, 
   Minimize2,
   Navigation,
-  Compass
+  Compass,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -34,8 +35,12 @@ export const MapControls: React.FC<MapControlsProps> = ({
     currentStyle, 
     setStyle, 
     isFullscreen, 
-    setFullscreen,
-    showControls 
+    fullscreenState,
+    isTransitioning,
+    orientation,
+    showControls,
+    enterFullscreen,
+    exitFullscreen
   } = useMap();
 
   if (!showControls) return null;
@@ -57,10 +62,12 @@ export const MapControls: React.FC<MapControlsProps> = ({
   };
 
   const handleFullscreenToggle = async () => {
+    if (isTransitioning) return; // Prevent multiple transitions
+    
     if (isFullscreen) {
-      await document.exitFullscreen();
+      await exitFullscreen();
     } else {
-      await document.documentElement.requestFullscreen();
+      await enterFullscreen();
     }
   };
 
@@ -84,8 +91,18 @@ export const MapControls: React.FC<MapControlsProps> = ({
 
   return (
     <Card className={cn(
-      "absolute top-4 left-4 z-10 p-2",
+      "absolute top-4 left-4 z-20 p-2",
+      "transition-all duration-300 transform-gpu",
       vertical ? "flex flex-col space-y-2" : "flex items-center space-x-2",
+      // Fullscreen state adaptations
+      fullscreenState === 'entering' && "animate-scale-in",
+      fullscreenState === 'exiting' && "animate-fade-out",
+      isTransitioning && "opacity-50 pointer-events-none",
+      // Orientation adaptations
+      orientation === 'landscape' && window.innerWidth < 768 && "top-2 left-2 scale-90",
+      // Premium styling
+      "bg-card/80 backdrop-blur-md border-border/50",
+      "shadow-ios-lg hover:shadow-ios-button",
       className
     )}>
       {showStyleSelector && (
@@ -139,12 +156,23 @@ export const MapControls: React.FC<MapControlsProps> = ({
           variant="outline"
           size="sm"
           onClick={handleFullscreenToggle}
-          title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          disabled={isTransitioning}
+          className={cn(
+            "ios-button relative",
+            fullscreenState === 'entered' && "bg-primary/10 border-primary/30 text-primary",
+            isTransitioning && "animate-pulse"
+          )}
+          title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
         >
-          {isFullscreen ? (
+          {isTransitioning ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : isFullscreen ? (
             <Minimize2 className="w-4 h-4" />
           ) : (
             <Maximize2 className="w-4 h-4" />
+          )}
+          {fullscreenState === 'entered' && (
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
           )}
         </Button>
       )}

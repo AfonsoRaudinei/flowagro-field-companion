@@ -2,6 +2,9 @@ import React from "react";
 import { NavigationHeader } from "@/components/ui/navigation";
 import { useNavigate } from "react-router-dom";
 import { MapProvider } from "@/components/maps/MapProvider";
+import { FullscreenTransitions } from '@/components/maps/FullscreenTransitions';
+import { useOrientationBehavior } from '@/hooks/useOrientationDetector';
+import { cn } from '@/lib/utils';
 import { BaseMap } from "@/components/maps/BaseMap";
 import { MapControls } from "@/components/maps/MapControls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +27,7 @@ import NDVIHistory from "@/components/maps/NDVIHistory";
 
 const TechnicalMap = () => {
   const navigate = useNavigate();
+  const { orientationClasses, isLandscape, isMobile } = useOrientationBehavior();
 
   const handleBack = () => {
     navigate(-1);
@@ -31,14 +35,22 @@ const TechnicalMap = () => {
 
   return (
     <MapProvider>
-      <div className="min-h-screen bg-background">
+      <FullscreenTransitions>
+        <div className={cn(
+          "min-h-screen bg-background",
+          orientationClasses.container,
+          isLandscape && isMobile && "flex-col"
+        )}>
         <NavigationHeader 
           title="Mapa Técnico" 
           onBack={handleBack}
           showBackButton
         />
         
-        <div className="flex h-[calc(100vh-4rem)]">
+          <div className={cn(
+            "flex h-[calc(100vh-4rem)]",
+            isLandscape && isMobile && "flex-row-reverse"
+          )}>
           {/* Map Area */}
           <div className="flex-1 relative">
             <BaseMap 
@@ -56,8 +68,12 @@ const TechnicalMap = () => {
             />
           </div>
 
-          {/* Sidebar */}
-          <div className="w-80 bg-card border-l p-4 overflow-y-auto space-y-4">
+            {/* Sidebar */}
+            <div className={cn(
+              "w-80 bg-card border-l p-4 overflow-y-auto space-y-4",
+              orientationClasses.sidebar,
+              isLandscape && isMobile && "w-64 border-r border-l-0"
+            )}>
             {/* Pin Controls */}
             <PinControls />
             
@@ -117,9 +133,10 @@ const TechnicalMap = () => {
                 </div>
               </CardContent>
             </Card>
+            </div>
           </div>
         </div>
-      </div>
+      </FullscreenTransitions>
     </MapProvider>
   );
 };
