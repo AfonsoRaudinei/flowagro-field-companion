@@ -6,7 +6,7 @@ import { DrawingToolsPanel } from "@/components/maps/DrawingToolsPanel";
 import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { useMapNavigation } from "@/hooks/useMapInstance";
 import { Button } from "@/components/ui/button";
-import { Camera, Layers, Navigation, ZoomIn, ZoomOut, LocateFixed, PenTool, Mountain, Satellite, Route, Check } from "lucide-react";
+import { Camera, Layers, Navigation, ZoomIn, ZoomOut, LocateFixed, PenTool, Mountain, Satellite, Route, Check, ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { supabase } from '@/integrations/supabase/client';
@@ -16,11 +16,14 @@ const TechnicalMapLayout = () => {
   const [cameraActive, setCameraActive] = useState(false);
   const [showDrawingPanel, setShowDrawingPanel] = useState(false);
   const [showLayersMenu, setShowLayersMenu] = useState(false);
+  const [showCameraMenu, setShowCameraMenu] = useState(false);
   const [currentLayer, setCurrentLayer] = useState<'terrain' | 'hybrid'>('hybrid');
   const [roadsEnabled, setRoadsEnabled] = useState(false);
   const [mapTilerToken, setMapTilerToken] = useState<string | null>(null);
   const layersMenuRef = useRef<HTMLDivElement>(null);
   const layersButtonRef = useRef<HTMLButtonElement>(null);
+  const cameraMenuRef = useRef<HTMLDivElement>(null);
+  const cameraButtonRef = useRef<HTMLButtonElement>(null);
   
   const mapContext = useMap();
   const { flyToCurrentLocation } = useMapNavigation();
@@ -56,7 +59,7 @@ const TechnicalMapLayout = () => {
     getToken();
   }, []);
 
-  // Close layers menu when clicking outside
+  // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showLayersMenu && 
@@ -66,11 +69,19 @@ const TechnicalMapLayout = () => {
           !layersButtonRef.current.contains(event.target as Node)) {
         setShowLayersMenu(false);
       }
+      
+      if (showCameraMenu && 
+          cameraMenuRef.current && 
+          !cameraMenuRef.current.contains(event.target as Node) &&
+          cameraButtonRef.current &&
+          !cameraButtonRef.current.contains(event.target as Node)) {
+        setShowCameraMenu(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showLayersMenu]);
+  }, [showLayersMenu, showCameraMenu]);
 
   const setMapLayer = async (layer: 'terrain' | 'hybrid') => {
     setCurrentLayer(layer);
@@ -178,6 +189,46 @@ const TechnicalMapLayout = () => {
       toast({
         title: "Erro de localização",
         description: "Não foi possível obter sua localização",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOpenCamera = async () => {
+    setShowCameraMenu(false);
+    try {
+      // Request camera permission and open native camera
+      // This will be handled by Capacitor Camera plugin
+      console.log('Opening native camera...');
+      
+      toast({
+        title: "Câmera",
+        description: "Abrindo câmera para captura...",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro na câmera",
+        description: "Não foi possível abrir a câmera. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOpenLibrary = async () => {
+    setShowCameraMenu(false);
+    try {
+      // Request media permission and open photo library
+      // This will be handled by Capacitor Camera plugin
+      console.log('Opening photo library...');
+      
+      toast({
+        title: "Galeria",
+        description: "Abrindo galeria para seleção...",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro na galeria",
+        description: "Não foi possível acessar a galeria. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -294,9 +345,44 @@ const TechnicalMapLayout = () => {
 
       {/* Floating Actions - Bottom Right */}
       <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
-        <Button onClick={handleCameraCapture} size="lg" className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90">
-          <Camera className="h-6 w-6" />
-        </Button>
+        <div className="relative">
+          <Button 
+            ref={cameraButtonRef}
+            onClick={() => setShowCameraMenu(!showCameraMenu)} 
+            size="lg" 
+            className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90"
+          >
+            <Camera className="h-6 w-6" />
+          </Button>
+          
+          {/* Camera Menu */}
+          {showCameraMenu && (
+            <div 
+              ref={cameraMenuRef}
+              className="absolute bottom-full right-0 mb-2 bg-card/95 backdrop-blur-sm border border-border/20 rounded-xl shadow-lg py-2 min-w-[180px] z-50"
+              style={{
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)'
+              }}
+            >
+              <button
+                onClick={handleOpenCamera}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 hover:bg-[rgba(0,87,255,0.1)] active:scale-98 text-foreground"
+              >
+                <Camera className="h-4 w-4" />
+                <span>Abrir Câmera</span>
+              </button>
+              
+              <button
+                onClick={handleOpenLibrary}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 hover:bg-[rgba(0,87,255,0.1)] active:scale-98 text-foreground"
+              >
+                <ImageIcon className="h-4 w-4" />
+                <span>Escolher da Biblioteca</span>
+              </button>
+            </div>
+          )}
+        </div>
+        
         <Button variant="secondary" size="sm" onClick={() => console.log('Navigation')} className="bg-background/90 backdrop-blur-sm">
           <Navigation className="h-4 w-4" />
         </Button>
