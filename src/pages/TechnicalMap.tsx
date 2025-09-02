@@ -377,7 +377,7 @@ const TechnicalMapLayout = () => {
   );
   return <div className="min-h-screen bg-background relative">
       {/* Mapa Principal - SIMPLIFICADO */}
-      <SimpleBaseMap className="w-full h-screen" />
+      <SimpleBaseMap className="w-full h-screen" showNativeControls={false} />
 
       {/* Controles Simplificados - Top */}
       <div className="absolute top-4 left-4 z-10 flex gap-2">

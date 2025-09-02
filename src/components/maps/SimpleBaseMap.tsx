@@ -9,13 +9,15 @@ interface SimpleBaseMapProps {
   center?: [number, number];
   zoom?: number;
   style?: React.CSSProperties;
+  showNativeControls?: boolean;
 }
 
 export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
   className,
   center = [-15.7975, -47.8919], // Brasília
   zoom = 4,
-  style
+  style,
+  showNativeControls = true
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -79,15 +81,18 @@ export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
         
         console.log('SimpleBaseMap: Instância criada, aguardando carregamento...');
         
-        // Add controls
-        mapInstance.addControl(new mapboxgl.NavigationControl(), 'top-right');
-        mapInstance.addControl(new mapboxgl.GeolocateControl({
-          positionOptions: {
-            enableHighAccuracy: true
-          },
-          trackUserLocation: true,
-          showUserHeading: true
-        }), 'top-right');
+        // Add controls conditionally
+        if (showNativeControls) {
+          mapInstance.addControl(new mapboxgl.NavigationControl(), 'top-right');
+          mapInstance.addControl(new mapboxgl.GeolocateControl({
+            positionOptions: {
+              enableHighAccuracy: true
+            },
+            trackUserLocation: true,
+            showUserHeading: true
+          }), 'top-right');
+        }
+        // Attribution is always required
         mapInstance.addControl(new mapboxgl.AttributionControl(), 'bottom-right');
         
         // Event listeners
