@@ -142,6 +142,7 @@ export type Database = {
           title: string
           updated_at: string
           url: string | null
+          user_id: string
         }
         Insert: {
           checksum?: string | null
@@ -155,6 +156,7 @@ export type Database = {
           title: string
           updated_at?: string
           url?: string | null
+          user_id: string
         }
         Update: {
           checksum?: string | null
@@ -168,6 +170,7 @@ export type Database = {
           title?: string
           updated_at?: string
           url?: string | null
+          user_id?: string
         }
         Relationships: []
       }
