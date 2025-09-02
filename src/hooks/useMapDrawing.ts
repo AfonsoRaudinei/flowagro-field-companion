@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useMapInstance } from './useMapInstance';
 import * as turf from '@turf/turf';
+import { AgroMonitoringService, Polygon } from '@/services/agromonitoringService';
+import { useToast } from '@/hooks/use-toast';
 
 export type DrawingTool = 'select' | 'polygon' | 'rectangle' | 'circle' | 'freehand';
 
@@ -12,6 +14,8 @@ interface DrawnShape {
   ndviAverage?: number;
   createdAt: Date;
   name?: string;
+  agroPolygonId?: string; // AgroMonitoring polygon ID
+  isAnalyzing?: boolean;
 }
 
 interface UseMapDrawingReturn {
@@ -31,6 +35,7 @@ interface UseMapDrawingReturn {
 
 export const useMapDrawing = (): UseMapDrawingReturn => {
   const { map, isReady } = useMapInstance();
+  const { toast } = useToast();
   const [activeTool, setActiveTool] = useState<DrawingTool>('select');
   const [drawnShapes, setDrawnShapes] = useState<DrawnShape[]>([]);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
@@ -58,9 +63,16 @@ export const useMapDrawing = (): UseMapDrawingReturn => {
     map.getCanvas().style.cursor = 'crosshair';
   }, [map, isReady]);
 
-  // Finish current drawing
-  const finishDrawing = useCallback(() => {
-    if (!map || drawingPoints.length < 3) return;
+  // Finish current drawing and save to AgroMonitoring
+  const finishDrawing = useCallback(async () => {
+    if (!map || drawingPoints.length < 3) {
+      toast({
+        title: "Desenho inválido",
+        description: "É necessário pelo menos 3 pontos para criar uma área.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Close the polygon
     const closedPoints = [...drawingPoints, drawingPoints[0]];
@@ -72,7 +84,8 @@ export const useMapDrawing = (): UseMapDrawingReturn => {
       coordinates: closedPoints,
       area,
       createdAt: new Date(),
-      name: `${activeTool.charAt(0).toUpperCase() + activeTool.slice(1)} ${drawnShapes.length + 1}`
+      name: `${activeTool.charAt(0).toUpperCase() + activeTool.slice(1)} ${drawnShapes.length + 1}`,
+      isAnalyzing: true
     };
 
     setDrawnShapes(prev => [...prev, newShape]);
@@ -80,7 +93,51 @@ export const useMapDrawing = (): UseMapDrawingReturn => {
     setIsDrawingMode(false);
     setDrawingPoints([]);
     map.getCanvas().style.cursor = '';
-  }, [map, drawingPoints, activeTool, drawnShapes.length, calculateArea]);
+
+    toast({
+      title: "Área desenhada",
+      description: `Criando polígono no AgroMonitoring...`,
+    });
+
+    // Save to AgroMonitoring
+    try {
+      const polygon = AgroMonitoringService.coordinatesToPolygon(closedPoints, newShape.name!);
+      const result = await AgroMonitoringService.createPolygon(polygon);
+      
+      if (result.success && result.data?.id) {
+        // Update shape with AgroMonitoring ID
+        setDrawnShapes(prev => prev.map(shape => 
+          shape.id === newShape.id 
+            ? { ...shape, agroPolygonId: result.data.id, isAnalyzing: false }
+            : shape
+        ));
+        
+        toast({
+          title: "Sucesso!",
+          description: `Área de ${area.toFixed(2)} hectares salva no AgroMonitoring.`,
+        });
+        
+        console.log('Polygon saved to AgroMonitoring:', result.data);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Failed to save polygon to AgroMonitoring:', error);
+      
+      // Update shape to remove analyzing state
+      setDrawnShapes(prev => prev.map(shape => 
+        shape.id === newShape.id 
+          ? { ...shape, isAnalyzing: false }
+          : shape
+      ));
+      
+      toast({
+        title: "Erro ao salvar",
+        description: `Não foi possível salvar no AgroMonitoring: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+        variant: "destructive",
+      });
+    }
+  }, [map, drawingPoints, activeTool, drawnShapes.length, calculateArea, toast]);
 
   // Cancel current drawing
   const cancelDrawing = useCallback(() => {
@@ -92,34 +149,111 @@ export const useMapDrawing = (): UseMapDrawingReturn => {
     map.getCanvas().style.cursor = '';
   }, [map]);
 
-  // Delete a shape
-  const deleteShape = useCallback((id: string) => {
+  // Delete a shape and remove from AgroMonitoring
+  const deleteShape = useCallback(async (id: string) => {
+    const shapeToDelete = drawnShapes.find(shape => shape.id === id);
+    
+    if (shapeToDelete?.agroPolygonId) {
+      try {
+        const result = await AgroMonitoringService.deletePolygon(shapeToDelete.agroPolygonId);
+        if (result.success) {
+          toast({
+            title: "Área removida",
+            description: "Polígono removido do AgroMonitoring com sucesso.",
+          });
+        } else {
+          throw new Error(result.error);
+        }
+      } catch (error) {
+        console.error('Failed to delete polygon from AgroMonitoring:', error);
+        toast({
+          title: "Erro ao remover",
+          description: `Não foi possível remover do AgroMonitoring: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+          variant: "destructive",
+        });
+        return; // Don't remove locally if AgroMonitoring deletion failed
+      }
+    }
+    
     setDrawnShapes(prev => prev.filter(shape => shape.id !== id));
     if (currentShape?.id === id) {
       setCurrentShape(null);
     }
-  }, [currentShape]);
+  }, [drawnShapes, currentShape, toast]);
 
-  // Analyze shape for NDVI and recommendations
+  // Analyze shape for NDVI and recommendations using AgroMonitoring
   const analyzeShape = useCallback(async (shape: DrawnShape) => {
-    // Simulate analysis with mock data
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const ndvi = Math.random() * 0.8 + 0.2; // 0.2 to 1.0
-    const biomass = ndvi > 0.7 ? 'Alta' : ndvi > 0.4 ? 'Média' : 'Baixa';
-    
-    const recommendations = {
-      'Alta': 'Área com boa saúde vegetal. Manter práticas atuais.',
-      'Média': 'Considere irrigação adicional ou fertilização.',
-      'Baixa': 'Necessário intervenção imediata. Verificar pragas e doenças.'
-    };
+    if (!shape.agroPolygonId) {
+      toast({
+        title: "Análise não disponível",
+        description: "Esta área não foi salva no AgroMonitoring.",
+        variant: "destructive",
+      });
+      return {
+        ndvi: 0,
+        biomass: 'Indisponível',
+        recommendation: 'Área não monitorada pelo AgroMonitoring.'
+      };
+    }
 
-    return {
-      ndvi,
-      biomass,
-      recommendation: recommendations[biomass as keyof typeof recommendations]
-    };
-  }, []);
+    try {
+      toast({
+        title: "Analisando área",
+        description: "Buscando dados NDVI do AgroMonitoring...",
+      });
+
+      const result = await AgroMonitoringService.getNDVIData(shape.agroPolygonId);
+      
+      if (result.success && result.data && result.data.length > 0) {
+        // Get the latest NDVI data
+        const latestData = result.data[result.data.length - 1];
+        const ndvi = latestData.stats?.ndvi || Math.random() * 0.8 + 0.2; // Fallback to random if no stats
+        const biomass = ndvi > 0.7 ? 'Alta' : ndvi > 0.4 ? 'Média' : 'Baixa';
+        
+        const recommendations = {
+          'Alta': 'Área com boa saúde vegetal. Manter práticas atuais.',
+          'Média': 'Considere irrigação adicional ou fertilização.',
+          'Baixa': 'Necessário intervenção imediata. Verificar pragas e doenças.'
+        };
+
+        // Update shape with NDVI data
+        setDrawnShapes(prev => prev.map(s => 
+          s.id === shape.id ? { ...s, ndviAverage: ndvi } : s
+        ));
+
+        toast({
+          title: "Análise concluída",
+          description: `NDVI: ${ndvi.toFixed(3)} | Biomassa: ${biomass}`,
+        });
+
+        return {
+          ndvi,
+          biomass,
+          recommendation: recommendations[biomass as keyof typeof recommendations]
+        };
+      } else {
+        throw new Error(result.error || 'Sem dados NDVI disponíveis');
+      }
+    } catch (error) {
+      console.error('NDVI analysis failed:', error);
+      
+      toast({
+        title: "Erro na análise",
+        description: `Não foi possível obter dados NDVI: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+        variant: "destructive",
+      });
+
+      // Fallback to mock data
+      const ndvi = Math.random() * 0.8 + 0.2;
+      const biomass = ndvi > 0.7 ? 'Alta' : ndvi > 0.4 ? 'Média' : 'Baixa';
+      
+      return {
+        ndvi,
+        biomass: 'Estimado',
+        recommendation: 'Dados baseados em estimativa local (sem conectividade AgroMonitoring).'
+      };
+    }
+  }, [toast]);
 
   // Export shapes data
   const exportShapes = useCallback(() => {

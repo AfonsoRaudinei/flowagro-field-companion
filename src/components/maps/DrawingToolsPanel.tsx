@@ -1,265 +1,153 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
+  MousePointer, 
   Square, 
   Circle, 
-  Pentagon, 
-  MousePointer, 
-  Pencil,
-  Play,
-  Square as StopSquare,
-  X,
-  Trash2,
+  Shapes, 
+  PenTool, 
+  Trash2, 
   Download,
-  BarChart3
+  BarChart3 
 } from 'lucide-react';
-import { useMapDrawing, DrawingTool } from '@/hooks/useMapDrawing';
-import { cn } from '@/lib/utils';
+import { DrawingTool } from '@/hooks/useMapDrawing';
 
 interface DrawingToolsPanelProps {
-  className?: string;
-  position?: 'left' | 'right';
-  onClose?: () => void;
+  activeTool: DrawingTool;
+  onToolSelect: (tool: DrawingTool) => void;
+  onStartDrawing: () => void;
+  onFinishDrawing: () => void;
+  onCancelDrawing: () => void;
+  onClearAll: () => void;
+  onExport: () => void;
+  isDrawingMode: boolean;
+  shapesCount: number;
 }
 
+const toolIcons = {
+  select: MousePointer,
+  polygon: Shapes,
+  rectangle: Square,
+  circle: Circle,
+  freehand: PenTool,
+};
+
+const toolLabels = {
+  select: 'Selecionar',
+  polygon: 'Polígono',
+  rectangle: 'Retângulo',
+  circle: 'Círculo',
+  freehand: 'Desenho Livre',
+};
+
 export const DrawingToolsPanel: React.FC<DrawingToolsPanelProps> = ({
-  className,
-  position = 'left',
-  onClose
+  activeTool,
+  onToolSelect,
+  onStartDrawing,
+  onFinishDrawing,
+  onCancelDrawing,
+  onClearAll,
+  onExport,
+  isDrawingMode,
+  shapesCount,
 }) => {
-  const {
-    activeTool,
-    drawnShapes,
-    isDrawingMode,
-    currentShape,
-    setActiveTool,
-    startDrawing,
-    finishDrawing,
-    cancelDrawing,
-    deleteShape,
-    analyzeShape,
-    exportShapes,
-    clearAllShapes
-  } = useMapDrawing();
-
-  const [analysisResult, setAnalysisResult] = useState<{
-    ndvi: number;
-    biomass: string;
-    recommendation: string;
-  } | null>(null);
-
-  const tools: Array<{ id: DrawingTool; icon: React.ReactNode; label: string }> = [
-    { id: 'select', icon: <MousePointer className="w-4 h-4" />, label: 'Selecionar' },
-    { id: 'polygon', icon: <Pentagon className="w-4 h-4" />, label: 'Polígono' },
-    { id: 'rectangle', icon: <Square className="w-4 h-4" />, label: 'Retângulo' },
-    { id: 'circle', icon: <Circle className="w-4 h-4" />, label: 'Círculo' },
-    { id: 'freehand', icon: <Pencil className="w-4 h-4" />, label: 'Livre' },
-  ];
-
-  const handleAnalyzeShape = async (shape: any) => {
-    try {
-      const result = await analyzeShape(shape);
-      setAnalysisResult(result);
-    } catch (error) {
-      console.error('Error analyzing shape:', error);
-    }
-  };
-
-  const getBiomassColor = (biomass: string) => {
-    switch (biomass) {
-      case 'Alta': return 'bg-green-500';
-      case 'Média': return 'bg-yellow-500';
-      case 'Baixa': return 'bg-red-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const positionClasses = {
-    left: 'left-4',
-    right: 'right-4'
-  };
-
   return (
-    <Card className={cn(
-      "absolute top-4 w-80 z-50 shadow-lg pointer-events-auto",
-      positionClasses[position],
-      className
-    )}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center justify-between">
+    <Card className="w-80 bg-background/95 backdrop-blur-sm border-border/50">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-primary" />
           Ferramentas de Desenho
-          {onClose && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-6 w-6"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          )}
         </CardTitle>
       </CardHeader>
-      
       <CardContent className="space-y-4">
         {/* Drawing Tools */}
         <div className="grid grid-cols-3 gap-2">
-          {tools.map((tool) => (
+          {Object.entries(toolIcons).map(([tool, Icon]) => (
             <Button
-              key={tool.id}
-              variant={activeTool === tool.id ? "default" : "outline"}
+              key={tool}
+              variant={activeTool === tool ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveTool(tool.id)}
-              className="flex flex-col gap-1 h-auto py-2"
+              onClick={() => onToolSelect(tool as DrawingTool)}
+              className="flex flex-col gap-1 h-16 p-2"
+              disabled={isDrawingMode && activeTool !== tool}
             >
-              {tool.icon}
-              <span className="text-xs">{tool.label}</span>
+              <Icon className="h-4 w-4" />
+              <span className="text-xs">{toolLabels[tool as DrawingTool]}</span>
             </Button>
           ))}
         </div>
 
-        {/* Drawing Controls */}
+        {/* Drawing Actions */}
         {activeTool !== 'select' && (
-          <div className="flex gap-2">
+          <div className="space-y-2">
             {!isDrawingMode ? (
-              <Button
-                onClick={startDrawing}
+              <Button 
+                onClick={onStartDrawing} 
+                className="w-full"
                 size="sm"
-                className="flex-1"
               >
-                <Play className="w-4 h-4 mr-2" />
-                Iniciar
+                Iniciar Desenho
               </Button>
             ) : (
-              <>
-                <Button
-                  onClick={finishDrawing}
-                  size="sm"
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  onClick={onFinishDrawing} 
                   variant="default"
+                  size="sm"
                 >
-                  <StopSquare className="w-4 h-4 mr-2" />
                   Finalizar
                 </Button>
-                <Button
-                  onClick={cancelDrawing}
+                <Button 
+                  onClick={onCancelDrawing} 
+                  variant="outline"
                   size="sm"
-                  variant="outline"
                 >
-                  <X className="w-4 h-4" />
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-
-        <Separator />
-
-        {/* Drawn Shapes List */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium">
-              Formas Desenhadas ({drawnShapes.length})
-            </h4>
-            {drawnShapes.length > 0 && (
-              <div className="flex gap-1">
-                <Button
-                  onClick={exportShapes}
-                  size="icon"
-                  variant="outline"
-                  className="h-6 w-6"
-                >
-                  <Download className="w-3 h-3" />
-                </Button>
-                <Button
-                  onClick={clearAllShapes}
-                  size="icon"
-                  variant="outline"
-                  className="h-6 w-6"
-                >
-                  <Trash2 className="w-3 h-3" />
+                  Cancelar
                 </Button>
               </div>
             )}
           </div>
+        )}
 
-          {drawnShapes.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-2">
-              Nenhuma forma desenhada
+        {/* Shape Management */}
+        {shapesCount > 0 && (
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <p className="text-sm text-muted-foreground">
+              {shapesCount} área{shapesCount !== 1 ? 's' : ''} desenhada{shapesCount !== 1 ? 's' : ''}
             </p>
-          ) : (
-            <div className="max-h-32 overflow-y-auto space-y-1">
-              {drawnShapes.map((shape) => (
-                <div
-                  key={shape.id}
-                  className="flex items-center justify-between p-2 rounded-md bg-muted/50"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium truncate">
-                      {shape.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {shape.area.toFixed(2)} ha
-                    </p>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      onClick={() => handleAnalyzeShape(shape)}
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6"
-                    >
-                      <BarChart3 className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      onClick={() => deleteShape(shape.id)}
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 text-destructive"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                onClick={onExport} 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-1"
+              >
+                <Download className="h-3 w-3" />
+                Exportar
+              </Button>
+              <Button 
+                onClick={onClearAll} 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-1 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3" />
+                Limpar
+              </Button>
             </div>
-          )}
-        </div>
-
-        {/* Analysis Result */}
-        {analysisResult && (
-          <>
-            <Separator />
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Análise da Área</h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs">NDVI:</span>
-                  <Badge variant="outline">{analysisResult.ndvi.toFixed(3)}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs">Biomassa:</span>
-                  <Badge className={cn("text-white", getBiomassColor(analysisResult.biomass))}>
-                    {analysisResult.biomass}
-                  </Badge>
-                </div>
-                <div className="p-2 rounded-md bg-muted/50">
-                  <p className="text-xs text-muted-foreground">
-                    {analysisResult.recommendation}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </>
+          </div>
         )}
 
-        {/* Status */}
+        {/* Drawing Instructions */}
         {isDrawingMode && (
-          <div className="flex items-center gap-2 p-2 rounded-md bg-primary/10">
-            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-xs">Modo de desenho ativo</span>
+          <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+            <p className="text-sm text-primary">
+              {activeTool === 'polygon' && 'Clique no mapa para adicionar pontos. Clique em "Finalizar" para completar o polígono.'}
+              {activeTool === 'rectangle' && 'Clique e arraste para criar um retângulo.'}
+              {activeTool === 'circle' && 'Clique e arraste para criar um círculo.'}
+              {activeTool === 'freehand' && 'Mantenha pressionado e desenhe livremente no mapa.'}
+            </p>
           </div>
         )}
       </CardContent>

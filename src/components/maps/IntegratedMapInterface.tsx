@@ -128,12 +128,9 @@ export const IntegratedMapInterface: React.FC<IntegratedMapInterfaceProps> = ({
       </div>
 
       {/* Enhanced Contextual Data Layer */}
-      <DrawingToolsPanel 
-        position="right"
-        className="pointer-events-auto top-20"
-      />
+      {/* Removed DrawingToolsPanel from here - it's handled in TechnicalMap now */}
       
-      <EnhancedMapClickPopover 
+      <EnhancedMapClickPopover
         className="pointer-events-auto"
         onAddPin={(coordinates) => console.log('Add pin at:', coordinates)}
         onAnalyzeArea={(coordinates) => console.log('Analyze area at:', coordinates)}

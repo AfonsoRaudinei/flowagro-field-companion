@@ -2,12 +2,27 @@ import React, { useState } from "react";
 import { MapProvider } from "@/components/maps/MapProvider";
 import { FullscreenTransitions } from '@/components/maps/FullscreenTransitions';
 import { SimpleBaseMap } from "@/components/maps/SimpleBaseMap";
+import { DrawingToolsPanel } from "@/components/maps/DrawingToolsPanel";
+import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { Button } from "@/components/ui/button";
-import { Camera, Layers, Navigation, ZoomIn, ZoomOut, LocateFixed } from "lucide-react";
+import { Camera, Layers, Navigation, ZoomIn, ZoomOut, LocateFixed, PenTool } from "lucide-react";
 
 // Layout simplificado e funcional
 const TechnicalMapLayout = () => {
   const [cameraActive, setCameraActive] = useState(false);
+  const [showDrawingPanel, setShowDrawingPanel] = useState(false);
+  
+  const {
+    activeTool,
+    drawnShapes,
+    isDrawingMode,
+    setActiveTool,
+    startDrawing,
+    finishDrawing,
+    cancelDrawing,
+    clearAllShapes,
+    exportShapes,
+  } = useMapDrawing();
 
   const handleCameraCapture = () => {
     setCameraActive(true);
@@ -40,6 +55,14 @@ const TechnicalMapLayout = () => {
           className="bg-background/90 backdrop-blur-sm"
         >
           <Layers className="h-4 w-4" />
+        </Button>
+        <Button
+          variant={showDrawingPanel ? "default" : "secondary"}
+          size="sm"
+          onClick={() => setShowDrawingPanel(!showDrawingPanel)}
+          className="bg-background/90 backdrop-blur-sm"
+        >
+          <PenTool className="h-4 w-4" />
         </Button>
       </div>
 
@@ -89,6 +112,23 @@ const TechnicalMapLayout = () => {
           <Navigation className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Drawing Tools Panel */}
+      {showDrawingPanel && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+          <DrawingToolsPanel
+            activeTool={activeTool}
+            onToolSelect={setActiveTool}
+            onStartDrawing={startDrawing}
+            onFinishDrawing={finishDrawing}
+            onCancelDrawing={cancelDrawing}
+            onClearAll={clearAllShapes}
+            onExport={exportShapes}
+            isDrawingMode={isDrawingMode}
+            shapesCount={drawnShapes.length}
+          />
+        </div>
+      )}
 
       {/* Loading overlay para camera */}
       {cameraActive && (

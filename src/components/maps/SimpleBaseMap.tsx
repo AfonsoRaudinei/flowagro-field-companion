@@ -21,164 +21,121 @@ export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>('Inicializando mapa...');
-
-  const updateDebug = (message: string) => {
-    setDebugInfo(prev => `${prev}\n${new Date().toLocaleTimeString()}: ${message}`);
-    console.log('SimpleBaseMap:', message);
-  };
 
   useEffect(() => {
+    let isMounted = true;
+    
     const initializeMap = async () => {
-      if (!mapContainer.current) return;
-
+      if (!mapContainer.current || map.current) return;
+      
+      console.log('SimpleBaseMap: Iniciando configuração do mapa...');
+      setIsLoading(true);
+      setError(null);
+      
       try {
-        setIsLoading(true);
-        setError(null);
-        updateDebug('Iniciando configuração do mapa...');
-
-        // Primeiro, tentar buscar o token MapTiler
-        let mapTilerToken: string | null = null;
+        console.log('SimpleBaseMap: Buscando token MapTiler...');
+        const { data, error: tokenError } = await supabase.functions.invoke('maptiler-token');
         
-        try {
-          updateDebug('Buscando token MapTiler...');
-          const { data, error: tokenError } = await supabase.functions.invoke('maptiler-token');
-          
-          if (tokenError) {
-            updateDebug(`Erro ao buscar token: ${tokenError.message}`);
-          } else if (data?.key) {
-            mapTilerToken = data.key;
-            updateDebug('Token MapTiler obtido com sucesso');
-          } else {
-            updateDebug('Token MapTiler não configurado, usando fallback OSM');
-          }
-        } catch (tokenErr) {
-          updateDebug(`Falha na busca do token: ${tokenErr}`);
-        }
-
-        // Configurar estilo do mapa
-        let mapStyle: string;
+        if (!isMounted) return;
         
-        if (mapTilerToken) {
-          // Usar MapTiler se token disponível
-          mapStyle = `https://api.maptiler.com/maps/streets/style.json?key=${mapTilerToken}`;
-          updateDebug('Usando estilo MapTiler');
+        let token = null;
+        if (tokenError) {
+          console.log('SimpleBaseMap: Erro ao buscar token:', tokenError.message);
+        } else if (data?.key) {
+          token = data.key;
+          console.log('SimpleBaseMap: Token MapTiler obtido com sucesso');
         } else {
-          // Fallback para OpenStreetMap
-          mapStyle = JSON.stringify({
-            version: 8,
-            name: "OpenStreetMap",
-            sources: {
-              osm: {
-                type: "raster",
-                tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-                tileSize: 256,
-                attribution: "© OpenStreetMap contributors"
-              }
-            },
-            layers: [
-              {
-                id: "osm-layer",
-                type: "raster",
-                source: "osm"
-              }
-            ]
-          });
-          updateDebug('Usando fallback OpenStreetMap');
+          console.log('SimpleBaseMap: Token não encontrado, usando OpenStreetMap');
         }
-
-        // Criar instância do mapa
-        updateDebug('Criando instância Mapbox GL...');
+        
+        console.log('SimpleBaseMap: Criando instância Mapbox GL...');
         const mapInstance = new mapboxgl.Map({
           container: mapContainer.current,
-          style: mapStyle,
-          center,
-          zoom,
-          pitch: 0,
-          bearing: 0,
-          interactive: true,
-          attributionControl: false,
-          preserveDrawingBuffer: true,
-          failIfMajorPerformanceCaveat: false
+          style: token ? 
+            `https://api.maptiler.com/maps/satellite/style.json?key=${token}` : 
+            JSON.stringify({
+              version: 8,
+              name: "OpenStreetMap",
+              sources: {
+                osm: {
+                  type: "raster",
+                  tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+                  tileSize: 256,
+                  attribution: "© OpenStreetMap contributors"
+                }
+              },
+              layers: [
+                {
+                  id: "osm-layer",
+                  type: "raster",
+                  source: "osm"
+                }
+              ]
+            }),
+          center: center || [-15.7975, -47.8919],
+          zoom: zoom || 4,
+          accessToken: token || undefined,
         });
-
-        updateDebug('Instância criada, aguardando carregamento...');
-
-        // Adicionar controles básicos
-        mapInstance.addControl(
-          new mapboxgl.NavigationControl({
-            visualizePitch: true,
-            showZoom: true,
-            showCompass: true
-          }), 
-          'top-right'
-        );
-
-        mapInstance.addControl(
-          new mapboxgl.GeolocateControl({
-            positionOptions: { enableHighAccuracy: true },
-            trackUserLocation: true,
-            showUserHeading: true
-          }), 
-          'top-right'
-        );
-
-        mapInstance.addControl(
-          new mapboxgl.AttributionControl({ compact: true }), 
-          'bottom-right'
-        );
-
+        
+        console.log('SimpleBaseMap: Instância criada, aguardando carregamento...');
+        
+        // Add controls
+        mapInstance.addControl(new mapboxgl.NavigationControl(), 'top-right');
+        mapInstance.addControl(new mapboxgl.GeolocateControl({
+          positionOptions: {
+            enableHighAccuracy: true
+          },
+          trackUserLocation: true,
+          showUserHeading: true
+        }), 'top-right');
+        mapInstance.addControl(new mapboxgl.AttributionControl(), 'bottom-right');
+        
         // Event listeners
         mapInstance.on('load', () => {
-          updateDebug('✅ Mapa carregado com sucesso!');
+          if (!isMounted) return;
+          console.log('SimpleBaseMap: Mapa carregado completamente');
           setIsLoading(false);
         });
-
+        
         mapInstance.on('error', (e) => {
-          const errorMsg = `Erro do mapa: ${e.error?.message || 'Erro desconhecido'}`;
-          updateDebug(`❌ ${errorMsg}`);
-          setError(errorMsg);
+          if (!isMounted) return;
+          console.error('SimpleBaseMap: Erro no mapa:', e);
+          setError(`Erro ao carregar o mapa: ${e.error?.message || 'Erro desconhecido'}`);
           setIsLoading(false);
         });
-
-        mapInstance.on('styledata', () => {
-          updateDebug('Estilo do mapa carregado');
-        });
-
-        mapInstance.on('sourcedata', (e) => {
-          if (e.isSourceLoaded) {
-            updateDebug(`Fonte carregada: ${e.sourceId}`);
-          }
-        });
-
-        map.current = mapInstance;
-
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Falha na inicialização';
-        updateDebug(`❌ Erro crítico: ${errorMsg}`);
-        setError(errorMsg);
+        
+        if (isMounted) {
+          map.current = mapInstance;
+        }
+        
+      } catch (err) {
+        if (!isMounted) return;
+        console.error('SimpleBaseMap: Erro na inicialização:', err);
+        setError(`Erro na inicialização do mapa: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
         setIsLoading(false);
       }
     };
-
+    
     initializeMap();
-
-    // Cleanup
+    
     return () => {
+      isMounted = false;
       if (map.current) {
+        console.log('SimpleBaseMap: Limpando instância do mapa');
         map.current.remove();
         map.current = null;
       }
     };
-  }, [center, zoom]);
+  }, []);
 
   const handleRetry = () => {
     setError(null);
-    setDebugInfo('Reiniciando mapa...');
     if (map.current) {
       map.current.remove();
       map.current = null;
     }
+    // Re-trigger initialization
+    window.location.reload();
   };
 
   return (
@@ -214,11 +171,6 @@ export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
           </div>
         </div>
       )}
-      
-      {/* Debug info (removível em produção) */}
-      <div className="absolute top-2 left-2 bg-black/70 text-white text-xs p-2 rounded max-w-xs max-h-32 overflow-y-auto font-mono z-40">
-        <div className="whitespace-pre-wrap">{debugInfo}</div>
-      </div>
     </div>
   );
 };
