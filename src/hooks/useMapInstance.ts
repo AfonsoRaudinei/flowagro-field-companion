@@ -50,6 +50,54 @@ export const useMapNavigation = () => {
 
   const flyTo = (coordinates: [number, number], zoom?: number) => {
     if (map) {
+      console.log('Flying to coordinates:', coordinates, 'at zoom:', zoom);
+      
+      // Add a temporary marker to show the location
+      const markerId = 'temp-location-marker';
+      
+      // Remove existing marker if any
+      if (map.getLayer(markerId)) {
+        map.removeLayer(markerId);
+      }
+      if (map.getSource(markerId)) {
+        map.removeSource(markerId);
+      }
+
+      // Add temporary location marker
+      map.addSource(markerId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'Point',
+            coordinates: coordinates
+          }
+        }
+      });
+
+      map.addLayer({
+        id: markerId,
+        type: 'circle',
+        source: markerId,
+        paint: {
+          'circle-radius': 10,
+          'circle-color': '#ff0000',
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff'
+        }
+      });
+
+      // Remove marker after 5 seconds
+      setTimeout(() => {
+        if (map.getLayer(markerId)) {
+          map.removeLayer(markerId);
+        }
+        if (map.getSource(markerId)) {
+          map.removeSource(markerId);
+        }
+      }, 5000);
+
       map.flyTo({
         center: coordinates,
         zoom: zoom || map.getZoom(),
@@ -88,12 +136,17 @@ export const useMapNavigation = () => {
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          resolve([position.coords.longitude, position.coords.latitude]);
+          const lng = position.coords.longitude;
+          const lat = position.coords.latitude;
+          console.log('Raw GPS coordinates - Lat:', lat, 'Lng:', lng);
+          console.log('Returning as [lng, lat] for Mapbox:', [lng, lat]);
+          resolve([lng, lat]);
         },
         (error) => {
+          console.error('Geolocation error:', error);
           reject(error);
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
       );
     });
   };
@@ -101,9 +154,11 @@ export const useMapNavigation = () => {
   const flyToCurrentLocation = async (zoom: number = 15) => {
     try {
       const coordinates = await getCurrentLocation();
+      console.log('Location coordinates (lng, lat):', coordinates);
       flyTo(coordinates, zoom);
     } catch (error) {
       console.error('Failed to get current location:', error);
+      throw error;
     }
   };
 
