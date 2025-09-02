@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export type DrawingTool = 'select' | 'polygon' | 'rectangle' | 'circle' | 'freehand';
 
-interface DrawnShape {
+export interface DrawnShape {
   id: string;
   type: DrawingTool;
   coordinates: number[][];
@@ -31,6 +31,8 @@ interface UseMapDrawingReturn {
   analyzeShape: (shape: DrawnShape) => Promise<{ ndvi: number; biomass: string; recommendation: string }>;
   exportShapes: () => void;
   clearAllShapes: () => void;
+  saveShape: (name: string) => Promise<void>;
+  loadPolygons: () => Promise<void>;
 }
 
 export const useMapDrawing = (): UseMapDrawingReturn => {
@@ -268,6 +270,82 @@ export const useMapDrawing = (): UseMapDrawingReturn => {
     linkElement.click();
   }, [drawnShapes]);
 
+  // Save shape with custom name
+  const saveShape = useCallback(async (name: string) => {
+    if (!currentShape) return;
+
+    try {
+      const polygon = AgroMonitoringService.coordinatesToPolygon(currentShape.coordinates, name);
+      const result = await AgroMonitoringService.createPolygon(polygon);
+      
+      if (result.success && result.data?.id) {
+        // Update shape with AgroMonitoring ID and new name
+        setDrawnShapes(prev => prev.map(shape => 
+          shape.id === currentShape.id 
+            ? { ...shape, agroPolygonId: result.data.id, name, isAnalyzing: false }
+            : shape
+        ));
+        
+        setCurrentShape(null);
+        
+        toast({
+          title: "Área salva!",
+          description: `"${name}" salva no AgroMonitoring com sucesso.`,
+        });
+        
+        console.log('Polygon saved to AgroMonitoring:', result.data);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Failed to save polygon to AgroMonitoring:', error);
+      
+      toast({
+        title: "Erro ao salvar",
+        description: `Não foi possível salvar "${name}": ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+        variant: "destructive",
+      });
+    }
+  }, [currentShape, toast]);
+
+  // Load polygons from AgroMonitoring
+  const loadPolygons = useCallback(async () => {
+    try {
+      const result = await AgroMonitoringService.listPolygons();
+      
+      if (result.success && result.polygons) {
+        const loadedShapes: DrawnShape[] = result.polygons.map((polygon: any) => ({
+          id: `agro-${polygon.id}`,
+          type: 'polygon' as DrawingTool,
+          coordinates: polygon.geo_json.geometry.coordinates[0],
+          area: AgroMonitoringService.calculateArea(polygon.geo_json.geometry.coordinates[0]),
+          createdAt: new Date(polygon.created_at || Date.now()),
+          name: polygon.name,
+          agroPolygonId: polygon.id,
+          isAnalyzing: false
+        }));
+        
+        setDrawnShapes(prev => {
+          // Merge with existing shapes, avoiding duplicates
+          const existingIds = prev.map(s => s.agroPolygonId);
+          const newShapes = loadedShapes.filter(s => !existingIds.includes(s.agroPolygonId));
+          return [...prev, ...newShapes];
+        });
+        
+        console.log(`Loaded ${loadedShapes.length} polygons from AgroMonitoring`);
+      }
+    } catch (error) {
+      console.error('Failed to load polygons from AgroMonitoring:', error);
+    }
+  }, []);
+
+  // Load polygons on mount
+  useEffect(() => {
+    if (map && isReady) {
+      loadPolygons();
+    }
+  }, [map, isReady, loadPolygons]);
+
   // Clear all shapes
   const clearAllShapes = useCallback(() => {
     setDrawnShapes([]);
@@ -367,6 +445,8 @@ export const useMapDrawing = (): UseMapDrawingReturn => {
     deleteShape,
     analyzeShape,
     exportShapes,
-    clearAllShapes
+    clearAllShapes,
+    saveShape,
+    loadPolygons
   };
 };

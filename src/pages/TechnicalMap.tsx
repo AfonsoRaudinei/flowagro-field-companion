@@ -29,12 +29,16 @@ const TechnicalMapLayout = () => {
     activeTool,
     drawnShapes,
     isDrawingMode,
+    currentShape,
     setActiveTool,
     startDrawing,
     finishDrawing,
     cancelDrawing,
     clearAllShapes,
-    exportShapes
+    exportShapes,
+    deleteShape,
+    analyzeShape,
+    saveShape
   } = useMapDrawing();
 
   // Get MapTiler token on mount
@@ -298,9 +302,24 @@ const TechnicalMapLayout = () => {
         </Button>
       </div>
 
-      {/* Drawing Tools Panel */}
-      {showDrawingPanel && <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
-          <DrawingToolsPanel activeTool={activeTool} onToolSelect={setActiveTool} onStartDrawing={startDrawing} onFinishDrawing={finishDrawing} onCancelDrawing={cancelDrawing} onClearAll={clearAllShapes} onExport={exportShapes} isDrawingMode={isDrawingMode} shapesCount={drawnShapes.length} />
+        {/* Drawing Tools Panel */}
+        {showDrawingPanel && <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+          <DrawingToolsPanel 
+            activeTool={activeTool} 
+            onToolSelect={setActiveTool} 
+            onStartDrawing={startDrawing} 
+            onFinishDrawing={finishDrawing} 
+            onCancelDrawing={cancelDrawing} 
+            onClearAll={clearAllShapes} 
+            onExport={exportShapes} 
+            isDrawingMode={isDrawingMode} 
+            shapesCount={drawnShapes.length}
+            currentShape={currentShape}
+            onSaveShape={saveShape}
+            onDeleteShape={deleteShape}
+            onAnalyzeShape={analyzeShape}
+            drawnShapes={drawnShapes}
+          />
         </div>}
 
       {/* Loading overlay para camera */}
