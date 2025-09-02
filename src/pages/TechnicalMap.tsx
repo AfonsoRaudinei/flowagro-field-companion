@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getStyleUrl, MAP_STYLES, type MapStyle } from '@/services/mapService';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Layers, PenTool, Mountain, Satellite, Route, Check, ImageIcon, ArrowLeft, Home } from "lucide-react";
+import { Camera, Layers, PenTool, Mountain, Satellite, Route, Check, ImageIcon, ArrowLeft, Home, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from '@/integrations/supabase/client';
 
@@ -516,15 +516,48 @@ const TechnicalMapLayout = () => {
         </div>
       </div>
 
-      {/* Controles de Navegação Consolidados - Top Right */}
-      <NavigationControlsHub
-        className="absolute top-20 right-4 z-20"
-        showZoomIndicator={true}
-        showCompass={true}
-        showLocationTracker={true}
-        showMiniMap={false}
-        layout="compact"
-      />
+      {/* Top Right: Zoom + GPS Controls */}
+      <div className="absolute top-20 right-4 z-20 flex flex-col gap-2">
+        <Button 
+          variant="secondary" 
+          size="icon" 
+          onClick={handleZoomIn}
+          disabled={isZooming || currentZoom >= maxZoom}
+          className={cn(
+            "w-10 h-10 rounded-full shadow-lg border-0 backdrop-blur-sm transition-all duration-200",
+            "hover:bg-[rgba(0,87,255,0.1)] active:scale-95 bg-card/95"
+          )}
+        >
+          <span className="text-lg font-semibold leading-none">+</span>
+        </Button>
+        
+        <Button 
+          variant="secondary" 
+          size="icon" 
+          onClick={handleZoomOut}
+          disabled={isZooming || currentZoom <= minZoom}
+          className={cn(
+            "w-10 h-10 rounded-full shadow-lg border-0 backdrop-blur-sm transition-all duration-200",
+            "hover:bg-[rgba(0,87,255,0.1)] active:scale-95 bg-card/95"
+          )}
+        >
+          <span className="text-lg font-semibold leading-none">−</span>
+        </Button>
+        
+        {/* GPS Location Button */}
+        <Button 
+          variant="secondary" 
+          size="icon" 
+          onClick={handleLocationClick}
+          className={cn(
+            "w-10 h-10 rounded-full shadow-lg border-0 backdrop-blur-sm transition-all duration-200",
+            "hover:bg-[rgba(0,87,255,0.1)] active:scale-95 bg-card/95"
+          )}
+          title="Centralizar na minha localização"
+        >
+          <Target className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* DrawingTools Panel */}
       {showDrawingTools && (
@@ -587,8 +620,13 @@ const TechnicalMapLayout = () => {
         </div>
       )}
 
-      {/* Rodapé com coordenadas GPS em tempo real */}
-      <LocationFooter position="bottom-center" />
+      {/* Rodapé flutuante com coordenadas GPS + Zoom */}
+      <LocationFooter 
+        className="pointer-events-none" 
+        position="bottom-center"
+        showZoomLevel={true}
+        currentZoom={currentZoom}
+      />
     </div>
   );
 };

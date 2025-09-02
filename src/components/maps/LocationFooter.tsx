@@ -7,11 +7,15 @@ import { cn } from '@/lib/utils';
 interface LocationFooterProps {
   className?: string;
   position?: 'bottom-left' | 'bottom-right' | 'bottom-center';
+  showZoomLevel?: boolean;
+  currentZoom?: number;
 }
 
 export const LocationFooter: React.FC<LocationFooterProps> = ({
   className,
-  position = 'bottom-center'
+  position = 'bottom-center',
+  showZoomLevel = false,
+  currentZoom
 }) => {
   const { 
     currentPosition, 
@@ -82,6 +86,14 @@ export const LocationFooter: React.FC<LocationFooterProps> = ({
             <div className="flex items-center gap-1.5 text-xs">
               <Navigation className="w-3 h-3 text-muted-foreground" />
               <span className="text-muted-foreground">{(speed * 3.6).toFixed(1)} km/h</span>
+            </div>
+          )}
+
+          {/* Nível de Zoom */}
+          {showZoomLevel && currentZoom && (
+            <div className="flex items-center gap-1.5 text-xs">
+              <Satellite className="w-3 h-3 text-muted-foreground" />
+              <span className="text-muted-foreground">Zoom {Math.round(currentZoom)}x</span>
             </div>
           )}
 
