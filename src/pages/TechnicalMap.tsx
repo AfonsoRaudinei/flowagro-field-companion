@@ -180,15 +180,19 @@ const TechnicalMapLayout = () => {
 
   const handleLocationClick = async () => {
     try {
-      await flyToCurrentLocation(16);
+      const coordinates = await flyToCurrentLocation(16);
+      const [lng, lat] = coordinates;
+      
       toast({
         title: "Localização encontrada",
-        description: "Mapa centrado na sua localização atual",
+        description: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`,
       });
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível obter sua localização";
+      
       toast({
-        title: "Erro de localização",
-        description: "Não foi possível obter sua localização",
+        title: "Erro de localização", 
+        description: errorMessage,
         variant: "destructive",
       });
     }
