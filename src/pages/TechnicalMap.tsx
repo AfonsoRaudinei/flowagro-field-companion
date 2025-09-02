@@ -676,7 +676,7 @@ const TechnicalMapLayout = () => {
 
         <Button variant={activeSheet === 'camera' ? "default" : "secondary"} size="sm" onClick={() => setActiveSheet(activeSheet === 'camera' ? null : 'camera')} className={cn("rounded-xl shadow-lg border-0 backdrop-blur-sm transition-all duration-200", "hover:bg-[rgba(0,87,255,0.1)] active:scale-95")} disabled={cameraActive}>
           {cameraActive ? <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent" /> : <Camera className="h-4 w-4" />}
-          <span className="ml-2 text-xs font-medium">Câmera</span>
+          
         </Button>
       </div>
 
