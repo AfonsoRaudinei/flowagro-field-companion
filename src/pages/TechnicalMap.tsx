@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MapProvider } from "@/components/maps/MapProvider";
+import { MapProvider, useMap } from "@/components/maps/MapProvider";
 import { FullscreenTransitions } from '@/components/maps/FullscreenTransitions';
 import { SimpleBaseMap } from "@/components/maps/SimpleBaseMap";
 import { DrawingToolsPanel } from "@/components/maps/DrawingToolsPanel";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Camera, Layers, Navigation, ZoomIn, ZoomOut, LocateFixed, PenTool, Mountain, Satellite, Route, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { supabase } from '@/integrations/supabase/client';
 
 // Layout simplificado e funcional
 const TechnicalMapLayout = () => {
@@ -17,9 +18,11 @@ const TechnicalMapLayout = () => {
   const [showLayersMenu, setShowLayersMenu] = useState(false);
   const [currentLayer, setCurrentLayer] = useState<'terrain' | 'hybrid'>('hybrid');
   const [roadsEnabled, setRoadsEnabled] = useState(false);
+  const [mapTilerToken, setMapTilerToken] = useState<string | null>(null);
   const layersMenuRef = useRef<HTMLDivElement>(null);
   const layersButtonRef = useRef<HTMLButtonElement>(null);
   
+  const mapContext = useMap();
   const { flyToCurrentLocation } = useMapNavigation();
   const { toast } = useToast();
   const {
@@ -33,6 +36,21 @@ const TechnicalMapLayout = () => {
     clearAllShapes,
     exportShapes
   } = useMapDrawing();
+
+  // Get MapTiler token on mount
+  useEffect(() => {
+    const getToken = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('maptiler-token');
+        if (data?.key) {
+          setMapTilerToken(data.key);
+        }
+      } catch (error) {
+        console.error('Failed to get MapTiler token:', error);
+      }
+    };
+    getToken();
+  }, []);
 
   // Close layers menu when clicking outside
   useEffect(() => {
@@ -50,17 +68,90 @@ const TechnicalMapLayout = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showLayersMenu]);
 
-  const setMapLayer = (layer: 'terrain' | 'hybrid') => {
+  const setMapLayer = async (layer: 'terrain' | 'hybrid') => {
     setCurrentLayer(layer);
     setShowLayersMenu(false);
-    console.log(`Map layer changed to: ${layer}`);
-    // TODO: Implement actual map layer switching
+    
+    // Get map instance and change style
+    if (mapContext?.map) {
+      let styleUrl = '';
+      
+      if (mapTilerToken) {
+        styleUrl = layer === 'terrain' 
+          ? `https://api.maptiler.com/maps/landscape/style.json?key=${mapTilerToken}`
+          : `https://api.maptiler.com/maps/satellite/style.json?key=${mapTilerToken}`;
+      } else {
+        // Fallback for OpenStreetMap
+        styleUrl = JSON.stringify({
+          version: 8,
+          name: layer === 'terrain' ? "OpenStreetMap Terrain" : "OpenStreetMap",
+          sources: {
+            osm: {
+              type: "raster",
+              tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+              tileSize: 256,
+              attribution: "© OpenStreetMap contributors"
+            }
+          },
+          layers: [
+            {
+              id: "osm-layer",
+              type: "raster",
+              source: "osm"
+            }
+          ]
+        });
+      }
+      
+      mapContext.map.setStyle(styleUrl);
+      console.log(`Map layer changed to: ${layer}`);
+      
+      // Reapply roads overlay if it was enabled
+      if (roadsEnabled) {
+        mapContext.map.once('styledata', () => {
+          setTimeout(() => toggleRoadsOverlay(), 100);
+        });
+      }
+    }
   };
 
   const toggleRoadsOverlay = () => {
-    setRoadsEnabled(!roadsEnabled);
-    console.log(`Roads overlay ${!roadsEnabled ? 'enabled' : 'disabled'}`);
-    // TODO: Implement actual roads overlay toggle
+    const newRoadsState = !roadsEnabled;
+    setRoadsEnabled(newRoadsState);
+    
+    // Toggle roads overlay on map
+    if (mapContext?.map) {
+      if (newRoadsState) {
+        // Add roads layer if it doesn't exist
+        if (!mapContext.map.getLayer('roads-overlay')) {
+          mapContext.map.addSource('roads-overlay', {
+            type: 'raster',
+            tiles: [
+              'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+            ],
+            tileSize: 256
+          });
+          
+          mapContext.map.addLayer({
+            id: 'roads-overlay',
+            type: 'raster',
+            source: 'roads-overlay',
+            paint: {
+              'raster-opacity': 0.5
+            }
+          });
+        } else {
+          mapContext.map.setLayoutProperty('roads-overlay', 'visibility', 'visible');
+        }
+      } else {
+        // Hide roads layer
+        if (mapContext.map.getLayer('roads-overlay')) {
+          mapContext.map.setLayoutProperty('roads-overlay', 'visibility', 'none');
+        }
+      }
+      
+      console.log(`Roads overlay ${newRoadsState ? 'enabled' : 'disabled'}`);
+    }
   };
   
   const handleCameraCapture = () => {
