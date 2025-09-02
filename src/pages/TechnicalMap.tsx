@@ -5,9 +5,11 @@ import { SimpleBaseMap } from "@/components/maps/SimpleBaseMap";
 import { DrawingToolsPanel } from "@/components/maps/DrawingToolsPanel";
 import { MapFloatingActions } from "@/components/maps/MapFloatingActions";
 import { NavigationControlsHub } from "@/components/maps/NavigationControlsHub";
+import { LocationFooter } from "@/components/maps/LocationFooter";
 import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { useMapNavigation } from '@/hooks/useMapInstance';
 import { useZoomControl } from '@/hooks/useZoomControl';
+import { useUserLocation } from '@/hooks/useUserLocation';
 import { useToast } from "@/hooks/use-toast";
 import { getStyleUrl, MAP_STYLES, type MapStyle } from '@/services/mapService';
 import { Button } from "@/components/ui/button";
@@ -34,6 +36,7 @@ const TechnicalMapLayout = () => {
   const mapContext = useMap();
   const { flyToCurrentLocation } = useMapNavigation();
   const { zoomIn, zoomOut, currentZoom, maxZoom, minZoom, zoomProgress, isZooming } = useZoomControl();
+  const { getCurrentLocation, currentPosition } = useUserLocation(); // Hook de localização GPS
   const { toast } = useToast();
   const {
     activeTool,
@@ -220,18 +223,28 @@ const TechnicalMapLayout = () => {
 
   const handleLocationClick = async () => {
     try {
-      const coordinates = await flyToCurrentLocation(16);
-      const [lng, lat] = coordinates;
-      
-      toast({
-        title: "Localização encontrada",
-        description: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`,
-      });
+      // Primeiro tenta obter localização atual
+      const location = await getCurrentLocation();
+      if (location) {
+        // Voa para a localização com zoom apropriado
+        if (mapContext?.map) {
+          mapContext.map.flyTo({
+            center: [location.longitude, location.latitude],
+            zoom: Math.max(mapContext.map.getZoom(), 16),
+            duration: 1500
+          });
+        }
+        
+        toast({
+          title: "📍 Localização GPS encontrada",
+          description: `Lat: ${location.latitude.toFixed(6)}, Lng: ${location.longitude.toFixed(6)}\nPrecisão: ±${location.accuracy?.toFixed(0)}m`,
+        });
+      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Não foi possível obter sua localização";
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível obter sua localização GPS";
       
       toast({
-        title: "Erro de localização", 
+        title: "❌ Erro de localização GPS", 
         description: errorMessage,
         variant: "destructive",
       });
@@ -573,6 +586,9 @@ const TechnicalMapLayout = () => {
           </div>
         </div>
       )}
+
+      {/* Rodapé com coordenadas GPS em tempo real */}
+      <LocationFooter position="bottom-center" />
     </div>
   );
 };

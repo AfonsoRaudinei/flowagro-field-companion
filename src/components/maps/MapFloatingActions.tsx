@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FloatingActionButtons } from './FloatingActionButtons';
+import { LocationTracker } from './LocationTracker';
 import { FloatingAction } from '@/hooks/useFloatingActions';
 import { 
   Layers, 
@@ -57,6 +58,14 @@ export const MapFloatingActions: React.FC<MapFloatingActionsProps> = ({
       primary: true
     },
     {
+      id: 'location',
+      icon: Target,
+      label: 'Localização GPS',
+      action: () => handleSheetOpen('location'),
+      shortcut: 'G',
+      primary: true
+    },
+    {
       id: 'ndvi',
       icon: Leaf,
       label: 'Análise NDVI',
@@ -77,7 +86,7 @@ export const MapFloatingActions: React.FC<MapFloatingActionsProps> = ({
       icon: Navigation,
       label: 'Navegação Avançada',
       action: () => handleSheetOpen('navigation'),
-      shortcut: 'G',
+      shortcut: 'R',
       contextual: true
     },
     {
@@ -173,6 +182,22 @@ export const MapFloatingActions: React.FC<MapFloatingActionsProps> = ({
                 </PremiumButton>
               </CardContent>
             </Card>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Sheet para Localização GPS */}
+      <Sheet open={activeSheet === 'location'} onOpenChange={(open) => !open && handleSheetClose()}>
+        <SheetContent side="bottom" className="h-[70vh]">
+          <SheetHeader>
+            <SheetTitle className="flex items-center space-x-2">
+              <Target className="w-5 h-5" />
+              <span>Localização GPS</span>
+            </SheetTitle>
+          </SheetHeader>
+          
+          <div className="mt-6 overflow-y-auto h-[calc(70vh-8rem)]">
+            <LocationTracker />
           </div>
         </SheetContent>
       </Sheet>
