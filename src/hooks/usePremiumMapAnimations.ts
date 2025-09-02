@@ -29,6 +29,13 @@ export function usePremiumMapAnimations() {
   const orientationInfo = useOrientationDetector();
   const { premiumPress, buttonPress, success } = useHapticFeedback();
   
+  // Defensive check for orientation info
+  const safeOrientationInfo = orientationInfo || {
+    orientation: 'portrait' as const,
+    angle: 0,
+    isSupported: false
+  };
+  
   const [animationState, setAnimationState] = useState<AnimationState>({
     isAnimating: false,
     currentAnimation: null,
@@ -78,11 +85,11 @@ export function usePremiumMapAnimations() {
 
   // Orientation-aware animations
   const getOrientationAnimation = useCallback(() => {
-    if (orientation === 'landscape') {
+    if (safeOrientationInfo.orientation === 'landscape') {
       return 'slide-in-right';
     }
     return 'slide-up';
-  }, [orientation]);
+  }, [safeOrientationInfo.orientation]);
 
   // Control visibility animations based on map state
   const animateControlsVisibility = useCallback((visible: boolean) => {
@@ -140,7 +147,7 @@ export function usePremiumMapAnimations() {
     }
     
     // Orientation-based classes
-    if (orientation === 'landscape') {
+    if (safeOrientationInfo.orientation === 'landscape') {
       classes.push('landscape-optimized');
     } else {
       classes.push('portrait-optimized');
@@ -152,7 +159,7 @@ export function usePremiumMapAnimations() {
     }
     
     return classes.join(' ');
-  }, [isTransitioning, fullscreenState, orientation, animationState.isAnimating]);
+  }, [isTransitioning, fullscreenState, safeOrientationInfo.orientation, animationState.isAnimating]);
 
   // Control positioning based on orientation and fullscreen state
   const getControlPosition = useCallback((controlType: 'primary' | 'secondary' | 'floating') => {
@@ -162,7 +169,7 @@ export function usePremiumMapAnimations() {
       floating: 'bottom-4 right-4'
     };
     
-    if (isFullscreen && orientation === 'landscape') {
+    if (isFullscreen && safeOrientationInfo.orientation === 'landscape') {
       return {
         primary: 'top-6 left-6',
         secondary: 'top-6 right-6',
@@ -171,7 +178,7 @@ export function usePremiumMapAnimations() {
     }
     
     return base;
-  }, [isFullscreen, orientation]);
+  }, [isFullscreen, safeOrientationInfo.orientation]);
 
   // Z-index system for layered controls
   const getZIndex = useCallback((layer: 'map' | 'controls' | 'overlay' | 'modal' | 'tooltip') => {
@@ -231,7 +238,7 @@ export function usePremiumMapAnimations() {
     isFullscreen,
     fullscreenState,
     isTransitioning,
-    orientation: orientationInfo.orientation,
+    orientation: safeOrientationInfo.orientation,
     showControls,
     
     // Actions
@@ -248,6 +255,6 @@ export function usePremiumMapAnimations() {
     
     // Direct access to map state for advanced usage
     map,
-    orientationInfo
+    orientationInfo: safeOrientationInfo
   };
 }
