@@ -6,29 +6,21 @@ export interface MapTilerTokenResponse {
 }
 
 /**
- * Fetches MapTiler API key from the edge function with retry logic
+ * Fetches MapTiler API key using Supabase client
  */
 export const getMapTilerToken = async (retries = 3): Promise<string | null> => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`Attempting to fetch MapTiler token (attempt ${attempt}/${retries})`);
       
-      const response = await fetch('https://pyoejhhkjlrjijiviryq.supabase.co/functions/v1/maptiler-token', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5b2VqaGhramxyamlqaXZpcnlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNTI1MDQsImV4cCI6MjA2OTcyODUwNH0.2P5wKq7b6viMa9kutLOZADsqAvSZx6X8fbLZMlooG1U`,
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5b2VqaGhramxyamlqaXZpcnlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNTI1MDQsImV4cCI6MjA2OTcyODUwNH0.2P5wKq7b6viMa9kutLOZADsqAvSZx6X8fbLZMlooG1U'
-        }
-      });
+      // Use Supabase client instead of direct fetch
+      const { data, error } = await supabase.functions.invoke('maptiler-token');
       
-      if (!response.ok) {
-        console.error(`Error fetching MapTiler token - Status: ${response.status}, Response: ${response.statusText}`);
+      if (error) {
+        console.error(`Error fetching MapTiler token:`, error);
         if (attempt === retries) return null;
         continue;
       }
-      
-      const data: MapTilerTokenResponse = await response.json();
       console.log('MapTiler token response:', { hasKey: !!data?.key, message: data?.message });
       
       if (!data?.key) {

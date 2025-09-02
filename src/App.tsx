@@ -16,6 +16,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
 const ConsultoriaComunicacao = lazy(() => import("./pages/ConsultoriaComunicacao"));
+const MapTest = lazy(() => import("./pages/MapTest"));
 const TechnicalMap = lazy(() => import("./pages/TechnicalMap"));
 const WebhookSettings = lazy(() => import("./pages/WebhookSettings"));
 const QAAuditoria = lazy(() => import("./pages/QAAuditoria"));
@@ -50,6 +51,7 @@ const AppLayout = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/phenological-stages" element={<PhenologicalStages />} />
           <Route path="/consultoria/comunicacao" element={<ConsultoriaComunicacao />} />
+          <Route path="/map-test" element={<MapTest />} />
           <Route path="/technical-map" element={<TechnicalMap />} />
           <Route path="/qa/auditoria" element={<QAAuditoria />} />
           <Route path="*" element={<NotFound />} />

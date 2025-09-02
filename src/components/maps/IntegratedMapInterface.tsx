@@ -1,5 +1,5 @@
 import React from 'react';
-import { BaseMap } from '@/components/maps/BaseMap';
+import { SimpleBaseMap } from '@/components/maps/SimpleBaseMap';
 import { PremiumMapControls } from '@/components/maps/PremiumMapControls';
 import { PremiumCameraButton } from '@/components/maps/PremiumCameraButton';
 import { NavigationControlsHub } from '@/components/maps/NavigationControlsHub';
@@ -69,12 +69,9 @@ export const IntegratedMapInterface: React.FC<IntegratedMapInterfaceProps> = ({
       )}
       style={{ zIndex: getZIndex('map') }}
     >
-      {/* Base Map */}
-      <BaseMap 
+      {/* Simple Base Map for Testing */}
+      <SimpleBaseMap 
         className="w-full h-full absolute inset-0"
-        showNavigation={!showAdvancedNavigation} // Use advanced navigation instead
-        showFullscreen={false} // Handled by PremiumMapControls
-        showGeolocate={false}  // Integrated into advanced navigation
       />
 
       {/* Performance Optimization */}
