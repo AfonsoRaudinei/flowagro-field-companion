@@ -2,6 +2,7 @@ import React from 'react';
 import { BaseMap } from '@/components/maps/BaseMap';
 import { PremiumMapControls } from '@/components/maps/PremiumMapControls';
 import { PremiumCameraButton } from '@/components/maps/PremiumCameraButton';
+import { NavigationControlsHub } from '@/components/maps/NavigationControlsHub';
 import { usePremiumMapAnimations } from '@/hooks/usePremiumMapAnimations';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +12,8 @@ interface IntegratedMapInterfaceProps {
   farmName?: string;
   onPhotoCapture?: (photoData: string, location?: { latitude: number; longitude: number }) => void;
   onMapStyleChange?: (style: string) => void;
+  showAdvancedNavigation?: boolean;
+  navigationLayout?: 'default' | 'compact' | 'mobile';
 }
 
 /**
@@ -26,7 +29,9 @@ export const IntegratedMapInterface: React.FC<IntegratedMapInterfaceProps> = ({
   farmId,
   farmName,
   onPhotoCapture,
-  onMapStyleChange
+  onMapStyleChange,
+  showAdvancedNavigation = true,
+  navigationLayout = 'default'
 }) => {
   const {
     getContextualClasses,
@@ -61,10 +66,21 @@ export const IntegratedMapInterface: React.FC<IntegratedMapInterfaceProps> = ({
       {/* Base Map */}
       <BaseMap 
         className="w-full h-full absolute inset-0"
-        showNavigation={true}
+        showNavigation={!showAdvancedNavigation} // Use advanced navigation instead
         showFullscreen={false} // Handled by PremiumMapControls
-        showGeolocate={false}  // Integrated into camera service
+        showGeolocate={false}  // Integrated into advanced navigation
       />
+
+      {/* Advanced Navigation Controls Hub */}
+      {showAdvancedNavigation && (
+        <NavigationControlsHub
+          layout={navigationLayout}
+          showZoomIndicator={true}
+          showCompass={true}
+          showLocationTracker={true}
+          showMiniMap={true}
+        />
+      )}
 
       {/* Premium Controls Layer */}
       <div 
@@ -73,8 +89,9 @@ export const IntegratedMapInterface: React.FC<IntegratedMapInterfaceProps> = ({
       >
         <div className="pointer-events-auto">
           <PremiumMapControls
+            className={showAdvancedNavigation ? "left-4" : ""}
             showStyleSelector={true}
-            showResetView={true}
+            showResetView={!showAdvancedNavigation} // Hide if advanced navigation is active
             showFullscreenToggle={true}
             vertical={true}
             onResetView={handleResetView}
