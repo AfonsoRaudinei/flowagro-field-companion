@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { MapProvider } from "@/components/maps/MapProvider";
 import { FullscreenTransitions } from '@/components/maps/FullscreenTransitions';
 import { SimpleBaseMap } from "@/components/maps/SimpleBaseMap";
@@ -6,13 +6,20 @@ import { DrawingToolsPanel } from "@/components/maps/DrawingToolsPanel";
 import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { useMapNavigation } from "@/hooks/useMapInstance";
 import { Button } from "@/components/ui/button";
-import { Camera, Layers, Navigation, ZoomIn, ZoomOut, LocateFixed, PenTool } from "lucide-react";
+import { Camera, Layers, Navigation, ZoomIn, ZoomOut, LocateFixed, PenTool, Mountain, Satellite, Route, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 // Layout simplificado e funcional
 const TechnicalMapLayout = () => {
   const [cameraActive, setCameraActive] = useState(false);
   const [showDrawingPanel, setShowDrawingPanel] = useState(false);
+  const [showLayersMenu, setShowLayersMenu] = useState(false);
+  const [currentLayer, setCurrentLayer] = useState<'terrain' | 'hybrid'>('hybrid');
+  const [roadsEnabled, setRoadsEnabled] = useState(false);
+  const layersMenuRef = useRef<HTMLDivElement>(null);
+  const layersButtonRef = useRef<HTMLButtonElement>(null);
+  
   const { flyToCurrentLocation } = useMapNavigation();
   const { toast } = useToast();
   const {
@@ -26,6 +33,35 @@ const TechnicalMapLayout = () => {
     clearAllShapes,
     exportShapes
   } = useMapDrawing();
+
+  // Close layers menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showLayersMenu && 
+          layersMenuRef.current && 
+          !layersMenuRef.current.contains(event.target as Node) &&
+          layersButtonRef.current &&
+          !layersButtonRef.current.contains(event.target as Node)) {
+        setShowLayersMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showLayersMenu]);
+
+  const setMapLayer = (layer: 'terrain' | 'hybrid') => {
+    setCurrentLayer(layer);
+    setShowLayersMenu(false);
+    console.log(`Map layer changed to: ${layer}`);
+    // TODO: Implement actual map layer switching
+  };
+
+  const toggleRoadsOverlay = () => {
+    setRoadsEnabled(!roadsEnabled);
+    console.log(`Roads overlay ${!roadsEnabled ? 'enabled' : 'disabled'}`);
+    // TODO: Implement actual roads overlay toggle
+  };
   
   const handleCameraCapture = () => {
     setCameraActive(true);
@@ -51,16 +87,98 @@ const TechnicalMapLayout = () => {
       });
     }
   };
+
+  // LayersMenu component
+  const LayersMenu = () => (
+    <div 
+      ref={layersMenuRef}
+      className="absolute top-12 left-0 bg-card/95 backdrop-blur-sm border border-border/20 rounded-xl shadow-lg py-2 min-w-[140px] z-30"
+      style={{
+        boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)'
+      }}
+    >
+      {/* Terrain Layer */}
+      <button
+        onClick={() => setMapLayer('terrain')}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200",
+          "hover:bg-[rgba(0,87,255,0.1)] active:scale-98",
+          currentLayer === 'terrain' ? "text-[rgb(0,87,255)]" : "text-foreground"
+        )}
+      >
+        <div className="relative">
+          <Mountain className="h-4 w-4" />
+          {currentLayer === 'terrain' && (
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-[rgb(0,87,255)] rounded-full" />
+          )}
+        </div>
+        <span>Terreno</span>
+      </button>
+
+      {/* Hybrid/Satellite Layer */}
+      <button
+        onClick={() => setMapLayer('hybrid')}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200",
+          "hover:bg-[rgba(0,87,255,0.1)] active:scale-98",
+          currentLayer === 'hybrid' ? "text-[rgb(0,87,255)]" : "text-foreground"
+        )}
+      >
+        <div className="relative">
+          <Satellite className="h-4 w-4" />
+          {currentLayer === 'hybrid' && (
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-[rgb(0,87,255)] rounded-full" />
+          )}
+        </div>
+        <span>Híbrido</span>
+      </button>
+
+      {/* Divider */}
+      <div className="h-px bg-border/30 mx-2 my-1" />
+
+      {/* Roads Toggle */}
+      <button
+        onClick={toggleRoadsOverlay}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200",
+          "hover:bg-[rgba(0,87,255,0.1)] active:scale-98",
+          roadsEnabled ? "text-[rgb(0,87,255)]" : "text-foreground"
+        )}
+      >
+        <div className="relative">
+          <Route className="h-4 w-4" />
+          {roadsEnabled && (
+            <Check className="absolute -top-1 -right-1 w-3 h-3 text-[rgb(0,87,255)]" />
+          )}
+        </div>
+        <span>Estradas</span>
+      </button>
+    </div>
+  );
   return <div className="min-h-screen bg-background relative">
       {/* Mapa Principal - SIMPLIFICADO */}
       <SimpleBaseMap className="w-full h-screen" />
 
       {/* Controles Simplificados - Top */}
       <div className="absolute top-4 left-4 z-10 flex gap-2">
+        <div className="relative">
+          <Button 
+            ref={layersButtonRef}
+            variant={showLayersMenu ? "default" : "secondary"} 
+            size="sm" 
+            onClick={() => setShowLayersMenu(!showLayersMenu)} 
+            className={cn(
+              "bg-background/90 backdrop-blur-sm transition-all duration-200",
+              showLayersMenu && "bg-[rgb(0,87,255)]/10 text-[rgb(0,87,255)] border-[rgb(0,87,255)]/20"
+            )}
+          >
+            <Layers className="h-4 w-4" />
+          </Button>
+          
+          {/* Layers Menu */}
+          {showLayersMenu && <LayersMenu />}
+        </div>
         
-        <Button variant="secondary" size="sm" onClick={() => console.log('Layers clicked')} className="bg-background/90 backdrop-blur-sm">
-          <Layers className="h-4 w-4" />
-        </Button>
         <Button variant={showDrawingPanel ? "default" : "secondary"} size="sm" onClick={() => setShowDrawingPanel(!showDrawingPanel)} className="bg-background/90 backdrop-blur-sm">
           <PenTool className="h-4 w-4" />
         </Button>
