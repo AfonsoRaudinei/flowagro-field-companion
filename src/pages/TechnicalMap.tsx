@@ -633,8 +633,14 @@ const TechnicalMapLayout = () => {
       <div className="fixed inset-0 pointer-events-none" style={{
       minHeight: '100dvh' // Dynamic viewport height for mobile
     }} />
-      {/* Mapa Principal - Posição fixa, nunca se desloca */}
-      <div className="fixed inset-0 z-10">
+      
+      {/* Map Container - Positioned relative for sheet anchoring */}
+      <div id="map-viewport" className="fixed inset-0 z-10 relative" style={{ 
+        width: '100vw', 
+        height: '100vh',
+        maxWidth: '100vw',
+        overflow: 'hidden' 
+      }}>
         <SimpleBaseMap className="w-full h-full" showNativeControls={false} />
       </div>
 
@@ -723,24 +729,36 @@ const TechnicalMapLayout = () => {
         <LocationFooter className="pointer-events-none" position="bottom-center" showZoomLevel={true} currentZoom={currentZoom} />
       </div>
 
-      {/* Bottom Sheet Unificado */}
-      {activeSheet && <ResponsiveBottomSheet title={getSheetTitle()} status={activeSheet === 'layers' && isLayerChanging ? 'Alterando...' : 'Ativo'} isActive={true} snapPoints={[20, 50, 80]} initialSnapPoint={1} persistentMiniMode={false} backdropBlur={true} onSnapPointChange={snapPoint => {
-      if (snapPoint === 0) {
-        setTimeout(() => setActiveSheet(null), 300);
-      }
-    }} onClose={() => setActiveSheet(null)} showFooter={activeSheet === 'drawing'} footerActions={activeSheet === 'drawing' ? <>
-                <Button variant="outline" size="sm" onClick={() => setActiveSheet(null)}>
-                  Fechar
-                </Button>
-                <Button size="sm" onClick={() => {
-        // Ação primária específica do contexto
-        console.log('Primary action for drawing');
-      }}>
-                  Salvar
-                </Button>
-              </> : undefined}>
-          {renderSheetContent()}
-        </ResponsiveBottomSheet>}
+      {/* Bottom Sheet Unificado - Contained within map viewport */}
+      {activeSheet && <ResponsiveBottomSheet 
+        title={getSheetTitle()} 
+        status={activeSheet === 'layers' && isLayerChanging ? 'Alterando...' : 'Ativo'} 
+        isActive={true} 
+        snapPoints={[20, 50, 80]} 
+        initialSnapPoint={1} 
+        persistentMiniMode={false} 
+        backdropBlur={true}
+        containerSelector="#map-viewport"
+        onSnapPointChange={snapPoint => {
+          if (snapPoint === 0) {
+            setTimeout(() => setActiveSheet(null), 300);
+          }
+        }} 
+        onClose={() => setActiveSheet(null)} 
+        showFooter={activeSheet === 'drawing'} 
+        footerActions={activeSheet === 'drawing' ? <>
+          <Button variant="outline" size="sm" onClick={() => setActiveSheet(null)}>
+            Fechar
+          </Button>
+          <Button size="sm" onClick={() => {
+            // Ação primária específica do contexto
+            console.log('Primary action for drawing');
+          }}>
+            Salvar
+          </Button>
+        </> : undefined}>
+        {renderSheetContent()}
+      </ResponsiveBottomSheet>}
     </div>;
 };
 const TechnicalMap = () => {

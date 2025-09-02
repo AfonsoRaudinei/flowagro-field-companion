@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useBottomSheet } from '../../hooks/useBottomSheet';
 import { ChevronUp, ChevronDown, Grip, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -14,6 +15,7 @@ export interface ResponsiveBottomSheetProps {
   isActive?: boolean;
   persistentMiniMode?: boolean;
   backdropBlur?: boolean;
+  containerSelector?: string;
   onSnapPointChange?: (snapPoint: number) => void;
   onClose?: () => void;
   showFooter?: boolean;
@@ -35,6 +37,7 @@ export function ResponsiveBottomSheet({
   isActive,
   persistentMiniMode = false,
   backdropBlur = true,
+  containerSelector = '#map-viewport',
   onSnapPointChange,
   onClose,
   showFooter = false,
@@ -79,21 +82,42 @@ export function ResponsiveBottomSheet({
     }
   }, [persistentMiniMode, state.isOpen, open, initialSnapPoint]);
 
-  // Lock body scroll quando aberto
+  // Lock body scroll quando aberto - container containment
   useEffect(() => {
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+
     if (state.isOpen && !isMinimized) {
+      // Disable body overscroll to keep sheets contained
       document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'none';
+      document.body.style.touchAction = 'none';
       document.body.style.paddingRight = 'var(--scrollbar-width, 0px)';
+      
+      // Prevent container from scrolling
+      (container as HTMLElement).style.overflow = 'hidden';
+      (container as HTMLElement).style.overscrollBehavior = 'none';
     } else {
       document.body.style.overflow = '';
+      document.body.style.overscrollBehavior = '';
+      document.body.style.touchAction = '';
       document.body.style.paddingRight = '';
+      
+      (container as HTMLElement).style.overflow = '';
+      (container as HTMLElement).style.overscrollBehavior = '';
     }
 
     return () => {
       document.body.style.overflow = '';
+      document.body.style.overscrollBehavior = '';
+      document.body.style.touchAction = '';
       document.body.style.paddingRight = '';
+      if (container) {
+        (container as HTMLElement).style.overflow = '';
+        (container as HTMLElement).style.overscrollBehavior = '';
+      }
     };
-  }, [state.isOpen, isMinimized]);
+  }, [state.isOpen, isMinimized, containerSelector]);
 
   // Keyboard handling (Esc para fechar)
   useEffect(() => {
@@ -127,42 +151,63 @@ export function ResponsiveBottomSheet({
   };
 
   const getMaxHeight = () => {
+    const container = document.querySelector(containerSelector);
+    if (!container) {
+      return '80vh'; // Fallback
+    }
+
+    const containerHeight = container.clientHeight;
     const isMobile = window.innerWidth <= 480;
-    const isSmallMobile = window.innerWidth <= 390; // Target small screens
+    const isSmallMobile = window.innerWidth <= 390;
     
+    // Use container height instead of viewport height
     if (isSmallMobile) {
-      return 'calc(90vh - env(safe-area-inset-bottom))'; // Very small screens
+      return `${Math.min(containerHeight * 0.8, 320)}px`; // 80% container or 320px max for small screens
     }
     
-    return isMobile ? 'calc(85vh - env(safe-area-inset-bottom))' : '70vh';
+    return isMobile 
+      ? `${Math.min(containerHeight * 0.8, 480)}px` // 80% container or 480px max for mobile
+      : `${Math.min(containerHeight * 0.7, 600)}px`; // 70% container or 600px max for desktop
   };
 
-  return (
+  // Get container for portal mounting
+  const getPortalContainer = () => {
+    return document.querySelector(containerSelector) || document.body;
+  };
+
+  // Render sheet content within the specified container
+  const sheetContent = (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - positioned within container */}
       {state.isOpen && backdropBlur && (
         <div
           ref={backdropRef}
           className={cn(
-            'fixed inset-0 transition-opacity duration-300 ease-out',
+            'absolute inset-0 transition-opacity duration-300 ease-out',
             'bg-black/20 backdrop-blur-sm',
-            'z-40' // Acima do mapa (z-30), abaixo de toasts (z-50)
+            'z-40'
           )}
           style={{
             opacity: backdropOpacity,
+            // Ensure backdrop is contained within the map container
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
           }}
           onClick={() => !isMinimized && handleClose()}
         />
       )}
 
-      {/* Bottom Sheet */}
+      {/* Bottom Sheet - positioned within container */}
       <div
         ref={sheetRef}
         className={cn(
-          'fixed bottom-0 left-0 right-0',
+          'absolute bottom-0 left-0 right-0',
           'bg-background border-t border-border rounded-t-2xl shadow-2xl',
           'transition-transform duration-300 ease-out',
-          'z-50', // Acima do backdrop, abaixo de toasts
+          'z-50',
           state.isDragging && 'transition-none',
           className
         )}
@@ -171,9 +216,10 @@ export function ResponsiveBottomSheet({
           maxHeight: getMaxHeight(),
           transform: state.isOpen ? 'translateY(0)' : `translateY(calc(100% - ${getSnapPointHeight(0)}px))`,
           paddingBottom: 'env(safe-area-inset-bottom)', // iOS safe area
-          // Ensure proper containment on small screens
-          minWidth: '100vw',
-          maxWidth: '100vw',
+          // Container-based sizing instead of viewport
+          width: '100%',
+          maxWidth: '100%',
+          minWidth: '100%',
         }}
       >
         {/* Drag Handle e Header */}
@@ -293,7 +339,12 @@ export function ResponsiveBottomSheet({
 
           {/* Conteúdo scrollável - visível apenas quando não minimizado */}
           {!isMinimized && (
-            <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 max-h-[calc(80vh-120px)]">
+            <div 
+              className="flex-1 overflow-y-auto overscroll-contain px-4 py-4"
+              style={{
+                maxHeight: `calc(${getMaxHeight()} - 120px)`, // Dynamic based on container
+              }}
+            >
               <div className="space-y-4 pb-safe min-h-0">
                 {children}
               </div>
@@ -324,4 +375,7 @@ export function ResponsiveBottomSheet({
       </div>
     </>
   );
+
+  // Use createPortal to render inside the map container
+  return createPortal(sheetContent, getPortalContainer());
 }
