@@ -3,20 +3,23 @@ import { MapProvider, useMap } from "@/components/maps/MapProvider";
 import { FullscreenTransitions } from '@/components/maps/FullscreenTransitions';
 import { SimpleBaseMap } from "@/components/maps/SimpleBaseMap";
 import { DrawingToolsPanel } from "@/components/maps/DrawingToolsPanel";
+import { MapFloatingActions } from "@/components/maps/MapFloatingActions";
+import { NavigationControlsHub } from "@/components/maps/NavigationControlsHub";
 import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { useMapNavigation } from '@/hooks/useMapInstance';
 import { useZoomControl } from '@/hooks/useZoomControl';
 import { useToast } from "@/hooks/use-toast";
 import { getStyleUrl, MAP_STYLES, type MapStyle } from '@/services/mapService';
 import { Button } from "@/components/ui/button";
-import { Camera, Layers, Navigation, ZoomIn, ZoomOut, LocateFixed, PenTool, Mountain, Satellite, Route, Check, ImageIcon, Plus, Minus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Camera, Layers, PenTool, Mountain, Satellite, Route, Check, ImageIcon, ArrowLeft, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from '@/integrations/supabase/client';
 
-// Layout simplificado e funcional
+// Layout principal do mapa técnico com todas as funcionalidades integradas
 const TechnicalMapLayout = () => {
   const [cameraActive, setCameraActive] = useState(false);
-  const [showDrawingPanel, setShowDrawingPanel] = useState(false);
+  const [showDrawingTools, setShowDrawingTools] = useState(false);
   const [showLayersMenu, setShowLayersMenu] = useState(false);
   const [showCameraMenu, setShowCameraMenu] = useState(false);
   const [currentLayer, setCurrentLayer] = useState<MapStyle>('hybrid');
@@ -30,7 +33,7 @@ const TechnicalMapLayout = () => {
   
   const mapContext = useMap();
   const { flyToCurrentLocation } = useMapNavigation();
-  const { zoomIn, zoomOut, currentZoom, isZooming } = useZoomControl();
+  const { zoomIn, zoomOut, currentZoom, maxZoom, minZoom, zoomProgress, isZooming } = useZoomControl();
   const { toast } = useToast();
   const {
     activeTool,
@@ -275,6 +278,33 @@ const TechnicalMapLayout = () => {
     }
   };
 
+  // Camera Menu component
+  const CameraMenu = () => (
+    <div 
+      ref={cameraMenuRef}
+      className="absolute bottom-full right-0 mb-2 bg-card/95 backdrop-blur-sm border border-border/20 rounded-xl shadow-lg py-2 min-w-[180px] z-50"
+      style={{
+        boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)'
+      }}
+    >
+      <button
+        onClick={handleOpenCamera}
+        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 hover:bg-[rgba(0,87,255,0.1)] active:scale-98 text-foreground"
+      >
+        <Camera className="h-4 w-4" />
+        <span>Abrir Câmera</span>
+      </button>
+      
+      <button
+        onClick={handleOpenLibrary}
+        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 hover:bg-[rgba(0,87,255,0.1)] active:scale-98 text-foreground"
+      >
+        <ImageIcon className="h-4 w-4" />
+        <span>Escolher da Biblioteca</span>
+      </button>
+    </div>
+  );
+
   // LayersMenu component with enhanced options
   const LayersMenu = () => (
     <div 
@@ -332,7 +362,8 @@ const TechnicalMapLayout = () => {
           currentLayer === 'hybrid' ? "text-[rgb(0,87,255)]" : "text-foreground"
         )}
       >
-        <div className="relative">
+        <div 
+          className="relative">
           <Layers className="h-4 w-4" />
           {currentLayer === 'hybrid' && (
             <div className="absolute -top-1 -right-1 w-2 h-2 bg-[rgb(0,87,255)] rounded-full" />
@@ -375,12 +406,40 @@ const TechnicalMapLayout = () => {
       )}
     </div>
   );
-  return <div className="min-h-screen bg-background relative">
-      {/* Mapa Principal - SIMPLIFICADO */}
+
+  return (
+    <div className="min-h-screen bg-background relative">
+      {/* Mapa Principal */}
       <SimpleBaseMap className="w-full h-screen" showNativeControls={false} />
 
-      {/* Controles Simplificados - Top */}
-      <div className="absolute top-4 left-4 z-10 flex gap-2">
+      {/* Header com Navegação - Estilo iOS */}
+      <div className="absolute top-0 left-0 right-0 z-30">
+        <div className="bg-background/80 backdrop-blur-lg border-b border-border/20">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.history.back()}
+                className="rounded-full hover:bg-primary/10"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex items-center gap-2">
+                <Home className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Mapa Técnico</span>
+              </div>
+            </div>
+            
+            <Badge variant="outline" className="text-xs">
+              FlowAgro v2.0
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      {/* Controles Principais - Top Left */}
+      <div className="absolute top-20 left-4 z-20 flex gap-2">
         <div className="relative">
           <Button 
             ref={layersButtonRef}
@@ -388,140 +447,144 @@ const TechnicalMapLayout = () => {
             size="sm" 
             onClick={() => setShowLayersMenu(!showLayersMenu)} 
             className={cn(
-              "bg-background/90 backdrop-blur-sm transition-all duration-200",
-              showLayersMenu && "bg-[rgb(0,87,255)]/10 text-[rgb(0,87,255)] border-[rgb(0,87,255)]/20"
+              "rounded-xl shadow-lg border-0 backdrop-blur-sm transition-all duration-200",
+              "hover:bg-[rgba(0,87,255,0.1)] active:scale-95",
+              showLayersMenu ? "bg-[rgb(0,87,255)] text-white" : "bg-card/95"
             )}
+            disabled={isLayerChanging}
           >
-            <Layers className="h-4 w-4" />
+            {isLayerChanging ? (
+              <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent" />
+            ) : (
+              <Layers className="h-4 w-4" />
+            )}
+            <span className="ml-2 text-xs font-medium">Camadas</span>
           </Button>
           
-          {/* Layers Menu */}
           {showLayersMenu && <LayersMenu />}
         </div>
-        
-        <Button variant={showDrawingPanel ? "default" : "secondary"} size="sm" onClick={() => setShowDrawingPanel(!showDrawingPanel)} className="bg-background/90 backdrop-blur-sm">
+
+        <Button 
+          variant="secondary" 
+          size="sm" 
+          onClick={() => setShowDrawingTools(!showDrawingTools)}
+          className={cn(
+            "rounded-xl shadow-lg border-0 backdrop-blur-sm transition-all duration-200",
+            "hover:bg-[rgba(0,87,255,0.1)] active:scale-95",
+            showDrawingTools ? "bg-[rgb(0,87,255)] text-white" : "bg-card/95"
+          )}
+        >
           <PenTool className="h-4 w-4" />
+          <span className="ml-2 text-xs font-medium">Desenhar</span>
         </Button>
-      </div>
 
-      {/* Enhanced Zoom Controls - Right */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-        <Button 
-          variant="secondary" 
-          size="sm" 
-          onClick={handleZoomIn}
-          disabled={isZooming}
-          className="bg-background/90 backdrop-blur-sm transition-all duration-200 hover:scale-105 disabled:opacity-50"
-        >
-          <ZoomIn className="h-4 w-4" />
-        </Button>
-        
-        {/* Zoom Level Indicator */}
-        <div className="bg-background/90 backdrop-blur-sm border border-border/20 rounded-md px-2 py-1 min-w-[2.5rem] text-center">
-          <span className="text-xs font-medium">{Math.round(currentZoom)}</span>
-        </div>
-        
-        <Button 
-          variant="secondary" 
-          size="sm" 
-          onClick={handleZoomOut}
-          disabled={isZooming}
-          className="bg-background/90 backdrop-blur-sm transition-all duration-200 hover:scale-105 disabled:opacity-50"
-        >
-          <ZoomOut className="h-4 w-4" />
-        </Button>
-        
-        <Button 
-          variant="secondary" 
-          size="sm" 
-          onClick={handleLocationClick} 
-          className="bg-background/90 backdrop-blur-sm transition-all duration-200 hover:scale-105"
-        >
-          <LocateFixed className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Floating Actions - Bottom Right */}
-      <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
         <div className="relative">
           <Button 
             ref={cameraButtonRef}
-            onClick={() => setShowCameraMenu(!showCameraMenu)} 
-            size="lg" 
-            className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90"
+            variant="secondary" 
+            size="sm" 
+            onClick={() => setShowCameraMenu(!showCameraMenu)}
+            className={cn(
+              "rounded-xl shadow-lg border-0 backdrop-blur-sm transition-all duration-200",
+              "hover:bg-[rgba(0,87,255,0.1)] active:scale-95",
+              showCameraMenu ? "bg-[rgb(0,87,255)] text-white" : "bg-card/95"
+            )}
+            disabled={cameraActive}
           >
-            <Camera className="h-6 w-6" />
+            {cameraActive ? (
+              <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent" />
+            ) : (
+              <Camera className="h-4 w-4" />
+            )}
+            <span className="ml-2 text-xs font-medium">Câmera</span>
           </Button>
           
-          {/* Camera Menu */}
-          {showCameraMenu && (
-            <div 
-              ref={cameraMenuRef}
-              className="absolute bottom-full right-0 mb-2 bg-card/95 backdrop-blur-sm border border-border/20 rounded-xl shadow-lg py-2 min-w-[180px] z-50"
-              style={{
-                boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)'
-              }}
-            >
-              <button
-                onClick={handleOpenCamera}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 hover:bg-[rgba(0,87,255,0.1)] active:scale-98 text-foreground"
-              >
-                <Camera className="h-4 w-4" />
-                <span>Abrir Câmera</span>
-              </button>
-              
-              <button
-                onClick={handleOpenLibrary}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 hover:bg-[rgba(0,87,255,0.1)] active:scale-98 text-foreground"
-              >
-                <ImageIcon className="h-4 w-4" />
-                <span>Escolher da Biblioteca</span>
-              </button>
-            </div>
-          )}
+          {showCameraMenu && <CameraMenu />}
         </div>
-        
-        <Button variant="secondary" size="sm" onClick={() => console.log('Navigation')} className="bg-background/90 backdrop-blur-sm">
-          <Navigation className="h-4 w-4" />
-        </Button>
       </div>
 
-        {/* Drawing Tools Panel */}
-        {showDrawingPanel && <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
-          <DrawingToolsPanel 
-            activeTool={activeTool} 
-            onToolSelect={setActiveTool} 
-            onStartDrawing={startDrawing} 
-            onFinishDrawing={finishDrawing} 
-            onCancelDrawing={cancelDrawing} 
-            onClearAll={clearAllShapes} 
-            onExport={exportShapes} 
-            isDrawingMode={isDrawingMode} 
-            shapesCount={drawnShapes.length}
-            currentShape={currentShape}
-            onSaveShape={saveShape}
-            onDeleteShape={deleteShape}
-            onAnalyzeShape={analyzeShape}
-            drawnShapes={drawnShapes}
-          />
-        </div>}
+      {/* Controles de Navegação Consolidados - Top Right */}
+      <NavigationControlsHub
+        className="absolute top-20 right-4 z-20"
+        showZoomIndicator={true}
+        showCompass={true}
+        showLocationTracker={true}
+        showMiniMap={false}
+        layout="compact"
+      />
+
+      {/* DrawingTools Panel */}
+      {showDrawingTools && (
+        <div className="absolute bottom-4 left-4 right-4 z-10">
+          <div className="mx-auto max-w-2xl">
+            <DrawingToolsPanel
+              activeTool={activeTool}
+              onToolSelect={setActiveTool}
+              onStartDrawing={startDrawing}
+              onFinishDrawing={finishDrawing}
+              onCancelDrawing={cancelDrawing}
+              onClearAll={clearAllShapes}
+              onExport={exportShapes}
+              isDrawingMode={isDrawingMode}
+              shapesCount={drawnShapes.length}
+              currentShape={currentShape}
+              onSaveShape={saveShape}
+              onDeleteShape={deleteShape}
+              onAnalyzeShape={analyzeShape}
+              drawnShapes={drawnShapes}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Floating Action Buttons - Sistema Premium */}
+      <MapFloatingActions
+        onCameraCapture={handleCameraCapture}
+        onMapStyleChange={setMapLayer}
+        onMeasurementStart={() => setShowDrawingTools(true)}
+        className="z-20"
+      />
+
+      {/* Status de Alteração de Camada */}
+      {isLayerChanging && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+          <div className="bg-card/95 backdrop-blur-sm rounded-xl p-6 shadow-xl border animate-scale-in">
+            <div className="flex items-center gap-3 text-sm font-medium">
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent" />
+              <div>
+                <div>Alterando camada para <strong>{currentLayer}</strong></div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Processando dados MapTiler...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Loading overlay para camera */}
-      {cameraActive && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+      {cameraActive && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="bg-background rounded-xl p-6 space-y-4 shadow-xl">
             <div className="flex items-center space-x-3">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               <span className="font-medium">Capturando foto...</span>
             </div>
           </div>
-        </div>}
-    </div>;
+        </div>
+      )}
+    </div>
+  );
 };
+
 const TechnicalMap = () => {
-  return <MapProvider>
+  return (
+    <MapProvider>
       <FullscreenTransitions>
         <TechnicalMapLayout />
       </FullscreenTransitions>
-    </MapProvider>;
+    </MapProvider>
+  );
 };
+
 export default TechnicalMap;
