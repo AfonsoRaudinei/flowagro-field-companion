@@ -59,13 +59,14 @@ export const MAP_PROVIDERS = {
 } as const;
 
 /**
- * Map style configurations using MapTiler styles
+ * Enhanced map style configurations using MapTiler styles
  */
 export const MAP_STYLES = {
   streets: 'basic-v2',
   satellite: 'satellite',
   terrain: 'outdoor-v2',
-  hybrid: 'hybrid'
+  hybrid: 'hybrid',
+  topo: 'topo-v2'
 } as const;
 
 export type MapStyle = keyof typeof MAP_STYLES;

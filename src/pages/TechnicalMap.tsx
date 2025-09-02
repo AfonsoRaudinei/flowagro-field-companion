@@ -4,10 +4,12 @@ import { FullscreenTransitions } from '@/components/maps/FullscreenTransitions';
 import { SimpleBaseMap } from "@/components/maps/SimpleBaseMap";
 import { DrawingToolsPanel } from "@/components/maps/DrawingToolsPanel";
 import { useMapDrawing } from "@/hooks/useMapDrawing";
-import { useMapNavigation } from "@/hooks/useMapInstance";
-import { Button } from "@/components/ui/button";
-import { Camera, Layers, Navigation, ZoomIn, ZoomOut, LocateFixed, PenTool, Mountain, Satellite, Route, Check, ImageIcon } from "lucide-react";
+import { useMapNavigation } from '@/hooks/useMapInstance';
+import { useZoomControl } from '@/hooks/useZoomControl';
 import { useToast } from "@/hooks/use-toast";
+import { getStyleUrl, MAP_STYLES, type MapStyle } from '@/services/mapService';
+import { Button } from "@/components/ui/button";
+import { Camera, Layers, Navigation, ZoomIn, ZoomOut, LocateFixed, PenTool, Mountain, Satellite, Route, Check, ImageIcon, Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,9 +19,10 @@ const TechnicalMapLayout = () => {
   const [showDrawingPanel, setShowDrawingPanel] = useState(false);
   const [showLayersMenu, setShowLayersMenu] = useState(false);
   const [showCameraMenu, setShowCameraMenu] = useState(false);
-  const [currentLayer, setCurrentLayer] = useState<'terrain' | 'hybrid'>('hybrid');
+  const [currentLayer, setCurrentLayer] = useState<MapStyle>('hybrid');
   const [roadsEnabled, setRoadsEnabled] = useState(false);
   const [mapTilerToken, setMapTilerToken] = useState<string | null>(null);
+  const [isLayerChanging, setIsLayerChanging] = useState(false);
   const layersMenuRef = useRef<HTMLDivElement>(null);
   const layersButtonRef = useRef<HTMLButtonElement>(null);
   const cameraMenuRef = useRef<HTMLDivElement>(null);
@@ -27,6 +30,7 @@ const TechnicalMapLayout = () => {
   
   const mapContext = useMap();
   const { flyToCurrentLocation } = useMapNavigation();
+  const { zoomIn, zoomOut, currentZoom, isZooming } = useZoomControl();
   const { toast } = useToast();
   const {
     activeTool,
@@ -83,48 +87,50 @@ const TechnicalMapLayout = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showLayersMenu, showCameraMenu]);
 
-  const setMapLayer = async (layer: 'terrain' | 'hybrid') => {
+  const setMapLayer = async (layer: MapStyle) => {
+    if (isLayerChanging) return;
+    
     setCurrentLayer(layer);
     setShowLayersMenu(false);
+    setIsLayerChanging(true);
     
     // Get map instance and change style
     if (mapContext?.map) {
-      let styleUrl = '';
-      
-      if (mapTilerToken) {
-        styleUrl = layer === 'terrain' 
-          ? `https://api.maptiler.com/maps/landscape/style.json?key=${mapTilerToken}`
-          : `https://api.maptiler.com/maps/satellite/style.json?key=${mapTilerToken}`;
-      } else {
-        // Fallback for OpenStreetMap
-        styleUrl = JSON.stringify({
-          version: 8,
-          name: layer === 'terrain' ? "OpenStreetMap Terrain" : "OpenStreetMap",
-          sources: {
-            osm: {
-              type: "raster",
-              tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-              tileSize: 256,
-              attribution: "© OpenStreetMap contributors"
-            }
-          },
-          layers: [
-            {
-              id: "osm-layer",
-              type: "raster",
-              source: "osm"
-            }
-          ]
+      try {
+        const styleUrl = getStyleUrl(layer, mapTilerToken || undefined);
+        mapContext.map.setStyle(styleUrl);
+        
+        console.log(`Map layer changed to: ${layer}`);
+        
+        // Reapply roads overlay if it was enabled
+        if (roadsEnabled) {
+          mapContext.map.once('styledata', () => {
+            setTimeout(() => {
+              toggleRoadsOverlay();
+              setIsLayerChanging(false);
+            }, 100);
+          });
+        } else {
+          mapContext.map.once('styledata', () => {
+            setIsLayerChanging(false);
+          });
+        }
+        
+        toast({
+          title: "Camada alterada",
+          description: `Visualização alterada para ${
+            layer === 'terrain' ? 'Terreno' : 
+            layer === 'satellite' ? 'Satélite' : 
+            layer === 'hybrid' ? 'Híbrido' : 'Ruas'
+          }`,
         });
-      }
-      
-      mapContext.map.setStyle(styleUrl);
-      console.log(`Map layer changed to: ${layer}`);
-      
-      // Reapply roads overlay if it was enabled
-      if (roadsEnabled) {
-        mapContext.map.once('styledata', () => {
-          setTimeout(() => toggleRoadsOverlay(), 100);
+      } catch (error) {
+        console.error('Error changing layer:', error);
+        setIsLayerChanging(false);
+        toast({
+          title: "Erro",
+          description: "Não foi possível alterar a camada do mapa",
+          variant: "destructive",
         });
       }
     }
@@ -137,36 +143,67 @@ const TechnicalMapLayout = () => {
     // Toggle roads overlay on map
     if (mapContext?.map) {
       if (newRoadsState) {
-        // Add roads layer if it doesn't exist
+        // Add enhanced roads layer
         if (!mapContext.map.getLayer('roads-overlay')) {
-          mapContext.map.addSource('roads-overlay', {
-            type: 'raster',
-            tiles: [
-              'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-            ],
-            tileSize: 256
-          });
+          const roadsSource = mapTilerToken ? {
+            type: 'raster' as const,
+            tiles: [`https://api.maptiler.com/tiles/osm/{z}/{x}/{y}.png?key=${mapTilerToken}`],
+            tileSize: 256,
+            attribution: '© MapTiler © OpenStreetMap contributors'
+          } : {
+            type: 'raster' as const,
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '© OpenStreetMap contributors'
+          };
+
+          mapContext.map.addSource('roads-overlay', roadsSource);
           
           mapContext.map.addLayer({
             id: 'roads-overlay',
             type: 'raster',
             source: 'roads-overlay',
             paint: {
-              'raster-opacity': 0.5
+              'raster-opacity': 0.7,
+              'raster-fade-duration': 300
             }
           });
         } else {
           mapContext.map.setLayoutProperty('roads-overlay', 'visibility', 'visible');
+          mapContext.map.setPaintProperty('roads-overlay', 'raster-opacity', 0.7);
         }
+        
+        toast({
+          title: "Estradas ativadas",
+          description: "Overlay de estradas foi adicionado ao mapa",
+        });
       } else {
-        // Hide roads layer
+        // Hide roads layer with animation
         if (mapContext.map.getLayer('roads-overlay')) {
-          mapContext.map.setLayoutProperty('roads-overlay', 'visibility', 'none');
+          mapContext.map.setPaintProperty('roads-overlay', 'raster-opacity', 0);
+          setTimeout(() => {
+            if (mapContext.map?.getLayer('roads-overlay')) {
+              mapContext.map.setLayoutProperty('roads-overlay', 'visibility', 'none');
+            }
+          }, 300);
         }
+        
+        toast({
+          title: "Estradas desativadas",
+          description: "Overlay de estradas foi removido do mapa",
+        });
       }
       
       console.log(`Roads overlay ${newRoadsState ? 'enabled' : 'disabled'}`);
     }
+  };
+  
+  const handleZoomIn = () => {
+    zoomIn();
+  };
+
+  const handleZoomOut = () => {
+    zoomOut();
   };
   
   const handleCameraCapture = () => {
@@ -238,7 +275,7 @@ const TechnicalMapLayout = () => {
     }
   };
 
-  // LayersMenu component
+  // LayersMenu component with enhanced options
   const LayersMenu = () => (
     <div 
       ref={layersMenuRef}
@@ -250,9 +287,10 @@ const TechnicalMapLayout = () => {
       {/* Terrain Layer */}
       <button
         onClick={() => setMapLayer('terrain')}
+        disabled={isLayerChanging}
         className={cn(
           "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200",
-          "hover:bg-[rgba(0,87,255,0.1)] active:scale-98",
+          "hover:bg-[rgba(0,87,255,0.1)] active:scale-98 disabled:opacity-50",
           currentLayer === 'terrain' ? "text-[rgb(0,87,255)]" : "text-foreground"
         )}
       >
@@ -265,17 +303,37 @@ const TechnicalMapLayout = () => {
         <span>Terreno</span>
       </button>
 
-      {/* Hybrid/Satellite Layer */}
+      {/* Satellite Layer */}
       <button
-        onClick={() => setMapLayer('hybrid')}
+        onClick={() => setMapLayer('satellite')}
+        disabled={isLayerChanging}
         className={cn(
           "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200",
-          "hover:bg-[rgba(0,87,255,0.1)] active:scale-98",
-          currentLayer === 'hybrid' ? "text-[rgb(0,87,255)]" : "text-foreground"
+          "hover:bg-[rgba(0,87,255,0.1)] active:scale-98 disabled:opacity-50",
+          currentLayer === 'satellite' ? "text-[rgb(0,87,255)]" : "text-foreground"
         )}
       >
         <div className="relative">
           <Satellite className="h-4 w-4" />
+          {currentLayer === 'satellite' && (
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-[rgb(0,87,255)] rounded-full" />
+          )}
+        </div>
+        <span>Satélite</span>
+      </button>
+
+      {/* Hybrid Layer */}
+      <button
+        onClick={() => setMapLayer('hybrid')}
+        disabled={isLayerChanging}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200",
+          "hover:bg-[rgba(0,87,255,0.1)] active:scale-98 disabled:opacity-50",
+          currentLayer === 'hybrid' ? "text-[rgb(0,87,255)]" : "text-foreground"
+        )}
+      >
+        <div className="relative">
+          <Layers className="h-4 w-4" />
           {currentLayer === 'hybrid' && (
             <div className="absolute -top-1 -right-1 w-2 h-2 bg-[rgb(0,87,255)] rounded-full" />
           )}
@@ -289,9 +347,10 @@ const TechnicalMapLayout = () => {
       {/* Roads Toggle */}
       <button
         onClick={toggleRoadsOverlay}
+        disabled={isLayerChanging}
         className={cn(
           "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200",
-          "hover:bg-[rgba(0,87,255,0.1)] active:scale-98",
+          "hover:bg-[rgba(0,87,255,0.1)] active:scale-98 disabled:opacity-50",
           roadsEnabled ? "text-[rgb(0,87,255)]" : "text-foreground"
         )}
       >
@@ -301,8 +360,19 @@ const TechnicalMapLayout = () => {
             <Check className="absolute -top-1 -right-1 w-3 h-3 text-[rgb(0,87,255)]" />
           )}
         </div>
-        <span>Estradas</span>
+        <span>Estradas {roadsEnabled && '✓'}</span>
       </button>
+
+      {/* Loading indicator */}
+      {isLayerChanging && (
+        <>
+          <div className="h-px bg-border/30 mx-2 my-1" />
+          <div className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground">
+            <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent" />
+            Alterando camada...
+          </div>
+        </>
+      )}
     </div>
   );
   return <div className="min-h-screen bg-background relative">
@@ -334,15 +404,39 @@ const TechnicalMapLayout = () => {
         </Button>
       </div>
 
-      {/* Controles de Zoom - Right */}
+      {/* Enhanced Zoom Controls - Right */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-        <Button variant="secondary" size="sm" onClick={() => console.log('Zoom in')} className="bg-background/90 backdrop-blur-sm">
+        <Button 
+          variant="secondary" 
+          size="sm" 
+          onClick={handleZoomIn}
+          disabled={isZooming}
+          className="bg-background/90 backdrop-blur-sm transition-all duration-200 hover:scale-105 disabled:opacity-50"
+        >
           <ZoomIn className="h-4 w-4" />
         </Button>
-        <Button variant="secondary" size="sm" onClick={() => console.log('Zoom out')} className="bg-background/90 backdrop-blur-sm">
+        
+        {/* Zoom Level Indicator */}
+        <div className="bg-background/90 backdrop-blur-sm border border-border/20 rounded-md px-2 py-1 min-w-[2.5rem] text-center">
+          <span className="text-xs font-medium">{Math.round(currentZoom)}</span>
+        </div>
+        
+        <Button 
+          variant="secondary" 
+          size="sm" 
+          onClick={handleZoomOut}
+          disabled={isZooming}
+          className="bg-background/90 backdrop-blur-sm transition-all duration-200 hover:scale-105 disabled:opacity-50"
+        >
           <ZoomOut className="h-4 w-4" />
         </Button>
-        <Button variant="secondary" size="sm" onClick={handleLocationClick} className="bg-background/90 backdrop-blur-sm">
+        
+        <Button 
+          variant="secondary" 
+          size="sm" 
+          onClick={handleLocationClick} 
+          className="bg-background/90 backdrop-blur-sm transition-all duration-200 hover:scale-105"
+        >
           <LocateFixed className="h-4 w-4" />
         </Button>
       </div>
