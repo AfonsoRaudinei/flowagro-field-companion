@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowLeft, RefreshCw, Search, FileText, Database, CheckCircle, AlertTriangle, XCircle, ExternalLink, FolderOpen, Download } from 'lucide-react';
+import React, { useRef } from 'react';
+import { ArrowLeft, RefreshCw, Search, FileText, Database, CheckCircle, AlertTriangle, XCircle, FolderOpen, Download, Sparkles, Zap, Code, Layout, Trash2, Terminal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,8 +17,38 @@ const QAAuditoria = () => {
     runAudit, 
     openRoute, 
     openFolder, 
-    exportReport 
+    exportReport,
+    searchUpdates
   } = useAuditoria();
+
+  // Refs for scrolling to sections
+  const orphansRef = useRef<HTMLDivElement>(null);
+  const duplicatesRef = useRef<HTMLDivElement>(null);
+  const csvRef = useRef<HTMLDivElement>(null);
+  const buildRef = useRef<HTMLDivElement>(null);
+
+  const scrollToSection = (ref: React.RefObject<HTMLDivElement>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const getImprovementIcon = (category: string) => {
+    switch (category) {
+      case 'performance': return <Zap className="h-4 w-4" />;
+      case 'ui': return <Layout className="h-4 w-4" />;
+      case 'code': return <Code className="h-4 w-4" />;
+      case 'imports': return <Trash2 className="h-4 w-4" />;
+      default: return <Sparkles className="h-4 w-4" />;
+    }
+  };
+
+  const getImpactColor = (impact: string) => {
+    switch (impact) {
+      case 'high': return 'bg-red-100 text-red-800 border-red-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
 
   const getStatusIcon = (status: 'success' | 'warning' | 'error') => {
     switch (status) {
@@ -73,7 +103,10 @@ const QAAuditoria = () => {
       {/* Cards de Status */}
       <div className="p-4 space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <Card className={`${getStatusColor(auditData?.routes.status || 'warning')} border`}>
+          <Card 
+            className={`${getStatusColor(auditData?.routes.status || 'warning')} border cursor-pointer transition-transform hover:scale-105`}
+            onClick={() => scrollToSection(orphansRef)}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Search className="h-4 w-4" />
@@ -89,7 +122,10 @@ const QAAuditoria = () => {
             </CardContent>
           </Card>
 
-          <Card className={`${getStatusColor(auditData?.files.status || 'warning')} border`}>
+          <Card 
+            className={`${getStatusColor(auditData?.files.status || 'warning')} border cursor-pointer transition-transform hover:scale-105`}
+            onClick={() => scrollToSection(duplicatesRef)}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -105,7 +141,10 @@ const QAAuditoria = () => {
             </CardContent>
           </Card>
 
-          <Card className={`${getStatusColor(auditData?.assets.status || 'warning')} border`}>
+          <Card 
+            className={`${getStatusColor(auditData?.assets.status || 'warning')} border cursor-pointer transition-transform hover:scale-105`}
+            onClick={() => scrollToSection(csvRef)}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Database className="h-4 w-4" />
@@ -121,10 +160,13 @@ const QAAuditoria = () => {
             </CardContent>
           </Card>
 
-          <Card className={`${getStatusColor(auditData?.build.status || 'warning')} border`}>
+          <Card 
+            className={`${getStatusColor(auditData?.build.status || 'warning')} border cursor-pointer transition-transform hover:scale-105`}
+            onClick={() => scrollToSection(buildRef)}
+          >
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
+                <Terminal className="h-4 w-4" />
                 Build
               </CardTitle>
             </CardHeader>
@@ -139,10 +181,67 @@ const QAAuditoria = () => {
         </div>
       </div>
 
+      {/* Atualizações Disponíveis */}
+      <div className="px-4 mb-6">
+        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Atualizações disponíveis
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-3">
+            {auditData?.improvements?.length > 0 ? (
+              <>
+                {auditData.improvements.slice(0, 3).map((improvement, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-background/50 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      {getImprovementIcon(improvement.category)}
+                      <div>
+                        <p className="text-sm font-medium">{improvement.description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge className={`text-xs ${getImpactColor(improvement.impact)}`}>
+                            {improvement.impact}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {improvement.effort} • {improvement.category}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-3"
+                  onClick={searchUpdates}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Buscar Atualizações no Lovable
+                </Button>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <Sparkles className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Nenhuma atualização disponível</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3"
+                  onClick={searchUpdates}
+                >
+                  Verificar atualizações
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Seções Detalhadas */}
       <div className="px-4 space-y-6">
         {/* Órfãos */}
-        <div>
+        <div ref={orphansRef}>
           <h3 className="text-base font-semibold mb-3">Órfãos</h3>
           <div className="bg-card rounded-lg border">
             <Table>
@@ -188,7 +287,7 @@ const QAAuditoria = () => {
         <Separator />
 
         {/* Duplicados */}
-        <div>
+        <div ref={duplicatesRef}>
           <h3 className="text-base font-semibold mb-3">Duplicados</h3>
           <div className="bg-card rounded-lg border">
             <Table>
@@ -234,7 +333,7 @@ const QAAuditoria = () => {
         <Separator />
 
         {/* CSV Issues */}
-        <div>
+        <div ref={csvRef}>
           <h3 className="text-base font-semibold mb-3">CSV Issues</h3>
           <div className="bg-card rounded-lg border">
             <Table>
@@ -282,48 +381,87 @@ const QAAuditoria = () => {
           </div>
         </div>
 
+        <Separator />
+
+        {/* Build Errors/Warnings */}
+        <div ref={buildRef}>
+          <h3 className="text-base font-semibold mb-3">Build Errors/Warnings</h3>
+          <div className="bg-card rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Arquivo</TableHead>
+                  <TableHead className="text-xs">Mensagem</TableHead>
+                  <TableHead className="text-xs w-20">Tipo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {auditData?.buildIssues?.map((issue, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="text-xs font-mono">
+                      {issue.file}
+                      {issue.line && <span className="text-muted-foreground">:{issue.line}</span>}
+                    </TableCell>
+                    <TableCell className="text-xs">{issue.message}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={issue.severity === 'error' ? 'destructive' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {issue.type}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                )) || (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground text-sm py-4">
+                      Build sem erros ou avisos
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
         {/* Espaçamento para o botão flutuante */}
         <div className="h-20" />
       </div>
 
-      {/* Botão Re-testar Flutuante */}
-      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
-        <Button
-          onClick={runAudit}
-          disabled={isLoading}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 text-base font-medium shadow-lg"
-        >
-          {isLoading ? (
-            <>
-              <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-              Executando...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-5 w-5 mr-2" />
-              Re-testar
-            </>
-          )}
-        </Button>
+      {/* Rodapé fixo */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 z-50">
+        <div className="flex items-center justify-between max-w-md mx-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportReport}
+            className="flex-1 mr-2"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+          <Button
+            onClick={runAudit}
+            disabled={isLoading}
+            className="flex-1 ml-2"
+          >
+            {isLoading ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Testando...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Re-testar Auditoria
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
-      {/* Rodapé com ajuda */}
-      <div className="px-4 py-8 text-center">
-        <Button
-          variant="link"
-          className="text-sm text-muted-foreground"
-          onClick={exportReport}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Exportar relatório
-        </Button>
-        <p className="text-xs text-muted-foreground mt-2">
-          Como esta auditoria funciona?
-        </p>
-        <p className="text-xs text-muted-foreground/80 mt-1 max-w-sm mx-auto">
-          Verifica rotas órfãs, arquivos duplicados, CSVs obrigatórios e validações de build para garantir a qualidade do projeto.
-        </p>
-      </div>
+      {/* Espaçamento para o rodapé fixo */}
+      <div className="h-20" />
     </div>
   );
 };

@@ -32,6 +32,19 @@ export interface AuditResult {
     severity: 'error' | 'warning';
     tip?: string;
   }>;
+  buildIssues: Array<{
+    file: string;
+    line?: number;
+    message: string;
+    severity: 'error' | 'warning';
+    type: string;
+  }>;
+  improvements: Array<{
+    category: 'performance' | 'ui' | 'code' | 'imports';
+    description: string;
+    impact: 'high' | 'medium' | 'low';
+    effort: 'easy' | 'moderate' | 'complex';
+  }>;
 }
 
 const mockAuditData: AuditResult = {
@@ -41,7 +54,9 @@ const mockAuditData: AuditResult = {
   build: { count: 0, status: 'success' },
   orphans: [],
   duplicates: [],
-  csvIssues: []
+  csvIssues: [],
+  buildIssues: [],
+  improvements: []
 };
 
 export const useAuditoria = () => {
@@ -93,7 +108,49 @@ export const useAuditoria = () => {
             problem: 'Poucos registros', 
             severity: 'warning' as const 
           }
-        ].slice(0, Math.floor(Math.random() * 3))
+        ].slice(0, Math.floor(Math.random() * 3)),
+        buildIssues: [
+          {
+            file: 'src/components/maps/SimpleBaseMap.tsx',
+            line: 45,
+            message: 'Unused variable "mapInstance"',
+            severity: 'warning' as const,
+            type: 'typescript'
+          },
+          {
+            file: 'src/hooks/useMapDrawing.ts',
+            line: 23,
+            message: 'Missing dependency in useEffect',
+            severity: 'error' as const,
+            type: 'react-hooks'
+          }
+        ].slice(0, Math.floor(Math.random() * 3)),
+        improvements: [
+          {
+            category: 'performance' as const,
+            description: 'Lazy loading para componentes de mapa',
+            impact: 'high' as const,
+            effort: 'moderate' as const
+          },
+          {
+            category: 'ui' as const,
+            description: 'Melhorar responsividade em tablets',
+            impact: 'medium' as const,
+            effort: 'easy' as const
+          },
+          {
+            category: 'code' as const,
+            description: 'Refatorar hooks duplicados',
+            impact: 'medium' as const,
+            effort: 'moderate' as const
+          },
+          {
+            category: 'imports' as const,
+            description: 'Remover imports não utilizados',
+            impact: 'low' as const,
+            effort: 'easy' as const
+          }
+        ].slice(0, Math.floor(Math.random() * 4))
       };
       
       setAuditData(newAuditData);
@@ -128,6 +185,21 @@ export const useAuditoria = () => {
     });
   }, [toast]);
 
+  const searchUpdates = useCallback(async () => {
+    toast({
+      title: "Buscando atualizações...",
+      description: "Verificando melhorias disponíveis no Lovable",
+    });
+
+    // Simular busca por atualizações
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    toast({
+      title: "Verificação concluída",
+      description: "Novas melhorias foram identificadas",
+    });
+  }, [toast]);
+
   const exportReport = useCallback(() => {
     const reportData = {
       timestamp: new Date().toISOString(),
@@ -159,6 +231,7 @@ export const useAuditoria = () => {
     runAudit,
     openRoute,
     openFolder,
-    exportReport
+    exportReport,
+    searchUpdates
   };
 };
