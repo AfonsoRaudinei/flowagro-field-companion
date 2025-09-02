@@ -8,7 +8,16 @@ export interface OrientationInfo {
 }
 
 export function useOrientationDetector() {
-  const { setOrientation } = useMap();
+  // Defensive check - safely access useMap context
+  let setOrientation: ((orientation: 'portrait' | 'landscape') => void) | null = null;
+  try {
+    const mapContext = useMap();
+    setOrientation = mapContext?.setOrientation || null;
+  } catch {
+    // MapProvider not available - this is ok, just skip orientation updates
+    setOrientation = null;
+  }
+  
   const [orientationInfo, setOrientationInfo] = useState<OrientationInfo>({
     orientation: window.innerHeight > window.innerWidth ? 'portrait' : 'landscape',
     angle: 0,
@@ -27,7 +36,10 @@ export function useOrientationDetector() {
       };
       
       setOrientationInfo(newInfo);
-      setOrientation(newOrientation);
+      // Only update map context if available
+      if (setOrientation) {
+        setOrientation(newOrientation);
+      }
     };
 
     // Initial check
