@@ -70,19 +70,25 @@ export const FloatingCameraButton: React.FC<FloatingCameraButtonProps> = ({
     <div
       className={cn(
         // Base positioning - floating over map
-        "fixed z-50 transition-all duration-300 ease-out",
+        "fixed z-50 transition-all duration-500 ease-out",
         
-        // Responsive positioning
-        isMobile && isLandscape && isFullscreen
-          ? "bottom-6 left-6" // Landscape fullscreen - left side
-          : isMobile && isLandscape
-          ? "bottom-6 right-6" // Landscape normal - right side
-          : isFullscreen
-          ? "bottom-8 right-8" // Portrait/desktop fullscreen
-          : "bottom-6 right-6", // Default position
+        // Mobile Portrait - Optimized for thumb reach (bottom-right, comfortable distance from edges)
+        isMobile && !isLandscape && !isFullscreen && "bottom-20 right-4",
+        isMobile && !isLandscape && isFullscreen && "bottom-8 right-6",
         
-        // Hide during transitions
-        isTransitioning && "opacity-0 scale-95 pointer-events-none",
+        // Mobile Landscape - Avoid control overlap
+        isMobile && isLandscape && !isFullscreen && "bottom-4 right-20", // Away from map controls
+        isMobile && isLandscape && isFullscreen && "bottom-6 left-6", // Left side in fullscreen
+        
+        // Desktop - Standard positioning
+        !isMobile && !isFullscreen && "bottom-6 right-6",
+        !isMobile && isFullscreen && "bottom-8 right-8",
+        
+        // Smooth transitions between positions
+        "transform-gpu will-change-transform",
+        
+        // Hide during transitions with enhanced animation
+        isTransitioning && "opacity-0 scale-90 pointer-events-none transition-all duration-300",
         
         className
       )}
