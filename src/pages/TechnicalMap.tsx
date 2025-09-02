@@ -4,13 +4,17 @@ import { FullscreenTransitions } from '@/components/maps/FullscreenTransitions';
 import { SimpleBaseMap } from "@/components/maps/SimpleBaseMap";
 import { DrawingToolsPanel } from "@/components/maps/DrawingToolsPanel";
 import { useMapDrawing } from "@/hooks/useMapDrawing";
+import { useMapNavigation } from "@/hooks/useMapInstance";
 import { Button } from "@/components/ui/button";
 import { Camera, Layers, Navigation, ZoomIn, ZoomOut, LocateFixed, PenTool } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 // Layout simplificado e funcional
 const TechnicalMapLayout = () => {
   const [cameraActive, setCameraActive] = useState(false);
   const [showDrawingPanel, setShowDrawingPanel] = useState(false);
+  const { flyToCurrentLocation } = useMapNavigation();
+  const { toast } = useToast();
   const {
     activeTool,
     drawnShapes,
@@ -22,6 +26,7 @@ const TechnicalMapLayout = () => {
     clearAllShapes,
     exportShapes
   } = useMapDrawing();
+  
   const handleCameraCapture = () => {
     setCameraActive(true);
     console.log('Camera capture initiated');
@@ -29,6 +34,22 @@ const TechnicalMapLayout = () => {
       setCameraActive(false);
       console.log('Photo captured successfully');
     }, 2000);
+  };
+
+  const handleLocationClick = async () => {
+    try {
+      await flyToCurrentLocation(16);
+      toast({
+        title: "Localização encontrada",
+        description: "Mapa centrado na sua localização atual",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro de localização",
+        description: "Não foi possível obter sua localização",
+        variant: "destructive",
+      });
+    }
   };
   return <div className="min-h-screen bg-background relative">
       {/* Mapa Principal - SIMPLIFICADO */}
@@ -53,7 +74,7 @@ const TechnicalMapLayout = () => {
         <Button variant="secondary" size="sm" onClick={() => console.log('Zoom out')} className="bg-background/90 backdrop-blur-sm">
           <ZoomOut className="h-4 w-4" />
         </Button>
-        <Button variant="secondary" size="sm" onClick={() => console.log('Location')} className="bg-background/90 backdrop-blur-sm">
+        <Button variant="secondary" size="sm" onClick={handleLocationClick} className="bg-background/90 backdrop-blur-sm">
           <LocateFixed className="h-4 w-4" />
         </Button>
       </div>
