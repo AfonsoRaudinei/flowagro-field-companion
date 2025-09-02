@@ -17,9 +17,16 @@ export const FloatingCameraButton: React.FC<FloatingCameraButtonProps> = ({
   className
 }) => {
   const [isCapturing, setIsCapturing] = useState(false);
-  const { isFullscreen, isTransitioning } = useMap();
+  const mapContext = useMap();
   const { isLandscape, isMobile } = useOrientationBehavior();
   const { toast } = useToast();
+
+  // Defensive check - don't render if map context isn't available
+  if (!mapContext) {
+    return null;
+  }
+
+  const { isFullscreen, isTransitioning } = mapContext;
 
   const handleCameraCapture = async () => {
     try {
