@@ -279,3 +279,94 @@
 .animate-slide-in-bottom {
   animation: slideInFromBottom 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
+
+/* Premium Animation System */
+@layer utilities {
+  /* Premium Hover Effects */
+  .premium-hover {
+    @apply transform transition-all duration-300 cursor-pointer;
+  }
+
+  .premium-hover:hover {
+    @apply animate-hover-lift;
+  }
+
+  .premium-glow:hover {
+    @apply animate-hover-glow;
+  }
+
+  /* Active/Pressed States */
+  .premium-press:active {
+    @apply animate-press-down;
+  }
+
+  .premium-bounce:active {
+    @apply animate-bounce-press;
+  }
+
+  /* Pulse Availability Indicators */
+  .availability-pulse {
+    @apply animate-pulse-availability;
+  }
+
+  .glow-pulse {
+    @apply animate-pulse-glow;
+  }
+
+  /* Combined Premium Effects */
+  .premium-button {
+    @apply premium-hover premium-press transition-all duration-300 transform;
+    box-shadow: var(--shadow-button);
+  }
+
+  .premium-button:hover {
+    @apply -translate-y-0.5 scale-105;
+    box-shadow: 0 10px 20px rgba(0, 87, 255, 0.3), 0 6px 6px rgba(0, 87, 255, 0.1);
+  }
+
+  .premium-button:active {
+    @apply translate-y-0 scale-100;
+    transition-duration: 0.1s;
+  }
+
+  /* State Transition Helpers */
+  .state-enter {
+    @apply animate-state-enter;
+  }
+
+  .state-exit {
+    @apply animate-state-exit;
+  }
+
+  /* Fullscreen Transition Enhancement */ 
+  .fullscreen-transition {
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .fullscreen-enter {
+    @apply animate-fullscreen-enter;
+  }
+
+  .fullscreen-exit {
+    @apply animate-fullscreen-exit;
+  }
+
+  /* Interactive Card Effects */
+  .premium-card {
+    @apply transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+    box-shadow: var(--shadow-card);
+  }
+
+  .premium-card:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Premium Icon Animations */
+  .premium-icon {
+    @apply transform transition-transform duration-200 hover:scale-110 hover:rotate-12;
+  }
+
+  .premium-icon:active {
+    @apply scale-95 rotate-0;
+  }
+}

@@ -10,6 +10,7 @@ import { MapControls } from "@/components/maps/MapControls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { PremiumButton } from "@/components/ui/premium-button";
 import { 
   Map, 
   Layers, 
@@ -97,16 +98,71 @@ const TechnicalMap = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Estilos Disponíveis</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Badge variant="secondary" className="justify-start">
-                      <Layers className="w-3 h-3 mr-1" />
-                      Satélite
-                    </Badge>
-                    <Badge variant="secondary" className="justify-start">
-                      <Navigation className="w-3 h-3 mr-1" />
-                      Terreno
-                    </Badge>
+                  <h4 className="text-sm font-medium">Controles Premium</h4>
+                  <div className="grid grid-cols-1 gap-2">
+                    <PremiumButton 
+                      variant="premium" 
+                      size="sm"
+                      animation="full"
+                      className="justify-start"
+                    >
+                      <Layers className="w-3 h-3 mr-2" />
+                      Análise Avançada
+                    </PremiumButton>
+                    
+                    <PremiumButton 
+                      variant="outline" 
+                      size="sm"
+                      animation="hover"
+                      className="justify-start"
+                    >
+                      <Navigation className="w-3 h-3 mr-2" />
+                      Navegação Inteligente
+                    </PremiumButton>
+                    
+                    <PremiumButton 
+                      variant="glow" 
+                      size="sm"
+                      animation="pulse"
+                      className="justify-start"
+                    >
+                      <Leaf className="w-3 h-3 mr-2" />
+                      Monitor NDVI Live
+                    </PremiumButton>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Ações Rápidas</h4>
+                  <div className="flex gap-2">
+                    <PremiumButton 
+                      variant="secondary" 
+                      size="icon"
+                      animation="bounce"
+                      className="premium-icon"
+                    >
+                      <MapPin className="h-4 w-4" />
+                    </PremiumButton>
+                    
+                    <PremiumButton 
+                      variant="ghost" 
+                      size="icon"
+                      animation="hover"
+                      className="premium-icon"
+                    >
+                      <Ruler className="h-4 w-4" />
+                    </PremiumButton>
+                    
+                    <PremiumButton 
+                      variant="outline" 
+                      size="icon"
+                      animation="press"
+                      className="premium-icon availability-pulse"
+                    >
+                      <Route className="h-4 w-4" />
+                    </PremiumButton>
                   </div>
                 </div>
 
