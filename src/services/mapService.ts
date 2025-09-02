@@ -6,37 +6,65 @@ export interface MapTilerTokenResponse {
 }
 
 /**
- * Fetches MapTiler API key from the edge function
+ * Fetches MapTiler API key from the edge function with retry logic
  */
-export const getMapTilerToken = async (): Promise<string | null> => {
-  try {
-    const response = await fetch('https://pyoejhhkjlrjijiviryq.supabase.co/functions/v1/maptiler-token', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5b2VqaGhramxyamlqaXZpcnlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNTI1MDQsImV4cCI6MjA2OTcyODUwNH0.2P5wKq7b6viMa9kutLOZADsqAvSZx6X8fbLZMlooG1U`,
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5b2VqaGhramxyamlqaXZpcnlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNTI1MDQsImV4cCI6MjA2OTcyODUwNH0.2P5wKq7b6viMa9kutLOZADsqAvSZx6X8fbLZMlooG1U'
+export const getMapTilerToken = async (retries = 3): Promise<string | null> => {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`Attempting to fetch MapTiler token (attempt ${attempt}/${retries})`);
+      
+      const response = await fetch('https://pyoejhhkjlrjijiviryq.supabase.co/functions/v1/maptiler-token', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5b2VqaGhramxyamlqaXZpcnlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNTI1MDQsImV4cCI6MjA2OTcyODUwNH0.2P5wKq7b6viMa9kutLOZADsqAvSZx6X8fbLZMlooG1U`,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5b2VqaGhramxyamlqaXZpcnlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNTI1MDQsImV4cCI6MjA2OTcyODUwNH0.2P5wKq7b6viMa9kutLOZADsqAvSZx6X8fbLZMlooG1U'
+        }
+      });
+      
+      if (!response.ok) {
+        console.error(`Error fetching MapTiler token - Status: ${response.status}, Response: ${response.statusText}`);
+        if (attempt === retries) return null;
+        continue;
       }
-    });
-    
-    if (!response.ok) {
-      console.error('Error fetching MapTiler token - Status:', response.status);
-      return null;
+      
+      const data: MapTilerTokenResponse = await response.json();
+      console.log('MapTiler token response:', { hasKey: !!data?.key, message: data?.message });
+      
+      if (!data?.key) {
+        console.warn('MapTiler token not configured:', data?.message);
+        return null;
+      }
+      
+      console.log('MapTiler token fetched successfully');
+      return data.key;
+    } catch (error) {
+      console.error(`Failed to get MapTiler token (attempt ${attempt}/${retries}):`, error);
+      if (attempt === retries) {
+        return null;
+      }
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
     }
-    
-    const data: MapTilerTokenResponse = await response.json();
-    
-    if (!data?.key) {
-      console.warn('MapTiler token not configured:', data?.message);
-      return null;
-    }
-    
-    return data.key;
-  } catch (error) {
-    console.error('Failed to get MapTiler token:', error);
-    return null;
   }
+  return null;
 };
+
+/**
+ * Fallback map providers for robust rendering
+ */
+export const MAP_PROVIDERS = {
+  maptiler: {
+    name: 'MapTiler',
+    baseUrl: 'https://api.maptiler.com/maps',
+    requiresToken: true
+  },
+  osm: {
+    name: 'OpenStreetMap',
+    baseUrl: 'https://tile.openstreetmap.org',
+    requiresToken: false
+  }
+} as const;
 
 /**
  * Map style configurations using MapTiler styles
@@ -51,10 +79,41 @@ export const MAP_STYLES = {
 export type MapStyle = keyof typeof MAP_STYLES;
 
 /**
- * Generates MapTiler style URL
+ * Generates MapTiler style URL with fallback
  */
-export const getStyleUrl = (style: MapStyle, token: string): string => {
-  return `https://api.maptiler.com/maps/${MAP_STYLES[style]}/style.json?key=${token}`;
+export const getStyleUrl = (style: MapStyle, token?: string): string => {
+  if (token) {
+    return `https://api.maptiler.com/maps/${MAP_STYLES[style]}/style.json?key=${token}`;
+  }
+  
+  // Fallback to basic OpenStreetMap style
+  console.warn('No MapTiler token available, using OpenStreetMap fallback');
+  return getOpenStreetMapStyle();
+};
+
+/**
+ * OpenStreetMap fallback style
+ */
+export const getOpenStreetMapStyle = (): string => {
+  return JSON.stringify({
+    version: 8,
+    name: "OpenStreetMap",
+    sources: {
+      osm: {
+        type: "raster",
+        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        tileSize: 256,
+        attribution: "© OpenStreetMap contributors"
+      }
+    },
+    layers: [
+      {
+        id: "osm-layer",
+        type: "raster",
+        source: "osm"
+      }
+    ]
+  });
 };
 
 /**
