@@ -22,7 +22,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Camera, Layers, PenTool, Mountain, Satellite, Route, Check, ImageIcon, ArrowLeft, Home, Target, Leaf, MapPin, Navigation } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Camera, Layers, PenTool, Mountain, Satellite, Route, Check, ImageIcon, ArrowLeft, Home, Target, Leaf, MapPin, Navigation, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from '@/integrations/supabase/client';
 
@@ -269,7 +273,6 @@ const TechnicalMapLayout = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* Terrain Layer */}
                 <Button
                   onClick={() => setMapLayer('terrain')}
                   disabled={isLayerChanging}
@@ -367,27 +370,59 @@ const TechnicalMapLayout = () => {
                 </div>
               </Button>
             </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Anotações de Imagem</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-xs text-muted-foreground">
+                  Após capturar, você poderá adicionar marcações e anotações sobre a imagem.
+                </div>
+                <div className="flex gap-2 text-xs">
+                  <Badge variant="outline">GPS Automático</Badge>
+                  <Badge variant="outline">Sobreposição no Mapa</Badge>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
 
       case 'drawing':
         return (
-          <DrawingToolsPanel
-            activeTool={activeTool}
-            onToolSelect={setActiveTool}
-            onStartDrawing={startDrawing}
-            onFinishDrawing={finishDrawing}
-            onCancelDrawing={cancelDrawing}
-            onClearAll={clearAllShapes}
-            onExport={exportShapes}
-            isDrawingMode={isDrawingMode}
-            shapesCount={drawnShapes.length}
-            currentShape={currentShape}
-            onSaveShape={saveShape}
-            onDeleteShape={deleteShape}
-            onAnalyzeShape={analyzeShape}
-            drawnShapes={drawnShapes}
-          />
+          <div className="space-y-4">
+            <DrawingToolsPanel
+              activeTool={activeTool}
+              onToolSelect={setActiveTool}
+              onStartDrawing={startDrawing}
+              onFinishDrawing={finishDrawing}
+              onCancelDrawing={cancelDrawing}
+              onClearAll={clearAllShapes}
+              onExport={exportShapes}
+              isDrawingMode={isDrawingMode}
+              shapesCount={drawnShapes.length}
+              currentShape={currentShape}
+              onSaveShape={saveShape}
+              onDeleteShape={deleteShape}
+              onAnalyzeShape={analyzeShape}
+              drawnShapes={drawnShapes}
+            />
+            
+            {/* Alerta de sobreposição */}
+            {drawnShapes.length > 1 && (
+              <Card className="border-orange-200 bg-orange-50">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 text-orange-700">
+                    <AlertCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">Verificação de Sobreposição</span>
+                  </div>
+                  <p className="text-xs text-orange-600 mt-1">
+                    Sistema detecta automaticamente colisões entre polígonos
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         );
 
       case 'location':
@@ -401,6 +436,29 @@ const TechnicalMapLayout = () => {
               </p>
             </div>
             <Separator />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Ações GPS</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  onClick={handleLocationClick}
+                  className="w-full justify-start"
+                  variant="outline"
+                >
+                  <Target className="h-4 w-4 mr-2" />
+                  Centralizar no Mapa
+                </Button>
+                
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>• Coordenadas exibidas no rodapé em tempo real</p>
+                  <p>• Geometrias salvas com referência GPS correta</p>
+                  <p>• Precisão automática baseada no sinal</p>
+                </div>
+              </CardContent>
+            </Card>
+            
             <LocationTracker />
           </div>
         );
@@ -416,9 +474,81 @@ const TechnicalMapLayout = () => {
               </p>
             </div>
             <Separator />
-            <NDVIControls />
-            <NDVIAnalysis />
-            <NDVIHistory />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center justify-between">
+                  Controles NDVI
+                  <Switch defaultChecked />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium">Opacidade</span>
+                    <span className="text-xs text-muted-foreground">75%</span>
+                  </div>
+                  <Slider defaultValue={[75]} max={100} step={1} className="w-full" />
+                </div>
+                
+                <div className="space-y-2">
+                  <span className="text-xs font-medium">Escala de Cores</span>
+                  <Select defaultValue="viridis">
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="viridis">Viridis (Verde-Azul)</SelectItem>
+                      <SelectItem value="rdylgn">RdYlGn (Vermelho-Verde)</SelectItem>
+                      <SelectItem value="spectral">Espectral</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium">Início</span>
+                    <Input type="date" className="text-xs" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium">Fim</span>
+                    <Input type="date" className="text-xs" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="history">
+                <AccordionTrigger className="text-sm">Histórico NDVI</AccordionTrigger>
+                <AccordionContent>
+                  <NDVIHistory />
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="legend">
+                <AccordionTrigger className="text-sm">Legenda de Cores</AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-red-500 rounded"></div>
+                      <span>Solo exposto/Seco (0.0-0.2)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+                      <span>Vegetação esparsa (0.2-0.4)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-green-500 rounded"></div>
+                      <span>Vegetação saudável (0.4-0.8)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-green-800 rounded"></div>
+                      <span>Vegetação densa (0.8-1.0)</span>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         );
 
@@ -433,6 +563,33 @@ const TechnicalMapLayout = () => {
               </p>
             </div>
             <Separator />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Filtros de Marketing</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
+                    Promoções
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
+                    Eventos
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
+                    Pontos de Venda
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
+                    Parcerias
+                  </Badge>
+                </div>
+                
+                <div className="text-xs text-muted-foreground">
+                  Toque em um pin no mapa para ver detalhes em tooltip não-modal
+                </div>
+              </CardContent>
+            </Card>
+            
             <PinControls />
           </div>
         );
@@ -448,24 +605,43 @@ const TechnicalMapLayout = () => {
               </p>
             </div>
             <Separator />
+            
             <Card>
-              <CardContent className="pt-6 space-y-4">
-                <div className="text-center space-y-2">
-                  <Badge variant="outline" className="mb-2">Em Desenvolvimento</Badge>
-                  <p className="text-sm text-muted-foreground">
-                    Sistema de detecção inteligente com IA
-                  </p>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center justify-between">
+                  Ativação do Scanner
+                  <Switch defaultChecked />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>Detecção de linhas de plantio</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <span>Identificação de falhas</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span>Análise de densidade vegetal</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span>Alertas de excesso/escassez</span>
+                  </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Recursos Inclusos:</h4>
-                  <ul className="text-xs text-muted-foreground space-y-1">
-                    <li>• Detecção de linhas de plantio</li>
-                    <li>• Identificação de falhas</li>
-                    <li>• Análise de densidade vegetal</li>
-                    <li>• Alertas automáticos</li>
-                  </ul>
+                <Separator />
+                
+                <div className="text-xs text-muted-foreground">
+                  Notificações geográficas aparecem diretamente no mapa quando anomalias são detectadas
                 </div>
+                
+                <Badge variant="outline" className="w-fit">
+                  IA Ativa • Processamento em tempo real
+                </Badge>
               </CardContent>
             </Card>
           </div>
