@@ -3,9 +3,10 @@ import { BaseMap } from '@/components/maps/BaseMap';
 import { PremiumMapControls } from '@/components/maps/PremiumMapControls';
 import { PremiumCameraButton } from '@/components/maps/PremiumCameraButton';
 import { NavigationControlsHub } from '@/components/maps/NavigationControlsHub';
-import { MapInfoPopover } from '@/components/maps/MapInfoPopover';
-import { TemporalTimelineSlider } from '@/components/maps/TemporalTimelineSlider';
-import { RealTimeMetricsPanel } from '@/components/maps/RealTimeMetricsPanel';
+import { DrawingToolsPanel } from '@/components/maps/DrawingToolsPanel';
+import { EnhancedMapClickPopover } from '@/components/maps/EnhancedMapClickPopover';
+import { DiagnosticPanel } from '@/components/maps/DiagnosticPanel';
+import { TemporalNavigator } from '@/components/maps/TemporalNavigator';
 import { usePremiumMapAnimations } from '@/hooks/usePremiumMapAnimations';
 import { cn } from '@/lib/utils';
 
@@ -117,16 +118,29 @@ export const IntegratedMapInterface: React.FC<IntegratedMapInterfaceProps> = ({
         </div>
       </div>
 
-      {/* Contextual Data Layer */}
-      <MapInfoPopover />
-      
-      <RealTimeMetricsPanel 
-        position="top-right"
-        className="pointer-events-auto"
+      {/* Enhanced Contextual Data Layer */}
+      <DrawingToolsPanel 
+        position="right"
+        className="pointer-events-auto top-20"
       />
       
-      <TemporalTimelineSlider 
-        className="absolute bottom-4 left-4 right-4 pointer-events-auto"
+      <EnhancedMapClickPopover 
+        className="pointer-events-auto"
+        onAddPin={(coordinates) => console.log('Add pin at:', coordinates)}
+        onAnalyzeArea={(coordinates) => console.log('Analyze area at:', coordinates)}
+        onViewHistory={(coordinates) => console.log('View history at:', coordinates)}
+      />
+      
+      <DiagnosticPanel 
+        position="bottom"
+        className="pointer-events-auto mb-20 lg:mb-4"
+      />
+      
+      <TemporalNavigator 
+        position="bottom"
+        className="pointer-events-auto"
+        onDateChange={(date) => console.log('Date changed to:', date)}
+        onDataExport={(data) => console.log('Exporting data:', data)}
       />
 
       {/* Fullscreen Overlay (for enhanced transitions) */}
