@@ -35,6 +35,7 @@ import { supabase } from '@/integrations/supabase/client';
 const TechnicalMapLayout = () => {
   const [cameraActive, setCameraActive] = useState(false);
   const [activeSheet, setActiveSheet] = useState<string | null>(null);
+  const [showCameraCard, setShowCameraCard] = useState(false);
   // Session persistence for layer settings
   const [currentLayer, setCurrentLayer] = useState<MapStyle>(() => {
     const saved = localStorage.getItem('flowagro-map-layer');
@@ -97,7 +98,29 @@ const TechnicalMapLayout = () => {
     onClose: () => setActiveSheet(null)
   });
 
-  // Get MapTiler token on mount
+  // Auto-hide camera card after 3 seconds of inactivity
+  useEffect(() => {
+    if (showCameraCard) {
+      const timer = setTimeout(() => {
+        setShowCameraCard(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showCameraCard]);
+
+  // Close camera card when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showCameraCard && !(e.target as Element)?.closest('.camera-card')) {
+        setShowCameraCard(false);
+      }
+    };
+    
+    if (showCameraCard) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showCameraCard]);
   useEffect(() => {
     const getToken = async () => {
       try {
@@ -674,7 +697,13 @@ const TechnicalMapLayout = () => {
 
         
 
-        <Button variant={activeSheet === 'camera' ? "default" : "secondary"} size="sm" onClick={() => setActiveSheet(activeSheet === 'camera' ? null : 'camera')} className={cn("rounded-xl shadow-lg border-0 backdrop-blur-sm transition-all duration-200", "hover:bg-[rgba(0,87,255,0.1)] active:scale-95")} disabled={cameraActive}>
+        <Button 
+          variant={showCameraCard ? "default" : "secondary"} 
+          size="sm" 
+          onClick={() => setShowCameraCard(!showCameraCard)} 
+          className={cn("rounded-xl shadow-lg border-0 backdrop-blur-sm transition-all duration-200", "hover:bg-[rgba(0,87,255,0.1)] active:scale-95")} 
+          disabled={cameraActive}
+        >
           {cameraActive ? <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent" /> : <Camera className="h-4 w-4" />}
           
         </Button>
@@ -713,6 +742,103 @@ const TechnicalMapLayout = () => {
             </div>
           </div>
         </div>}
+
+      {/* Creative Camera Options Card */}
+      {showCameraCard && (
+        <div className="absolute top-20 left-16 z-30 camera-card">
+          <Card className={cn(
+            "w-72 bg-card/95 backdrop-blur-lg shadow-2xl border-0",
+            "animate-in slide-in-from-left-3 duration-300",
+            "overflow-hidden"
+          )}>
+            <div className="relative">
+              {/* Animated gradient header */}
+              <div className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 animate-pulse" />
+              
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-full bg-primary/10">
+                      <Camera className="w-4 h-4 text-primary" />
+                    </div>
+                    <CardTitle className="text-sm font-semibold">Captura de Imagem</CardTitle>
+                  </div>
+                  <Badge variant="secondary" className="text-xs px-2 py-1">
+                    Ativo
+                  </Badge>
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-3 pb-4">
+                {/* Camera option */}
+                <Button 
+                  onClick={() => {
+                    handleOpenCamera();
+                    setShowCameraCard(false);
+                  }}
+                  variant="outline" 
+                  className={cn(
+                    "w-full h-14 justify-start group transition-all duration-200",
+                    "hover:bg-blue-50 hover:border-blue-200 hover:shadow-md",
+                    "focus:ring-2 focus:ring-blue-200"
+                  )}
+                >
+                  <div className="flex items-center gap-3 w-full">
+                    <div className="p-2 rounded-lg bg-blue-100 group-hover:bg-blue-200 transition-colors">
+                      <Camera className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="font-medium text-sm">Abrir Câmera</div>
+                      <div className="text-xs text-muted-foreground">Capturar nova foto</div>
+                    </div>
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  </div>
+                </Button>
+
+                {/* Gallery option */}
+                <Button 
+                  onClick={() => {
+                    handleOpenLibrary();
+                    setShowCameraCard(false);
+                  }}
+                  variant="outline" 
+                  className={cn(
+                    "w-full h-14 justify-start group transition-all duration-200",
+                    "hover:bg-purple-50 hover:border-purple-200 hover:shadow-md",
+                    "focus:ring-2 focus:ring-purple-200"
+                  )}
+                >
+                  <div className="flex items-center gap-3 w-full">
+                    <div className="p-2 rounded-lg bg-purple-100 group-hover:bg-purple-200 transition-colors">
+                      <ImageIcon className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div className="text-left flex-1">
+                      <div className="font-medium text-sm">Escolher da Galeria</div>
+                      <div className="text-xs text-muted-foreground">Selecionar imagem existente</div>
+                    </div>
+                    <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                  </div>
+                </Button>
+
+                {/* Quick info */}
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <div className="flex gap-1.5">
+                    <Badge variant="outline" className="text-xs px-2 py-0.5">
+                      GPS Auto
+                    </Badge>
+                    <Badge variant="outline" className="text-xs px-2 py-0.5">
+                      Geo-tag
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Auto-close em 3s
+                  </div>
+                </div>
+              </CardContent>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Loading overlay para camera */}
       {cameraActive && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
