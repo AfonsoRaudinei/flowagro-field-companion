@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { PremiumButton } from "@/components/ui/premium-button";
+import { IntegratedMapInterface } from "@/components/maps/IntegratedMapInterface";
 import { 
   Map, 
   Layers, 
@@ -53,20 +54,21 @@ const TechnicalMap = () => {
             "flex h-[calc(100vh-4rem)]",
             isLandscape && isMobile && "flex-row-reverse"
           )}>
-          {/* Map Area */}
+          {/* Map Area with Integrated Interface */}
           <div className="flex-1 relative">
-            <BaseMap 
+            <IntegratedMapInterface
               className="w-full h-full"
-              showNavigation={true}
-              showFullscreen={true}
-              showGeolocate={true}
-            />
-            <MapControls 
-              className="top-4 left-4"
-              showStyleSelector={true}
-              showResetView={true}
-              showFullscreenToggle={true}
-              vertical={true}
+              farmId="demo-farm-001"
+              farmName="Fazenda Técnica Demo"
+              onPhotoCapture={(photoData, location) => {
+                console.log('Photo captured successfully:', {
+                  dataLength: photoData.length,
+                  location: location ? `${location.latitude}, ${location.longitude}` : 'No location'
+                });
+              }}
+              onMapStyleChange={(style) => {
+                console.log('Map style changed to:', style);
+              }}
             />
           </div>
 
@@ -193,8 +195,7 @@ const TechnicalMap = () => {
             </div>
           </div>
           
-          {/* Floating Camera Button */}
-          <FloatingCameraButton />
+          {/* Floating Camera Button - Removed from here since it's now integrated into PremiumCameraButton */}
         </div>
       </FullscreenTransitions>
     </MapProvider>
