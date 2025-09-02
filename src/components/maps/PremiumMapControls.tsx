@@ -93,20 +93,25 @@ export const PremiumMapControls: React.FC<PremiumMapControlsProps> = ({
       style={{ zIndex: getZIndex('controls') }}
     >
       {/* Zoom Controls */}
-      <div className={cn(
-        "flex",
-        vertical ? "flex-col" : "flex-row",
-        "gap-1 p-1 rounded-lg",
-        "bg-background/80 backdrop-blur-sm",
-        "border border-border/50",
-        "shadow-lg premium-card"
-      )}>
+      <div 
+        className={cn(
+          "flex",
+          vertical ? "flex-col" : "flex-row",
+          "gap-1 p-1 rounded-lg",
+          "bg-background/80 backdrop-blur-sm",
+          "border border-border/50",
+          "shadow-lg premium-card"
+        )}
+        role="group"
+        aria-label="Controles de zoom do mapa"
+      >
         <PremiumButton
           variant="ghost"
           size="icon"
           animation="hover"
           onClick={handleZoomIn}
-          className="premium-icon h-8 w-8"
+          ariaLabel="Ampliar mapa (Zoom In)"
+          className="premium-icon h-12 w-12"
         >
           <ZoomIn className="h-4 w-4" />
         </PremiumButton>
@@ -116,27 +121,33 @@ export const PremiumMapControls: React.FC<PremiumMapControlsProps> = ({
           size="icon"
           animation="hover"
           onClick={handleZoomOut}
-          className="premium-icon h-8 w-8"
+          ariaLabel="Reduzir mapa (Zoom Out)"
+          className="premium-icon h-12 w-12"
         >
           <ZoomOut className="h-4 w-4" />
         </PremiumButton>
       </div>
 
       {/* Navigation Controls */}
-      <div className={cn(
-        "flex",
-        vertical ? "flex-col" : "flex-row",
-        "gap-1 p-1 rounded-lg",
-        "bg-background/80 backdrop-blur-sm",
-        "border border-border/50",
-        "shadow-lg premium-card"
-      )}>
+      <div 
+        className={cn(
+          "flex",
+          vertical ? "flex-col" : "flex-row",
+          "gap-1 p-1 rounded-lg",
+          "bg-background/80 backdrop-blur-sm",
+          "border border-border/50",
+          "shadow-lg premium-card"
+        )}
+        role="group"
+        aria-label="Controles de navegação do mapa"
+      >
         <PremiumButton
           variant="ghost"
           size="icon"
           animation="press"
           onClick={() => animateMapInteraction('rotate')}
-          className="premium-icon h-8 w-8"
+          ariaLabel="Rotacionar mapa"
+          className="premium-icon h-12 w-12"
         >
           <Navigation className="h-4 w-4" />
         </PremiumButton>
@@ -147,7 +158,8 @@ export const PremiumMapControls: React.FC<PremiumMapControlsProps> = ({
             size="icon"
             animation="bounce"
             onClick={handleResetView}
-            className="premium-icon h-8 w-8"
+            ariaLabel="Redefinir visualização do mapa para posição inicial"
+            className="premium-icon h-12 w-12"
           >
             <RotateCcw className="h-4 w-4" />
           </PremiumButton>
@@ -156,20 +168,25 @@ export const PremiumMapControls: React.FC<PremiumMapControlsProps> = ({
 
       {/* Style and Settings */}
       {showStyleSelector && (
-        <div className={cn(
-          "flex",
-          vertical ? "flex-col" : "flex-row",
-          "gap-1 p-1 rounded-lg",
-          "bg-background/80 backdrop-blur-sm",
-          "border border-border/50",
-          "shadow-lg premium-card"
-        )}>
+        <div 
+          className={cn(
+            "flex",
+            vertical ? "flex-col" : "flex-row",
+            "gap-1 p-1 rounded-lg",
+            "bg-background/80 backdrop-blur-sm",
+            "border border-border/50",
+            "shadow-lg premium-card"
+          )}
+          role="group"
+          aria-label="Configurações e estilos do mapa"
+        >
           <PremiumButton
             variant="ghost"
             size="icon"
             animation="glow"
             onClick={() => onStyleChange?.('satellite')}
-            className="premium-icon h-8 w-8 availability-pulse"
+            ariaLabel="Alterar para visualização por satélite"
+            className="premium-icon h-12 w-12 availability-pulse"
           >
             <Layers className="h-4 w-4" />
           </PremiumButton>
@@ -178,7 +195,8 @@ export const PremiumMapControls: React.FC<PremiumMapControlsProps> = ({
             variant="ghost"
             size="icon"
             animation="hover"
-            className="premium-icon h-8 w-8"
+            ariaLabel="Abrir configurações do mapa"
+            className="premium-icon h-12 w-12"
           >
             <Settings className="h-4 w-4" />
           </PremiumButton>
@@ -187,20 +205,30 @@ export const PremiumMapControls: React.FC<PremiumMapControlsProps> = ({
 
       {/* Fullscreen Toggle */}
       {showFullscreenToggle && (
-        <div className={cn(
-          "p-1 rounded-lg",
-          "bg-background/80 backdrop-blur-sm",
-          "border border-border/50",
-          "shadow-lg premium-card"
-        )}>
+        <div 
+          className={cn(
+            "p-1 rounded-lg",
+            "bg-background/80 backdrop-blur-sm",
+            "border border-border/50",
+            "shadow-lg premium-card"
+          )}
+          role="group"
+          aria-label="Controle de tela cheia"
+        >
           <PremiumButton
             variant={isFullscreen ? "premium" : "outline"}
             size="icon"
             animation="full"
             onClick={handleFullscreenToggle}
             disabled={fullscreenState === 'entering' || fullscreenState === 'exiting'}
+            ariaLabel={
+              isFullscreen 
+                ? "Sair do modo tela cheia" 
+                : "Entrar no modo tela cheia"
+            }
+            ariaDescribedBy="fullscreen-description"
             className={cn(
-              "premium-icon h-8 w-8",
+              "premium-icon h-12 w-12",
               fullscreenState === 'entering' && "animate-hover-lift",
               fullscreenState === 'exiting' && "animate-press-down"
             )}
@@ -210,6 +238,12 @@ export const PremiumMapControls: React.FC<PremiumMapControlsProps> = ({
             ) : (
               <Maximize className="h-4 w-4" />
             )}
+            <span id="fullscreen-description" className="sr-only">
+              {isFullscreen 
+                ? "Clique para sair do modo tela cheia e retornar à visualização normal" 
+                : "Clique para entrar no modo tela cheia para melhor visualização do mapa"
+              }
+            </span>
           </PremiumButton>
         </div>
       )}

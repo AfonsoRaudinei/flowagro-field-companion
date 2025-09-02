@@ -105,37 +105,49 @@ export const PremiumCameraButton: React.FC<PremiumCameraButtonProps> = ({
       )}
       style={{ zIndex: getZIndex('overlay') }}
     >
-      <PremiumButton
-        variant={getCameraButtonVariant()}
-        size="touch"
-        animation={getCameraButtonAnimation()}
-        disabled={isCapturing}
-        onClick={handleCameraCapture}
-        className={cn(
-          "premium-card shadow-lg",
-          "flex items-center gap-2",
-          isCapturing && "animate-pulse-availability",
-          lastCaptureTime && Date.now() - lastCaptureTime.getTime() < 5000 && "animate-hover-glow"
-        )}
-      >
-        <CameraIcon className={cn(
-          "h-5 w-5",
-          isCapturing && "animate-spin",
-          "premium-icon"
-        )} />
-        {!isFullscreen && (
-          <span className="text-sm font-medium">
+        <PremiumButton
+          variant={isCapturing ? "secondary" : "default"}
+          size="touch"
+          animation={getCameraButtonAnimation()}
+          disabled={isCapturing}
+          onClick={handleCameraCapture}
+          ariaLabel={
+            isCapturing 
+              ? "Capturando foto, aguarde..." 
+              : "Capturar foto com localização GPS"
+          }
+          ariaDescribedBy="camera-button-description"
+          className={cn(
+            "premium-card shadow-lg",
+            "flex items-center gap-2",
+            isCapturing && "animate-pulse-availability",
+            lastCaptureTime && Date.now() - lastCaptureTime.getTime() < 5000 && "animate-hover-glow"
+          )}
+        >
+          <CameraIcon className={cn(
+            "h-5 w-5",
+            isCapturing && "animate-spin",
+            "premium-icon"
+          )} />
+          {!isFullscreen && (
+            <span className="text-sm font-medium">
+              {isCapturing 
+                ? "Capturando..." 
+                : lastCaptureTime && Date.now() - lastCaptureTime.getTime() < 5000
+                  ? "Sucesso!"
+                  : "Foto"
+              }
+            </span>
+          )}
+          <span id="camera-button-description" className="sr-only">
             {isCapturing 
-              ? "Capturando..." 
-              : lastCaptureTime && Date.now() - lastCaptureTime.getTime() < 5000
-                ? "Sucesso!"
-                : "Foto"
+              ? "Aguardando captura da foto e localização GPS" 
+              : "Botão para capturar foto com coordenadas GPS automáticas. Tamanho do alvo de toque otimizado para acessibilidade."
             }
           </span>
-        )}
-      </PremiumButton>
+        </PremiumButton>
       
-      {/* Location indicator */}
+      {/* Location indicator with accessibility */}
       {!isCapturing && (
         <div 
           className={cn(
@@ -147,8 +159,11 @@ export const PremiumCameraButton: React.FC<PremiumCameraButtonProps> = ({
             "shadow-sm"
           )}
           style={{ zIndex: getZIndex('tooltip') }}
+          aria-label="Indicador de GPS ativo"
+          role="status"
         >
           <MapPin className="h-2 w-2" />
+          <span className="sr-only">GPS ativo para captura de localização</span>
         </div>
       )}
     </div>

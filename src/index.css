@@ -280,28 +280,54 @@
   animation: slideInFromBottom 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* Premium Animation System */
+/* Premium Animation System with Enhanced Accessibility */
 @layer utilities {
-  /* Premium Hover Effects */
-  .premium-hover {
-    @apply transform transition-all duration-300 cursor-pointer;
+  /* Focus Indicators - High Contrast */
+  .premium-focus {
+    @apply focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 
-  .premium-hover:hover {
+  .premium-focus-high-contrast {
+    @apply focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:outline-none;
+  }
+
+  /* Premium Hover Effects */
+  .premium-hover {
+    @apply transform transition-all duration-300 cursor-pointer premium-focus;
+  }
+
+  .premium-hover:hover:not(:disabled) {
     @apply animate-hover-lift;
   }
 
-  .premium-glow:hover {
+  .premium-hover:focus-visible {
+    @apply animate-hover-lift;
+  }
+
+  .premium-glow:hover:not(:disabled) {
+    @apply animate-hover-glow;
+  }
+
+  .premium-glow:focus-visible {
     @apply animate-hover-glow;
   }
 
   /* Active/Pressed States */
-  .premium-press:active {
+  .premium-press:active:not(:disabled) {
     @apply animate-press-down;
   }
 
-  .premium-bounce:active {
+  .premium-bounce:active:not(:disabled) {
     @apply animate-bounce-press;
+  }
+
+  /* Touch Target Helpers */
+  .touch-target-44 {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  .touch-target-icon {
+    @apply h-12 w-12 min-h-[44px] min-w-[44px];
   }
 
   /* Pulse Availability Indicators */
@@ -313,20 +339,72 @@
     @apply animate-pulse-glow;
   }
 
+  /* High Contrast Mode Support */
+  @media (prefers-contrast: high) {
+    .premium-button {
+      @apply border-2 border-current;
+    }
+    
+    .premium-hover:hover:not(:disabled) {
+      @apply bg-foreground text-background;
+    }
+    
+    .premium-focus {
+      @apply focus-visible:ring-4 focus-visible:ring-current focus-visible:ring-offset-4;
+    }
+  }
+
+  /* Reduced Motion Support */
+  @media (prefers-reduced-motion: reduce) {
+    .premium-hover {
+      @apply transition-none;
+    }
+    
+    .premium-button {
+      animation: none !important;
+    }
+    
+    .availability-pulse,
+    .glow-pulse {
+      animation: none !important;
+    }
+    
+    .premium-hover:hover:not(:disabled) {
+      @apply scale-100 translate-y-0;
+      box-shadow: 0 4px 8px rgba(0, 87, 255, 0.2);
+    }
+    
+    .premium-press:active:not(:disabled) {
+      @apply scale-95;
+      transition: transform 0.1s ease;
+    }
+  }
+
   /* Combined Premium Effects */
   .premium-button {
-    @apply premium-hover premium-press transition-all duration-300 transform;
+    @apply premium-hover premium-press transition-all duration-300 transform premium-focus;
     box-shadow: var(--shadow-button);
   }
 
-  .premium-button:hover {
+  .premium-button:hover:not(:disabled) {
     @apply -translate-y-0.5 scale-105;
     box-shadow: 0 10px 20px rgba(0, 87, 255, 0.3), 0 6px 6px rgba(0, 87, 255, 0.1);
   }
 
-  .premium-button:active {
+  .premium-button:focus-visible {
+    @apply -translate-y-0.5 scale-105;
+    box-shadow: 0 10px 20px rgba(0, 87, 255, 0.3), 0 6px 6px rgba(0, 87, 255, 0.1);
+  }
+
+  .premium-button:active:not(:disabled) {
     @apply translate-y-0 scale-100;
     transition-duration: 0.1s;
+  }
+
+  .premium-button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+    box-shadow: none;
+    animation: none;
   }
 
   /* State Transition Helpers */
@@ -353,20 +431,45 @@
 
   /* Interactive Card Effects */
   .premium-card {
-    @apply transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+    @apply transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg premium-focus;
     box-shadow: var(--shadow-card);
   }
 
-  .premium-card:hover {
+  .premium-card:hover:not(:disabled) {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .premium-card:focus-visible {
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   }
 
   /* Premium Icon Animations */
   .premium-icon {
-    @apply transform transition-transform duration-200 hover:scale-110 hover:rotate-12;
+    @apply transform transition-transform duration-200 hover:scale-110 hover:rotate-12 premium-focus;
   }
 
-  .premium-icon:active {
+  .premium-icon:active:not(:disabled) {
     @apply scale-95 rotate-0;
+  }
+
+  .premium-icon:focus-visible {
+    @apply scale-110 rotate-12;
+  }
+
+  /* Screen Reader Only Content */
+  .sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  /* Skip Link for Keyboard Navigation */
+  .skip-link {
+    @apply absolute left-0 top-0 bg-primary text-primary-foreground px-4 py-2 rounded-md;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
   }
 }
