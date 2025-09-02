@@ -1,8 +1,16 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { MapProvider, useMap } from "@/components/maps/MapProvider";
 import { FullscreenTransitions } from '@/components/maps/FullscreenTransitions';
 import { SimpleBaseMap } from "@/components/maps/SimpleBaseMap";
+import { DrawingToolsPanel } from "@/components/maps/DrawingToolsPanel";
+import { MapFloatingActions } from "@/components/maps/MapFloatingActions";
 import { LocationFooter } from "@/components/maps/LocationFooter";
+import { LocationTracker } from "@/components/maps/LocationTracker";
+import { PinControls } from "@/components/maps/PinControls";
+import { NDVIControls } from "@/components/maps/NDVIControls";
+import { NDVIAnalysis } from "@/components/maps/NDVIAnalysis";
+import NDVIHistory from "@/components/maps/NDVIHistory";
+import { ResponsiveBottomSheet } from "@/components/maps/ResponsiveBottomSheet";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { useMapNavigation } from '@/hooks/useMapInstance';
@@ -12,19 +20,21 @@ import { useToast } from "@/hooks/use-toast";
 import { getStyleUrl, MAP_STYLES, type MapStyle } from '@/services/mapService';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider"; 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, Layers, PenTool, Mountain, Satellite, Route, ArrowLeft, Home, Target, Leaf, MapPin, Navigation, AlertCircle, Radar, Square, Circle, MousePointer } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Camera, Layers, PenTool, Mountain, Satellite, Route, Check, ImageIcon, ArrowLeft, Home, Target, Leaf, MapPin, Navigation, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from '@/integrations/supabase/client';
 
-// Layout principal do mapa técnico com ícones compactos (sem modais)
+// Layout principal do mapa técnico com todas as funcionalidades integradas
 const TechnicalMapLayout = () => {
   const [cameraActive, setCameraActive] = useState(false);
-  const [activeInlineControl, setActiveInlineControl] = useState<string | null>(null);
-  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
-  
+  const [activeSheet, setActiveSheet] = useState<string | null>(null);
   // Session persistence for layer settings
   const [currentLayer, setCurrentLayer] = useState<MapStyle>(() => {
     const saved = localStorage.getItem('flowagro-map-layer');
@@ -37,12 +47,8 @@ const TechnicalMapLayout = () => {
   const [ndviEnabled, setNdviEnabled] = useState(false);
   const [ndviOpacity, setNdviOpacity] = useState(75);
   const [ndviColorScale, setNdviColorScale] = useState('viridis');
-  const [ndviPeriod, setNdviPeriod] = useState('30d');
   const [mapTilerToken, setMapTilerToken] = useState<string | null>(null);
   const [isLayerChanging, setIsLayerChanging] = useState(false);
-  const [pinsActive, setPinsActive] = useState(false);
-  const [scannerActive, setScannerActive] = useState(false);
-  const [radarActive, setRadarActive] = useState(false);
   const mapContext = useMap();
   const {
     flyToCurrentLocation
@@ -79,16 +85,16 @@ const TechnicalMapLayout = () => {
     saveShape
   } = useMapDrawing();
 
-  // Keyboard shortcuts para ícones compactos
+  // Keyboard shortcuts para FAB
   useKeyboardShortcuts({
-    onLayersOpen: () => handleIconTap('layers'),
-    onLocationOpen: () => handleLocationClick(),
-    onNDVIOpen: () => handleIconTap('ndvi'),
-    onPinsOpen: () => handleIconTap('pins'),
-    onScannerOpen: () => handleIconTap('scanner'),
-    onDrawingOpen: () => handleIconTap('drawing'),
-    onCameraOpen: () => handleIconTap('camera'),
-    onClose: () => setActiveInlineControl(null)
+    onLayersOpen: () => setActiveSheet('layers'),
+    onLocationOpen: () => setActiveSheet('location'),
+    onNDVIOpen: () => setActiveSheet('ndvi'),
+    onPinsOpen: () => setActiveSheet('pins'),
+    onScannerOpen: () => setActiveSheet('scanner'),
+    onDrawingOpen: () => setActiveSheet('drawing'),
+    onCameraOpen: () => setActiveSheet('camera'),
+    onClose: () => setActiveSheet(null)
   });
 
   // Get MapTiler token on mount
@@ -107,73 +113,11 @@ const TechnicalMapLayout = () => {
     };
     getToken();
   }, []);
-  // Auto-hide microcontroles após 3s
-  useEffect(() => {
-    if (activeInlineControl) {
-      const timer = setTimeout(() => {
-        setActiveInlineControl(null);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [activeInlineControl]);
-
-  // Handlers para long-press
-  const handlePressStart = useCallback((iconType: string) => {
-    const timer = setTimeout(() => {
-      setActiveInlineControl(iconType);
-      // Feedback háptico leve
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-    }, 400);
-    setLongPressTimer(timer);
-  }, []);
-
-  const handlePressEnd = useCallback(() => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
-  }, [longPressTimer]);
-
-  // Handlers para tap simples (ação principal)
-  const handleIconTap = useCallback((iconType: string) => {
-    switch (iconType) {
-      case 'layers':
-        cycleLayers();
-        break;
-      case 'drawing':
-        setActiveTool(activeTool === 'select' ? 'polygon' : 'select');
-        break;
-      case 'camera':
-        handleOpenCamera();
-        break;
-      case 'ndvi':
-        setNdviEnabled(!ndviEnabled);
-        break;
-      case 'pins':
-        setPinsActive(!pinsActive);
-        break;
-      case 'scanner':
-        setScannerActive(!scannerActive);
-        break;
-      case 'radar':
-        setRadarActive(!radarActive);
-        break;
-    }
-  }, [activeTool, ndviEnabled, pinsActive, scannerActive, radarActive]);
-
-  const cycleLayers = () => {
-    const layers: MapStyle[] = ['terrain', 'satellite', 'hybrid'];
-    const currentIndex = layers.indexOf(currentLayer);
-    const nextLayer = layers[(currentIndex + 1) % layers.length];
-    setMapLayer(nextLayer);
-  };
-
   const setMapLayer = async (layer: MapStyle) => {
     if (isLayerChanging) return;
     setCurrentLayer(layer);
-    localStorage.setItem('flowagro-map-layer', layer);
+    localStorage.setItem('flowagro-map-layer', layer); // Persist layer choice
+    setActiveSheet(null); // Fechar sheet ao alterar camada
     setIsLayerChanging(true);
 
     // Get map instance and change style
@@ -196,18 +140,17 @@ const TechnicalMapLayout = () => {
             setIsLayerChanging(false);
           });
         }
-        
         toast({
-          title: "Camada: " + (layer === 'terrain' ? 'Terreno' : layer === 'satellite' ? 'Satélite' : 'Híbrido'),
-          duration: 2000
+          title: "Camada alterada",
+          description: `Visualização alterada para ${layer === 'terrain' ? 'Terreno' : layer === 'satellite' ? 'Satélite' : layer === 'hybrid' ? 'Híbrido' : 'Ruas'}`
         });
       } catch (error) {
         console.error('Error changing layer:', error);
         setIsLayerChanging(false);
         toast({
-          title: "Erro ao alterar camada",
-          variant: "destructive",
-          duration: 2000
+          title: "Erro",
+          description: "Não foi possível alterar a camada do mapa",
+          variant: "destructive"
         });
       }
     }
@@ -249,7 +192,7 @@ const TechnicalMapLayout = () => {
         }
         toast({
           title: "Estradas ativadas",
-          duration: 2000
+          description: "Overlay de estradas foi adicionado ao mapa"
         });
       } else {
         // Hide roads layer with animation
@@ -263,7 +206,7 @@ const TechnicalMapLayout = () => {
         }
         toast({
           title: "Estradas desativadas",
-          duration: 2000
+          description: "Overlay de estradas foi removido do mapa"
         });
       }
       console.log(`Roads overlay ${newRoadsState ? 'enabled' : 'disabled'}`);
@@ -283,16 +226,16 @@ const TechnicalMapLayout = () => {
           });
         }
         toast({
-          title: "GPS centralizado",
-          duration: 2000
+          title: "📍 Localização GPS encontrada",
+          description: `Lat: ${location.latitude.toFixed(6)}, Lng: ${location.longitude.toFixed(6)}\nPrecisão: ±${location.accuracy?.toFixed(0)}m`
         });
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "GPS indisponível";
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível obter sua localização GPS";
       toast({
-        title: errorMessage,
-        variant: "destructive",
-        duration: 2000
+        title: "❌ Erro de localização GPS",
+        description: errorMessage,
+        variant: "destructive"
       });
     }
   };
@@ -305,205 +248,384 @@ const TechnicalMapLayout = () => {
     }, 2000);
   };
   const handleOpenCamera = async () => {
+    setActiveSheet(null); // Fechar sheet
     try {
       console.log('Opening native camera...');
       toast({
-        title: "Câmera ativa",
-        duration: 2000
+        title: "Câmera",
+        description: "Abrindo câmera para captura..."
       });
     } catch (error) {
       toast({
         title: "Erro na câmera",
-        variant: "destructive",
-        duration: 2000  
+        description: "Não foi possível abrir a câmera. Tente novamente.",
+        variant: "destructive"
       });
     }
   };
-  
   const handleOpenLibrary = async () => {
+    setActiveSheet(null); // Fechar sheet
     try {
       console.log('Opening photo library...');
       toast({
-        title: "Galeria ativa", 
-        duration: 2000
+        title: "Galeria",
+        description: "Abrindo galeria para seleção..."
       });
     } catch (error) {
       toast({
         title: "Erro na galeria",
-        variant: "destructive",
-        duration: 2000
+        description: "Não foi possível acessar a galeria. Tente novamente.",
+        variant: "destructive"
       });
     }
   };
 
-  // Renderizar microcontroles inline (sem modais)
-  const renderInlineControls = () => {
-    if (!activeInlineControl) return null;
-
-    const baseClasses = "absolute bottom-16 left-1/2 transform -translate-x-1/2 z-30 bg-card/95 backdrop-blur-sm rounded-xl shadow-xl border p-3 animate-fade-in";
-    const maxWidth = "max-w-[90vw] w-fit";
-
-    switch (activeInlineControl) {
+  // Renderizar conteúdo do sheet baseado no tipo ativo
+  const renderSheetContent = () => {
+    switch (activeSheet) {
       case 'layers':
-        return (
-          <div className={cn(baseClasses, maxWidth)}>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm" 
-                variant={currentLayer === 'terrain' ? "default" : "outline"}
-                onClick={() => setMapLayer('terrain')}
-                className="h-8 px-3"
-              >
-                <Mountain className="h-3 w-3 mr-1" />
-                Terreno
-              </Button>
-              <Button
-                size="sm"
-                variant={currentLayer === 'satellite' ? "default" : "outline"}
-                onClick={() => setMapLayer('satellite')}
-                className="h-8 px-3"
-              >
-                <Satellite className="h-3 w-3 mr-1" />
-                Satélite
-              </Button>
-              <Button
-                size="sm"
-                variant={currentLayer === 'hybrid' ? "default" : "outline"}
-                onClick={() => setMapLayer('hybrid')}
-                className="h-8 px-3"
-              >
-                <Layers className="h-3 w-3 mr-1" />
-                Híbrido
-              </Button>
-            </div>
-            <div className="flex items-center justify-between mt-2 pt-2 border-t">
-              <div className="flex items-center gap-2">
-                <Route className="h-3 w-3" />
-                <span className="text-xs font-medium">Estradas</span>
-              </div>
-              <Switch 
-                checked={roadsEnabled} 
-                onCheckedChange={toggleRoadsOverlay}
-              />
-            </div>
-          </div>
-        );
-
-      case 'drawing':
-        return (
-          <div className={cn(baseClasses, maxWidth)}>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant={activeTool === 'select' ? "default" : "outline"}
-                onClick={() => setActiveTool('select')}
-                className="h-8 px-3"
-              >
-                <MousePointer className="h-3 w-3 mr-1" />
-                Selecionar
-              </Button>
-              <Button
-                size="sm"
-                variant={activeTool === 'polygon' ? "default" : "outline"}
-                onClick={() => setActiveTool('polygon')}
-                className="h-8 px-3"
-              >
-                <PenTool className="h-3 w-3 mr-1" />
-                Polígono
-              </Button>
-              <Button
-                size="sm"
-                variant={activeTool === 'rectangle' ? "default" : "outline"}
-                onClick={() => setActiveTool('rectangle')}
-                className="h-8 px-3"
-              >
-                <Square className="h-3 w-3 mr-1" />
-                Retângulo
-              </Button>
-              <Button
-                size="sm"
-                variant={activeTool === 'circle' ? "default" : "outline"}
-                onClick={() => setActiveTool('circle')}
-                className="h-8 px-3"
-              >
-                <Circle className="h-3 w-3 mr-1" />
-                Círculo
-              </Button>
-              {drawnShapes.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={clearAllShapes}
-                  className="h-8 px-3"
-                >
-                  Limpar
+        return <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Layers className="w-4 h-4" />
+                  Estilos Base do Mapa
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button onClick={() => setMapLayer('terrain')} disabled={isLayerChanging} variant={currentLayer === 'terrain' ? "default" : "outline"} className="w-full justify-start">
+                  <Mountain className="h-4 w-4 mr-2" />
+                  <span>Terreno</span>
+                  {currentLayer === 'terrain' && <Check className="ml-auto h-4 w-4" />}
                 </Button>
-              )}
-            </div>
-          </div>
-        );
 
-      case 'camera':
-        return (
-          <div className={cn(baseClasses, maxWidth)}>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleOpenCamera}
-                className="h-8 px-3"
-              >
-                <Camera className="h-3 w-3 mr-1" />
-                Câmera
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleOpenLibrary}
-                className="h-8 px-3"
-              >
-                Galeria
-              </Button>
-            </div>
-          </div>
-        );
+                <Button onClick={() => setMapLayer('satellite')} disabled={isLayerChanging} variant={currentLayer === 'satellite' ? "default" : "outline"} className="w-full justify-start">
+                  <Satellite className="h-4 w-4 mr-2" />
+                  <span>Satélite</span>
+                  {currentLayer === 'satellite' && <Check className="ml-auto h-4 w-4" />}
+                </Button>
 
-      case 'ndvi':
-        return (
-          <div className={cn(baseClasses, maxWidth)}>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium">Opacidade</span>
-                <div className="w-16">
-                  <Slider
-                    value={[ndviOpacity]}
-                    onValueChange={(value) => setNdviOpacity(value[0])}
-                    max={100}
-                    step={5}
-                    className="w-full"
-                    disabled={!ndviEnabled}
-                  />
+                <Button onClick={() => setMapLayer('hybrid')} disabled={isLayerChanging} variant={currentLayer === 'hybrid' ? "default" : "outline"} className="w-full justify-start">
+                  <Layers className="h-4 w-4 mr-2" />
+                  <span>Híbrido</span>
+                  {currentLayer === 'hybrid' && <Check className="ml-auto h-4 w-4" />}
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Sobreposições</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Route className="h-4 w-4" />
+                    <span className="text-sm font-medium">Estradas</span>
+                  </div>
+                  <Switch checked={roadsEnabled} onCheckedChange={toggleRoadsOverlay} disabled={isLayerChanging} />
                 </div>
-                <span className="text-xs text-muted-foreground w-8">{ndviOpacity}%</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Select value={ndviPeriod} onValueChange={setNdviPeriod} disabled={!ndviEnabled}>
-                  <SelectTrigger className="w-16 h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7d">7d</SelectItem>
-                    <SelectItem value="30d">30d</SelectItem>
-                    <SelectItem value="90d">90d</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Exibe as principais vias e estradas na região
+                </p>
+              </CardContent>
+            </Card>
+          </div>;
+      case 'camera':
+        return <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <Camera className="w-12 h-12 mx-auto text-primary" />
+              <h3 className="font-semibold">Capturar Imagem</h3>
+              <p className="text-sm text-muted-foreground">
+                Capture fotos da área ou escolha da galeria
+              </p>
             </div>
-          </div>
-        );
-
+            
+            <Separator />
+            
+            <div className="space-y-3">
+              <Button onClick={handleOpenCamera} className="w-full justify-start h-12" variant="outline">
+                <Camera className="h-5 w-5 mr-3" />
+                <div className="text-left">
+                  <div className="font-medium">Abrir Câmera</div>
+                  <div className="text-xs text-muted-foreground">Tirar nova foto</div>
+                </div>
+              </Button>
+              
+              <Button onClick={handleOpenLibrary} className="w-full justify-start h-12" variant="outline">
+                <ImageIcon className="h-5 w-5 mr-3" />
+                <div className="text-left">
+                  <div className="font-medium">Escolher da Galeria</div>
+                  <div className="text-xs text-muted-foreground">Selecionar imagem existente</div>
+                </div>
+              </Button>
+            </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Anotações de Imagem</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-xs text-muted-foreground">
+                  Após capturar, você poderá adicionar marcações e anotações sobre a imagem.
+                </div>
+                <div className="flex gap-2 text-xs">
+                  <Badge variant="outline">GPS Automático</Badge>
+                  <Badge variant="outline">Sobreposição no Mapa</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>;
+      case 'drawing':
+        return <div className="space-y-4">
+            <DrawingToolsPanel activeTool={activeTool} onToolSelect={setActiveTool} onStartDrawing={startDrawing} onFinishDrawing={finishDrawing} onCancelDrawing={cancelDrawing} onClearAll={clearAllShapes} onExport={exportShapes} isDrawingMode={isDrawingMode} shapesCount={drawnShapes.length} currentShape={currentShape} onSaveShape={saveShape} onDeleteShape={deleteShape} onAnalyzeShape={analyzeShape} drawnShapes={drawnShapes} />
+            
+            {/* Alerta de sobreposição */}
+            {drawnShapes.length > 1 && <Card className="border-orange-200 bg-orange-50">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 text-orange-700">
+                    <AlertCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">Verificação de Sobreposição</span>
+                  </div>
+                  <p className="text-xs text-orange-600 mt-1">
+                    Sistema detecta automaticamente colisões entre polígonos
+                  </p>
+                </CardContent>
+              </Card>}
+          </div>;
+      case 'location':
+        return <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <Target className="w-12 h-12 mx-auto text-primary" />
+              <h3 className="font-semibold">Localização GPS</h3>
+              <p className="text-sm text-muted-foreground">
+                Controle e monitore sua posição atual
+              </p>
+            </div>
+            <Separator />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Ações GPS</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button onClick={handleLocationClick} className="w-full justify-start" variant="outline">
+                  <Target className="h-4 w-4 mr-2" />
+                  Centralizar no Mapa
+                </Button>
+                
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>• Coordenadas exibidas no rodapé em tempo real</p>
+                  <p>• Geometrias salvas com referência GPS correta</p>
+                  <p>• Precisão automática baseada no sinal</p>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <LocationTracker />
+          </div>;
+      case 'ndvi':
+        return <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <Leaf className="w-12 h-12 mx-auto text-green-600" />
+              <h3 className="font-semibold">Análise NDVI</h3>
+              <p className="text-sm text-muted-foreground">
+                Índice de vegetação e saúde das plantas
+              </p>
+            </div>
+            <Separator />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center justify-between">
+                  Controles NDVI
+                  <Switch checked={ndviEnabled} onCheckedChange={setNdviEnabled} />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium">Opacidade</span>
+                    <span className="text-xs text-muted-foreground">{ndviOpacity}%</span>
+                  </div>
+                  <Slider value={[ndviOpacity]} onValueChange={value => setNdviOpacity(value[0])} max={100} step={1} className="w-full" disabled={!ndviEnabled} />
+                </div>
+                
+                <div className="space-y-2">
+                  <span className="text-xs font-medium">Escala de Cores</span>
+                  <Select value={ndviColorScale} onValueChange={setNdviColorScale} disabled={!ndviEnabled}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="viridis">Viridis (Verde-Azul)</SelectItem>
+                      <SelectItem value="rdylgn">RdYlGn (Vermelho-Verde)</SelectItem>
+                      <SelectItem value="spectral">Espectral</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium">Início</span>
+                    <Input type="date" className="text-xs" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium">Fim</span>
+                    <Input type="date" className="text-xs" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="history">
+                <AccordionTrigger className="text-sm">Histórico NDVI</AccordionTrigger>
+                <AccordionContent>
+                  <NDVIHistory />
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="legend">
+                <AccordionTrigger className="text-sm">Legenda de Cores</AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-red-500 rounded"></div>
+                      <span>Solo exposto/Seco (0.0-0.2)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+                      <span>Vegetação esparsa (0.2-0.4)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-green-500 rounded"></div>
+                      <span>Vegetação saudável (0.4-0.8)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 bg-green-800 rounded"></div>
+                      <span>Vegetação densa (0.8-1.0)</span>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>;
+      case 'pins':
+        return <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <MapPin className="w-12 h-12 mx-auto text-primary" />
+              <h3 className="font-semibold">Gerenciar Pins</h3>
+              <p className="text-sm text-muted-foreground">
+                Adicione e organize marcadores no mapa
+              </p>
+            </div>
+            <Separator />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Filtros de Marketing</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
+                    Promoções
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
+                    Eventos
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
+                    Pontos de Venda
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary/10">
+                    Parcerias
+                  </Badge>
+                </div>
+                
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>✅ Toque em pins no mapa para tooltip inline (não-modal)</p>
+                  <p>✅ Coordenadas GPS registradas automaticamente</p>
+                  <p>✅ Filtros aplicados em tempo real</p>
+                  <p>📍 Use <kbd className="px-1 py-0.5 bg-muted rounded text-xs">P</kbd> para abrir rapidamente</p>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <PinControls />
+          </div>;
+      case 'scanner':
+        return <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <Navigation className="w-12 h-12 mx-auto text-primary" />
+              <h3 className="font-semibold">Scanner Inteligente</h3>
+              <p className="text-sm text-muted-foreground">
+                Detecção automática de falhas e anomalias
+              </p>
+            </div>
+            <Separator />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center justify-between">
+                  Ativação do Scanner
+                  <Switch defaultChecked />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>Detecção de linhas de plantio</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span>Análise de densidade vegetal</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    
+                    <span>Alertas de excesso/escassez</span>
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>✅ Notificações geográficas inline no mapa</p>
+                  <p>✅ Nenhum modal ou popup invasivo</p>
+                  <p>🔥 Use <kbd className="px-1 py-0.5 bg-muted rounded text-xs">S</kbd> para ativar/desativar</p>
+                </div>
+                
+                <Badge variant="outline" className="w-fit">
+                  IA Ativa • Processamento em tempo real
+                </Badge>
+              </CardContent>
+            </Card>
+          </div>;
       default:
         return null;
+    }
+  };
+  const getSheetTitle = () => {
+    switch (activeSheet) {
+      case 'layers':
+        return 'Camadas do Mapa';
+      case 'camera':
+        return 'Capturar Imagem';
+      case 'drawing':
+        return 'Ferramentas de Desenho';
+      case 'location':
+        return 'Localização GPS';
+      case 'ndvi':
+        return 'Análise NDVI';
+      case 'pins':
+        return 'Gerenciar Pins';
+      case 'scanner':
+        return 'Scanner Inteligente';
+      default:
+        return '';
     }
   };
   return <div className="min-h-screen bg-background relative overflow-hidden">
@@ -543,72 +665,17 @@ const TechnicalMapLayout = () => {
         </div>
       </div>
 
-      {/* Top-Left: Barra de Ações Primárias (máx 48px altura) */}
+      {/* Controles Principais - Top Left */}
       <div className="absolute top-20 left-4 z-20 flex gap-2">
-        <Button 
-          variant="secondary" 
-          size="sm" 
-          onTouchStart={() => handlePressStart('layers')}
-          onTouchEnd={handlePressEnd}
-          onMouseDown={() => handlePressStart('layers')}
-          onMouseUp={handlePressEnd}
-          onMouseLeave={handlePressEnd}
-          onClick={() => handleIconTap('layers')}
-          className={cn(
-            "h-10 px-3 rounded-xl shadow-lg border-0 backdrop-blur-sm transition-all duration-150",
-            "hover:bg-[rgba(0,87,255,0.1)] active:scale-95 bg-card/95",
-            isLayerChanging && "opacity-50"
-          )}
-          disabled={isLayerChanging}
-        >
-          {isLayerChanging ? (
-            <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent" />
-          ) : (
-            <Layers className="h-4 w-4" />
-          )}
+        <Button variant={activeSheet === 'layers' ? "default" : "secondary"} size="sm" onClick={() => setActiveSheet(activeSheet === 'layers' ? null : 'layers')} className={cn("rounded-xl shadow-lg border-0 backdrop-blur-sm transition-all duration-200", "hover:bg-[rgba(0,87,255,0.1)] active:scale-95")} disabled={isLayerChanging}>
+          {isLayerChanging ? <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent" /> : <Layers className="h-4 w-4" />}
           <span className="ml-2 text-xs font-medium">Camadas</span>
         </Button>
 
-        <Button 
-          variant="secondary" 
-          size="sm"
-          onTouchStart={() => handlePressStart('drawing')}
-          onTouchEnd={handlePressEnd}
-          onMouseDown={() => handlePressStart('drawing')}
-          onMouseUp={handlePressEnd}
-          onMouseLeave={handlePressEnd}
-          onClick={() => handleIconTap('drawing')}
-          className={cn(
-            "h-10 px-3 rounded-xl shadow-lg border-0 backdrop-blur-sm transition-all duration-150",
-            "hover:bg-[rgba(0,87,255,0.1)] active:scale-95 bg-card/95",
-            activeTool !== 'select' && "ring-2 ring-primary/30"
-          )}
-        >
-          <PenTool className="h-4 w-4" />
-          <span className="ml-2 text-xs font-medium">Desenhar</span>
-        </Button>
+        
 
-        <Button 
-          variant="secondary" 
-          size="sm"
-          onTouchStart={() => handlePressStart('camera')}
-          onTouchEnd={handlePressEnd}
-          onMouseDown={() => handlePressStart('camera')}
-          onMouseUp={handlePressEnd}
-          onMouseLeave={handlePressEnd}
-          onClick={() => handleIconTap('camera')}
-          className={cn(
-            "h-10 px-3 rounded-xl shadow-lg border-0 backdrop-blur-sm transition-all duration-150",
-            "hover:bg-[rgba(0,87,255,0.1)] active:scale-95 bg-card/95",
-            cameraActive && "opacity-50"
-          )}
-          disabled={cameraActive}
-        >
-          {cameraActive ? (
-            <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent" />
-          ) : (
-            <Camera className="h-4 w-4" />
-          )}
+        <Button variant={activeSheet === 'camera' ? "default" : "secondary"} size="sm" onClick={() => setActiveSheet(activeSheet === 'camera' ? null : 'camera')} className={cn("rounded-xl shadow-lg border-0 backdrop-blur-sm transition-all duration-200", "hover:bg-[rgba(0,87,255,0.1)] active:scale-95")} disabled={cameraActive}>
+          {cameraActive ? <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent" /> : <Camera className="h-4 w-4" />}
           <span className="ml-2 text-xs font-medium">Câmera</span>
         </Button>
       </div>
@@ -629,110 +696,8 @@ const TechnicalMapLayout = () => {
         </Button>
       </div>
 
-      {/* Bottom: Ribbon de Ícones Compactos (máx 56px altura) */}
-      <div className="absolute bottom-20 left-0 right-0 z-20" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-        <div className="flex items-center justify-center gap-3 px-4">
-          <div className="flex items-center gap-2 bg-card/95 backdrop-blur-sm rounded-2xl p-2 shadow-lg">
-            {/* NDVI */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onTouchStart={() => handlePressStart('ndvi')}
-              onTouchEnd={handlePressEnd}
-              onMouseDown={() => handlePressStart('ndvi')}
-              onMouseUp={handlePressEnd}
-              onMouseLeave={handlePressEnd}
-              onClick={() => handleIconTap('ndvi')}
-              className={cn(
-                "w-11 h-11 rounded-xl transition-all duration-150",
-                "hover:bg-[rgba(0,87,255,0.1)] active:scale-95",
-                ndviEnabled ? "bg-green-500/20 text-green-700 ring-2 ring-green-500/30" : "text-muted-foreground"
-              )}
-              title="NDVI - Tap: Liga/Desliga | Long-press: Controles"
-            >
-              <Leaf className="h-5 w-5" />
-              {ndviEnabled && (
-                <Badge variant="secondary" className="absolute -top-1 -right-1 w-3 h-3 p-0 text-xs leading-none">
-                  ✓
-                </Badge>
-              )}
-            </Button>
-
-            {/* Pins/Marketing */}
-            <Button
-              variant="ghost"
-              size="icon" 
-              onClick={() => handleIconTap('pins')}
-              className={cn(
-                "w-11 h-11 rounded-xl transition-all duration-150",
-                "hover:bg-[rgba(0,87,255,0.1)] active:scale-95",
-                pinsActive ? "bg-blue-500/20 text-blue-700 ring-2 ring-blue-500/30" : "text-muted-foreground"
-              )}
-              title="Pins - Tap: Ativa/Desativa"
-            >
-              <MapPin className="h-5 w-5" />
-              {pinsActive && (
-                <Badge variant="secondary" className="absolute -top-1 -right-1 w-3 h-3 p-0 text-xs leading-none">
-                  ✓
-                </Badge>
-              )}
-            </Button>
-
-            {/* Scanner */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleIconTap('scanner')}
-              className={cn(
-                "w-11 h-11 rounded-xl transition-all duration-150",
-                "hover:bg-[rgba(0,87,255,0.1)] active:scale-95",
-                scannerActive ? "bg-orange-500/20 text-orange-700 ring-2 ring-orange-500/30" : "text-muted-foreground"
-              )}
-              title="Scanner - Tap: Ativa/Desativa"
-            >
-              <Navigation className="h-5 w-5" />
-              {scannerActive && (
-                <Badge variant="secondary" className="absolute -top-1 -right-1 w-3 h-3 p-0 text-xs leading-none">
-                  ✓
-                </Badge>
-              )}
-            </Button>
-
-            {/* Radar */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleIconTap('radar')}
-              className={cn(
-                "w-11 h-11 rounded-xl transition-all duration-150",
-                "hover:bg-[rgba(0,87,255,0.1)] active:scale-95",
-                radarActive ? "bg-purple-500/20 text-purple-700 ring-2 ring-purple-500/30" : "text-muted-foreground"
-              )}
-              title="Radar - Tap: Ativa/Desativa"
-            >
-              <Radar className="h-5 w-5" />
-              {radarActive && (
-                <Badge variant="secondary" className="absolute -top-1 -right-1 w-3 h-3 p-0 text-xs leading-none">
-                  ✓
-                </Badge>
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Microcontroles Inline (sem modais) */}
-      {renderInlineControls()}
-
-      {/* Alerta de sobreposição para desenho */}
-      {drawnShapes.length > 1 && (
-        <div className="absolute top-32 left-4 z-20">
-          <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-            <AlertCircle className="w-3 h-3 mr-1" />
-            Sobreposição detectada
-          </Badge>
-        </div>
-      )}
+      {/* Floating Action Buttons - Posição absolutamente fixa (sem duplicação) */}
+      <MapFloatingActions onCameraCapture={handleCameraCapture} onMapStyleChange={setMapLayer} onMeasurementStart={() => setActiveSheet('drawing')} onOpenSheet={setActiveSheet} />
 
       {/* Status de Alteração de Camada */}
       {isLayerChanging && <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
@@ -759,22 +724,41 @@ const TechnicalMapLayout = () => {
           </div>
         </div>}
 
-      {/* Rodapé GPS - Posição fixa, sempre visível (precisão inline) */}
-      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-10 pointer-events-none">
-        <LocationFooter 
-          className="pointer-events-none text-xs" 
-          position="bottom-center" 
-          showZoomLevel={true} 
-          currentZoom={currentZoom}
-        />
-        {currentPosition && (
-          <div className="mt-1 text-center">
-            <Badge variant="outline" className="bg-card/95 backdrop-blur-sm text-xs">
-              ±{currentPosition.accuracy?.toFixed(0)}m
-            </Badge>
-          </div>
-        )}
+      {/* Rodapé flutuante - Posição fixa, sempre visível */}
+      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none">
+        <LocationFooter className="pointer-events-none" position="bottom-center" showZoomLevel={true} currentZoom={currentZoom} />
       </div>
+
+      {/* Bottom Sheet Unificado - Contained within map viewport */}
+      {activeSheet && <ResponsiveBottomSheet 
+        title={getSheetTitle()} 
+        status={activeSheet === 'layers' && isLayerChanging ? 'Alterando...' : 'Ativo'} 
+        isActive={true} 
+        snapPoints={[20, 50, 80]} 
+        initialSnapPoint={1} 
+        persistentMiniMode={false} 
+        backdropBlur={true}
+        containerSelector="#map-viewport"
+        onSnapPointChange={snapPoint => {
+          if (snapPoint === 0) {
+            setTimeout(() => setActiveSheet(null), 300);
+          }
+        }} 
+        onClose={() => setActiveSheet(null)} 
+        showFooter={activeSheet === 'drawing'} 
+        footerActions={activeSheet === 'drawing' ? <>
+          <Button variant="outline" size="sm" onClick={() => setActiveSheet(null)}>
+            Fechar
+          </Button>
+          <Button size="sm" onClick={() => {
+            // Ação primária específica do contexto
+            console.log('Primary action for drawing');
+          }}>
+            Salvar
+          </Button>
+        </> : undefined}>
+        {renderSheetContent()}
+      </ResponsiveBottomSheet>}
     </div>;
 };
 const TechnicalMap = () => {
