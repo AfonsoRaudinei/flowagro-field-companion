@@ -128,7 +128,13 @@ export function ResponsiveBottomSheet({
 
   const getMaxHeight = () => {
     const isMobile = window.innerWidth <= 480;
-    return isMobile ? '80vh' : '70vh';
+    const isSmallMobile = window.innerWidth <= 390; // Target small screens
+    
+    if (isSmallMobile) {
+      return 'calc(90vh - env(safe-area-inset-bottom))'; // Very small screens
+    }
+    
+    return isMobile ? 'calc(85vh - env(safe-area-inset-bottom))' : '70vh';
   };
 
   return (
@@ -165,6 +171,9 @@ export function ResponsiveBottomSheet({
           maxHeight: getMaxHeight(),
           transform: state.isOpen ? 'translateY(0)' : `translateY(calc(100% - ${getSnapPointHeight(0)}px))`,
           paddingBottom: 'env(safe-area-inset-bottom)', // iOS safe area
+          // Ensure proper containment on small screens
+          minWidth: '100vw',
+          maxWidth: '100vw',
         }}
       >
         {/* Drag Handle e Header */}
@@ -284,8 +293,8 @@ export function ResponsiveBottomSheet({
 
           {/* Conteúdo scrollável - visível apenas quando não minimizado */}
           {!isMinimized && (
-            <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
-              <div className="space-y-4 pb-safe">
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 max-h-[calc(80vh-120px)]">
+              <div className="space-y-4 pb-safe min-h-0">
                 {children}
               </div>
             </div>

@@ -35,8 +35,18 @@ import { supabase } from '@/integrations/supabase/client';
 const TechnicalMapLayout = () => {
   const [cameraActive, setCameraActive] = useState(false);
   const [activeSheet, setActiveSheet] = useState<string | null>(null);
-  const [currentLayer, setCurrentLayer] = useState<MapStyle>('hybrid');
-  const [roadsEnabled, setRoadsEnabled] = useState(false);
+  // Session persistence for layer settings
+  const [currentLayer, setCurrentLayer] = useState<MapStyle>(() => {
+    const saved = localStorage.getItem('flowagro-map-layer');
+    return (saved as MapStyle) || 'hybrid';
+  });
+  const [roadsEnabled, setRoadsEnabled] = useState(() => {
+    const saved = localStorage.getItem('flowagro-roads-enabled');
+    return saved === 'true';
+  });
+  const [ndviEnabled, setNdviEnabled] = useState(false);
+  const [ndviOpacity, setNdviOpacity] = useState(75);
+  const [ndviColorScale, setNdviColorScale] = useState('viridis');
   const [mapTilerToken, setMapTilerToken] = useState<string | null>(null);
   const [isLayerChanging, setIsLayerChanging] = useState(false);
   
@@ -92,6 +102,7 @@ const TechnicalMapLayout = () => {
     if (isLayerChanging) return;
     
     setCurrentLayer(layer);
+    localStorage.setItem('flowagro-map-layer', layer); // Persist layer choice
     setActiveSheet(null); // Fechar sheet ao alterar camada
     setIsLayerChanging(true);
     
@@ -140,6 +151,7 @@ const TechnicalMapLayout = () => {
   const toggleRoadsOverlay = () => {
     const newRoadsState = !roadsEnabled;
     setRoadsEnabled(newRoadsState);
+    localStorage.setItem('flowagro-roads-enabled', newRoadsState.toString()); // Persist roads setting
     
     // Toggle roads overlay on map
     if (mapContext?.map) {
@@ -492,21 +504,35 @@ const TechnicalMapLayout = () => {
               <CardHeader>
                 <CardTitle className="text-sm flex items-center justify-between">
                   Controles NDVI
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={ndviEnabled} 
+                    onCheckedChange={setNdviEnabled} 
+                  />
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium">Opacidade</span>
-                    <span className="text-xs text-muted-foreground">75%</span>
+                    <span className="text-xs text-muted-foreground">{ndviOpacity}%</span>
                   </div>
-                  <Slider defaultValue={[75]} max={100} step={1} className="w-full" />
+                  <Slider 
+                    value={[ndviOpacity]} 
+                    onValueChange={(value) => setNdviOpacity(value[0])}
+                    max={100} 
+                    step={1} 
+                    className="w-full" 
+                    disabled={!ndviEnabled}
+                  />
                 </div>
                 
                 <div className="space-y-2">
                   <span className="text-xs font-medium">Escala de Cores</span>
-                  <Select defaultValue="viridis">
+                  <Select 
+                    value={ndviColorScale} 
+                    onValueChange={setNdviColorScale}
+                    disabled={!ndviEnabled}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
@@ -693,8 +719,12 @@ const TechnicalMapLayout = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Mobile viewport meta tag enforcement */}
+      <div className="fixed inset-0 pointer-events-none" style={{
+        minHeight: '100dvh', // Dynamic viewport height for mobile
+      }} />
       {/* Mapa Principal - Posição fixa, nunca se desloca */}
-      <div className="fixed inset-0">
+      <div className="fixed inset-0 z-10">
         <SimpleBaseMap className="w-full h-full" showNativeControls={false} />
       </div>
 
@@ -819,15 +849,13 @@ const TechnicalMapLayout = () => {
         </Button>
       </div>
 
-      {/* Floating Action Buttons - Posição absolutamente fixa */}
-      <div className="fixed bottom-6 right-6 z-30 pointer-events-auto">
-        <MapFloatingActions
-          onCameraCapture={handleCameraCapture}
-          onMapStyleChange={setMapLayer}
-          onMeasurementStart={() => setActiveSheet('drawing')}
-          onOpenSheet={setActiveSheet}
-        />
-      </div>
+      {/* Floating Action Buttons - Posição absolutamente fixa (sem duplicação) */}
+      <MapFloatingActions
+        onCameraCapture={handleCameraCapture}
+        onMapStyleChange={setMapLayer}
+        onMeasurementStart={() => setActiveSheet('drawing')}
+        onOpenSheet={setActiveSheet}
+      />
 
       {/* Status de Alteração de Camada */}
       {isLayerChanging && (
