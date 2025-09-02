@@ -7,6 +7,8 @@ import { DrawingToolsPanel } from '@/components/maps/DrawingToolsPanel';
 import { EnhancedMapClickPopover } from '@/components/maps/EnhancedMapClickPopover';
 import { DiagnosticPanel } from '@/components/maps/DiagnosticPanel';
 import { TemporalNavigator } from '@/components/maps/TemporalNavigator';
+import { TileLoadingOptimizer } from '@/components/maps/TileLoadingOptimizer';
+import { MobileRenderOptimizer } from '@/components/maps/MobileRenderOptimizer';
 import { usePremiumMapAnimations } from '@/hooks/usePremiumMapAnimations';
 import { cn } from '@/lib/utils';
 
@@ -73,6 +75,16 @@ export const IntegratedMapInterface: React.FC<IntegratedMapInterfaceProps> = ({
         showNavigation={!showAdvancedNavigation} // Use advanced navigation instead
         showFullscreen={false} // Handled by PremiumMapControls
         showGeolocate={false}  // Integrated into advanced navigation
+      />
+
+      {/* Performance Optimization */}
+      <TileLoadingOptimizer 
+        showDebugInfo={false}
+        enablePreloading={true}
+      />
+      <MobileRenderOptimizer 
+        showDebugPanel={false}
+        autoOptimize={true}
       />
 
       {/* Advanced Navigation Controls Hub */}
