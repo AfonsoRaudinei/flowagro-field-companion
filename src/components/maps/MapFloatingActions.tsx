@@ -27,7 +27,7 @@ export const MapFloatingActions: React.FC<MapFloatingActionsProps> = ({
   onOpenSheet,
   className
 }) => {
-  // Ações principais do FAB - usando callbacks para o sheet unificado
+  // Ações principais do FAB com shortcuts definidos
   const floatingActions: FloatingAction[] = [
     {
       id: 'layers',
@@ -38,7 +38,7 @@ export const MapFloatingActions: React.FC<MapFloatingActionsProps> = ({
       primary: true
     },
     {
-      id: 'location',
+      id: 'location', 
       icon: Target,
       label: 'Localização GPS',
       action: () => onOpenSheet?.('location'),
@@ -48,7 +48,7 @@ export const MapFloatingActions: React.FC<MapFloatingActionsProps> = ({
     {
       id: 'ndvi',
       icon: Leaf,
-      label: 'Análise NDVI',
+      label: 'Análise NDVI', 
       action: () => onOpenSheet?.('ndvi'),
       shortcut: 'N',
       contextual: true
@@ -56,7 +56,7 @@ export const MapFloatingActions: React.FC<MapFloatingActionsProps> = ({
     {
       id: 'pins',
       icon: MapPin,
-      label: 'Gerenciar Pins',
+      label: 'Marketing Pins',
       action: () => onOpenSheet?.('pins'),
       shortcut: 'P',
       contextual: true
@@ -65,7 +65,7 @@ export const MapFloatingActions: React.FC<MapFloatingActionsProps> = ({
       id: 'scanner',
       icon: Navigation,
       label: 'Scanner Inteligente',
-      action: () => onOpenSheet?.('scanner'),
+      action: () => onOpenSheet?.('scanner'), 
       shortcut: 'S',
       contextual: true
     },
@@ -88,14 +88,16 @@ export const MapFloatingActions: React.FC<MapFloatingActionsProps> = ({
   ];
 
   return (
-    <FloatingActionButtons
-      actions={floatingActions}
-      position="bottom-right"
-      maxVisibleActions={6}
-      expandOnHover={false}
-      contextSensitive={true}
-      autoHide={false}
-      className={className}
-    />
+    <div className="fixed bottom-6 right-6 z-30">
+      <FloatingActionButtons
+        actions={floatingActions}
+        position="bottom-right"
+        maxVisibleActions={6}
+        expandOnHover={false}
+        contextSensitive={true}
+        autoHide={false}
+        className="pointer-events-auto"
+      />
+    </div>
   );
 };

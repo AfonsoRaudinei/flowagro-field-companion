@@ -11,6 +11,7 @@ import { NDVIControls } from "@/components/maps/NDVIControls";
 import { NDVIAnalysis } from "@/components/maps/NDVIAnalysis";
 import NDVIHistory from "@/components/maps/NDVIHistory";
 import { ResponsiveBottomSheet } from "@/components/maps/ResponsiveBottomSheet";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { useMapNavigation } from '@/hooks/useMapInstance';
 import { useZoomControl } from '@/hooks/useZoomControl';
@@ -59,6 +60,18 @@ const TechnicalMapLayout = () => {
     analyzeShape,
     saveShape
   } = useMapDrawing();
+
+  // Keyboard shortcuts para FAB
+  useKeyboardShortcuts({
+    onLayersOpen: () => setActiveSheet('layers'),
+    onLocationOpen: () => setActiveSheet('location'),
+    onNDVIOpen: () => setActiveSheet('ndvi'),
+    onPinsOpen: () => setActiveSheet('pins'),
+    onScannerOpen: () => setActiveSheet('scanner'),
+    onDrawingOpen: () => setActiveSheet('drawing'),
+    onCameraOpen: () => setActiveSheet('camera'),
+    onClose: () => setActiveSheet(null),
+  });
 
   // Get MapTiler token on mount
   useEffect(() => {
@@ -584,8 +597,11 @@ const TechnicalMapLayout = () => {
                   </Badge>
                 </div>
                 
-                <div className="text-xs text-muted-foreground">
-                  Toque em um pin no mapa para ver detalhes em tooltip não-modal
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>✅ Toque em pins no mapa para tooltip inline (não-modal)</p>
+                  <p>✅ Coordenadas GPS registradas automaticamente</p>
+                  <p>✅ Filtros aplicados em tempo real</p>
+                  <p>📍 Use <kbd className="px-1 py-0.5 bg-muted rounded text-xs">P</kbd> para abrir rapidamente</p>
                 </div>
               </CardContent>
             </Card>
@@ -635,8 +651,10 @@ const TechnicalMapLayout = () => {
                 
                 <Separator />
                 
-                <div className="text-xs text-muted-foreground">
-                  Notificações geográficas aparecem diretamente no mapa quando anomalias são detectadas
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>✅ Notificações geográficas inline no mapa</p>
+                  <p>✅ Nenhum modal ou popup invasivo</p>
+                  <p>🔥 Use <kbd className="px-1 py-0.5 bg-muted rounded text-xs">S</kbd> para ativar/desativar</p>
                 </div>
                 
                 <Badge variant="outline" className="w-fit">
@@ -674,9 +692,11 @@ const TechnicalMapLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Mapa Principal */}
-      <SimpleBaseMap className="w-full h-screen" showNativeControls={false} />
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Mapa Principal - Posição fixa, nunca se desloca */}
+      <div className="fixed inset-0">
+        <SimpleBaseMap className="w-full h-full" showNativeControls={false} />
+      </div>
 
       {/* Header com Navegação - Estilo iOS */}
       <div className="absolute top-0 left-0 right-0 z-30">
@@ -799,14 +819,15 @@ const TechnicalMapLayout = () => {
         </Button>
       </div>
 
-      {/* Floating Action Buttons - Sistema Premium */}
-      <MapFloatingActions
-        onCameraCapture={handleCameraCapture}
-        onMapStyleChange={setMapLayer}
-        onMeasurementStart={() => setActiveSheet('drawing')}
-        onOpenSheet={setActiveSheet}
-        className="z-20"
-      />
+      {/* Floating Action Buttons - Posição absolutamente fixa */}
+      <div className="fixed bottom-6 right-6 z-30 pointer-events-auto">
+        <MapFloatingActions
+          onCameraCapture={handleCameraCapture}
+          onMapStyleChange={setMapLayer}
+          onMeasurementStart={() => setActiveSheet('drawing')}
+          onOpenSheet={setActiveSheet}
+        />
+      </div>
 
       {/* Status de Alteração de Camada */}
       {isLayerChanging && (
@@ -837,13 +858,15 @@ const TechnicalMapLayout = () => {
         </div>
       )}
 
-      {/* Rodapé flutuante com coordenadas GPS + Zoom */}
-      <LocationFooter 
-        className="pointer-events-none" 
-        position="bottom-center"
-        showZoomLevel={true}
-        currentZoom={currentZoom}
-      />
+      {/* Rodapé flutuante - Posição fixa, sempre visível */}
+      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none">
+        <LocationFooter 
+          className="pointer-events-none" 
+          position="bottom-center"
+          showZoomLevel={true}
+          currentZoom={currentZoom}
+        />
+      </div>
 
       {/* Bottom Sheet Unificado */}
       {activeSheet && (
