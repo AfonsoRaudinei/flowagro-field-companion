@@ -673,7 +673,9 @@ const TechnicalMapLayout = () => {
       {activeSheet && (
         <ResponsiveBottomSheet
           title={getSheetTitle()}
-          snapPoints={[25, 60, 85]}
+          status={activeSheet === 'layers' && isLayerChanging ? 'Alterando...' : 'Ativo'}
+          isActive={true}
+          snapPoints={[20, 50, 80]}
           initialSnapPoint={1}
           persistentMiniMode={false}
           backdropBlur={true}
@@ -682,6 +684,30 @@ const TechnicalMapLayout = () => {
               setTimeout(() => setActiveSheet(null), 300);
             }
           }}
+          onClose={() => setActiveSheet(null)}
+          showFooter={activeSheet === 'drawing'}
+          footerActions={
+            activeSheet === 'drawing' ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveSheet(null)}
+                >
+                  Fechar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    // Ação primária específica do contexto
+                    console.log('Primary action for drawing');
+                  }}
+                >
+                  Salvar
+                </Button>
+              </>
+            ) : undefined
+          }
         >
           {renderSheetContent()}
         </ResponsiveBottomSheet>
