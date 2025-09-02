@@ -24,6 +24,7 @@ import { PinControls } from "@/components/maps/PinControls";
 import { NDVIControls } from "@/components/maps/NDVIControls";
 import { NDVIAnalysis } from "@/components/maps/NDVIAnalysis";
 import NDVIHistory from "@/components/maps/NDVIHistory";
+import { FloatingCameraButton } from "@/components/maps/FloatingCameraButton";
 
 const TechnicalMap = () => {
   const navigate = useNavigate();
@@ -132,9 +133,12 @@ const TechnicalMap = () => {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+             </Card>
             </div>
           </div>
+          
+          {/* Floating Camera Button */}
+          <FloatingCameraButton />
         </div>
       </FullscreenTransitions>
     </MapProvider>
