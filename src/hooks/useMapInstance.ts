@@ -6,7 +6,19 @@ import type { Map as MapboxMap } from 'mapbox-gl';
  * Hook to safely access map instance with loading state
  */
 export const useMapInstance = () => {
-  const { map, isLoading, error } = useMap();
+  const mapContext = useMap();
+  
+  // Defensive check - return safe defaults if context isn't available
+  if (!mapContext) {
+    return {
+      map: null,
+      isLoading: true,
+      error: null,
+      isReady: false
+    };
+  }
+  
+  const { map, isLoading, error } = mapContext;
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {

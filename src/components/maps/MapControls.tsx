@@ -30,6 +30,13 @@ export const MapControls: React.FC<MapControlsProps> = ({
   showFullscreenToggle = true,
   vertical = false
 }) => {
+  const mapContext = useMap();
+  
+  // Defensive check - don't render if map context isn't available
+  if (!mapContext) {
+    return null;
+  }
+  
   const { 
     map, 
     currentStyle, 
@@ -41,7 +48,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
     showControls,
     enterFullscreen,
     exitFullscreen
-  } = useMap();
+  } = mapContext;
 
   if (!showControls) return null;
 

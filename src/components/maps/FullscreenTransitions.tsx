@@ -8,7 +8,14 @@ interface FullscreenTransitionsProps {
 }
 
 export const FullscreenTransitions: React.FC<FullscreenTransitionsProps> = ({ children }) => {
-  const { fullscreenState, isTransitioning, orientation } = useMap();
+  const mapContext = useMap();
+  
+  // Defensive check - render children without transitions if context isn't available
+  if (!mapContext) {
+    return <div className="relative w-full h-full">{children}</div>;
+  }
+  
+  const { fullscreenState, isTransitioning, orientation } = mapContext;
 
   return (
     <div className={cn(

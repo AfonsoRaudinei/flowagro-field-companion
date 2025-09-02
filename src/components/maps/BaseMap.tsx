@@ -28,6 +28,18 @@ export const BaseMap: React.FC<BaseMapProps> = ({
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const mapContext = useMap();
+  
+  // Defensive check - render placeholder if context isn't available
+  if (!mapContext) {
+    return (
+      <div 
+        className={cn("w-full h-full bg-muted animate-pulse rounded-lg", className)}
+        style={style}
+      />
+    );
+  }
+  
   const { 
     setMap, 
     setLoading, 
@@ -36,7 +48,7 @@ export const BaseMap: React.FC<BaseMapProps> = ({
     setToken, 
     currentStyle,
     isFullscreen 
-  } = useMap();
+  } = mapContext;
 
   // Initialize map
   useEffect(() => {
