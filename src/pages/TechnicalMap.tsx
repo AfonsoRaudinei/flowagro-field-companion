@@ -1,94 +1,94 @@
 import React, { useState } from "react";
 import { MapProvider } from "@/components/maps/MapProvider";
 import { FullscreenTransitions } from '@/components/maps/FullscreenTransitions';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { IntegratedMapInterface } from "@/components/maps/IntegratedMapInterface";
-import { MapFloatingActions } from "@/components/maps/MapFloatingActions";
-import { QuickActionsBar } from "@/components/maps/QuickActionsBar";
-import { MicroFABs } from "@/components/maps/MicroFABs";
-import { useMapPins } from '@/hooks/useMapPins';
-import { useNDVILayer } from '@/hooks/useNDVILayer';
-import { useZoomControl } from '@/hooks/useZoomControl';
-import { useUserLocation } from '@/hooks/useUserLocation';
+import { SimpleBaseMap } from "@/components/maps/SimpleBaseMap";
+import { Button } from "@/components/ui/button";
+import { Camera, Layers, Navigation, ZoomIn, ZoomOut, LocateFixed } from "lucide-react";
 
-// Layout unificado com Floating Actions
+// Layout simplificado e funcional
 const TechnicalMapLayout = () => {
-  const { pins } = useMapPins();
-  const { config: ndviConfig } = useNDVILayer();
-  const { currentZoom, zoomIn, zoomOut } = useZoomControl();
-  const { isTracking, startTracking, stopTracking } = useUserLocation();
   const [cameraActive, setCameraActive] = useState(false);
 
   const handleCameraCapture = () => {
     setCameraActive(true);
     console.log('Camera capture initiated');
-    // Simular captura
     setTimeout(() => {
       setCameraActive(false);
       console.log('Photo captured successfully');
     }, 2000);
   };
 
-  const handleMapStyleChange = (style: string) => {
-    console.log('Map style changed to:', style);
-  };
-
-  const handleMeasurementStart = () => {
-    console.log('Measurement tool activated');
-  };
-
-  const handleLocationToggle = () => {
-    if (isTracking) {
-      stopTracking();
-    } else {
-      startTracking();
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background relative">
-      {/* Mapa Principal */}
-      <IntegratedMapInterface
-        className="w-full h-screen"
-        farmId="demo-farm-001"
-        farmName="Fazenda Técnica Demo"
-        onPhotoCapture={(photoData, location) => {
-          console.log('Photo captured:', {
-            dataLength: photoData.length,
-            location: location ? `${location.latitude}, ${location.longitude}` : 'No location'
-          });
-        }}
-        onMapStyleChange={handleMapStyleChange}
-      />
+      {/* Mapa Principal - SIMPLIFICADO */}
+      <SimpleBaseMap className="w-full h-screen" />
 
-      {/* Quick Actions Bar (Top-left) */}
-      <QuickActionsBar
-        onCameraClick={handleCameraCapture}
-        onLayersClick={() => console.log('Layers clicked')}
-        onSettingsClick={() => console.log('Settings clicked')}
-        activePins={pins.length}
-        ndviActive={ndviConfig.visible}
-      />
+      {/* Controles Simplificados - Top */}
+      <div className="absolute top-4 left-4 z-10 flex gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => window.history.back()}
+          className="bg-background/90 backdrop-blur-sm"
+        >
+          ← Voltar
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => console.log('Layers clicked')}
+          className="bg-background/90 backdrop-blur-sm"
+        >
+          <Layers className="h-4 w-4" />
+        </Button>
+      </div>
 
-      {/* Micro FABs (Top-right) */}
-      <MicroFABs
-        currentZoom={currentZoom}
-        onZoomIn={zoomIn}
-        onZoomOut={zoomOut}
-        locationActive={isTracking}
-        onLocationToggle={handleLocationToggle}
-        showCompass={true}
-        compassHeading={0}
-        onCompassClick={() => console.log('Compass clicked')}
-        showWeather={false} // Contextual - aparece quando dados disponíveis
-      />
+      {/* Controles de Zoom - Right */}
+      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => console.log('Zoom in')}
+          className="bg-background/90 backdrop-blur-sm"
+        >
+          <ZoomIn className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => console.log('Zoom out')}
+          className="bg-background/90 backdrop-blur-sm"
+        >
+          <ZoomOut className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => console.log('Location')}
+          className="bg-background/90 backdrop-blur-sm"
+        >
+          <LocateFixed className="h-4 w-4" />
+        </Button>
+      </div>
 
-      {/* Main Floating Actions (Bottom-right) */}
-      <MapFloatingActions
-        onCameraCapture={handleCameraCapture}
-        onMapStyleChange={handleMapStyleChange}
-        onMeasurementStart={handleMeasurementStart}
-      />
+      {/* Floating Actions - Bottom Right */}
+      <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
+        <Button
+          onClick={handleCameraCapture}
+          size="lg"
+          className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90"
+        >
+          <Camera className="h-6 w-6" />
+        </Button>
+        <Button
+          variant="secondary" 
+          size="sm"
+          onClick={() => console.log('Navigation')}
+          className="bg-background/90 backdrop-blur-sm"
+        >
+          <Navigation className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Loading overlay para camera */}
       {cameraActive && (
