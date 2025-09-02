@@ -635,12 +635,12 @@ const TechnicalMapLayout = () => {
     }} />
       
       {/* Map Container - Positioned relative for sheet anchoring */}
-      <div id="map-viewport" className="fixed inset-0 z-10 relative" style={{ 
-        width: '100vw', 
-        height: '100vh',
-        maxWidth: '100vw',
-        overflow: 'hidden' 
-      }}>
+      <div id="map-viewport" className="fixed inset-0 z-10 relative" style={{
+      width: '100vw',
+      height: '100vh',
+      maxWidth: '100vw',
+      overflow: 'hidden'
+    }}>
         <SimpleBaseMap className="w-full h-full" showNativeControls={false} />
       </div>
 
@@ -669,7 +669,7 @@ const TechnicalMapLayout = () => {
       <div className="absolute top-20 left-4 z-20 flex gap-2">
         <Button variant={activeSheet === 'layers' ? "default" : "secondary"} size="sm" onClick={() => setActiveSheet(activeSheet === 'layers' ? null : 'layers')} className={cn("rounded-xl shadow-lg border-0 backdrop-blur-sm transition-all duration-200", "hover:bg-[rgba(0,87,255,0.1)] active:scale-95")} disabled={isLayerChanging}>
           {isLayerChanging ? <div className="animate-spin rounded-full h-3 w-3 border border-primary border-t-transparent" /> : <Layers className="h-4 w-4" />}
-          <span className="ml-2 text-xs font-medium">Camadas</span>
+          
         </Button>
 
         
@@ -730,30 +730,18 @@ const TechnicalMapLayout = () => {
       </div>
 
       {/* Bottom Sheet Unificado - Contained within map viewport */}
-      {activeSheet && <ResponsiveBottomSheet 
-        title={getSheetTitle()} 
-        status={activeSheet === 'layers' && isLayerChanging ? 'Alterando...' : 'Ativo'} 
-        isActive={true} 
-        snapPoints={[20, 50, 80]} 
-        initialSnapPoint={1} 
-        persistentMiniMode={false} 
-        backdropBlur={true}
-        containerSelector="#map-viewport"
-        onSnapPointChange={snapPoint => {
-          if (snapPoint === 0) {
-            setTimeout(() => setActiveSheet(null), 300);
-          }
-        }} 
-        onClose={() => setActiveSheet(null)} 
-        showFooter={activeSheet === 'drawing'} 
-        footerActions={activeSheet === 'drawing' ? <>
+      {activeSheet && <ResponsiveBottomSheet title={getSheetTitle()} status={activeSheet === 'layers' && isLayerChanging ? 'Alterando...' : 'Ativo'} isActive={true} snapPoints={[20, 50, 80]} initialSnapPoint={1} persistentMiniMode={false} backdropBlur={true} containerSelector="#map-viewport" onSnapPointChange={snapPoint => {
+      if (snapPoint === 0) {
+        setTimeout(() => setActiveSheet(null), 300);
+      }
+    }} onClose={() => setActiveSheet(null)} showFooter={activeSheet === 'drawing'} footerActions={activeSheet === 'drawing' ? <>
           <Button variant="outline" size="sm" onClick={() => setActiveSheet(null)}>
             Fechar
           </Button>
           <Button size="sm" onClick={() => {
-            // Ação primária específica do contexto
-            console.log('Primary action for drawing');
-          }}>
+        // Ação primária específica do contexto
+        console.log('Primary action for drawing');
+      }}>
             Salvar
           </Button>
         </> : undefined}>
