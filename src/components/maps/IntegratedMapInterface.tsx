@@ -3,6 +3,9 @@ import { BaseMap } from '@/components/maps/BaseMap';
 import { PremiumMapControls } from '@/components/maps/PremiumMapControls';
 import { PremiumCameraButton } from '@/components/maps/PremiumCameraButton';
 import { NavigationControlsHub } from '@/components/maps/NavigationControlsHub';
+import { MapInfoPopover } from '@/components/maps/MapInfoPopover';
+import { TemporalTimelineSlider } from '@/components/maps/TemporalTimelineSlider';
+import { RealTimeMetricsPanel } from '@/components/maps/RealTimeMetricsPanel';
 import { usePremiumMapAnimations } from '@/hooks/usePremiumMapAnimations';
 import { cn } from '@/lib/utils';
 
@@ -113,6 +116,18 @@ export const IntegratedMapInterface: React.FC<IntegratedMapInterfaceProps> = ({
           />
         </div>
       </div>
+
+      {/* Contextual Data Layer */}
+      <MapInfoPopover />
+      
+      <RealTimeMetricsPanel 
+        position="top-right"
+        className="pointer-events-auto"
+      />
+      
+      <TemporalTimelineSlider 
+        className="absolute bottom-4 left-4 right-4 pointer-events-auto"
+      />
 
       {/* Fullscreen Overlay (for enhanced transitions) */}
       {isFullscreen && (
