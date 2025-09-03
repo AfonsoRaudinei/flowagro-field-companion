@@ -1,6 +1,6 @@
 import React, { Component, ReactNode } from 'react';
 import { logger } from '@/lib/logger';
-import { MemoryMonitor, PerformanceMonitor } from '@/lib/performance';
+import { MemoryMonitor, PerformanceMonitor } from '@/lib/unifiedPerformance';
 
 interface Props {
   children: ReactNode;

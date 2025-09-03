@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useMapInstance } from './useMapInstance';
-import { performanceMonitor } from '@/lib/performanceMonitor';
+import { performanceMonitor } from '@/lib/unifiedPerformance';
 
 interface MobileOptimizationConfig {
   enableGPUAcceleration: boolean;

@@ -6,26 +6,57 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserProvider } from "./contexts/UserContext";
 import NotFound from "./pages/NotFound";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Optimized query client configuration
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
+      retry: 1, // Reduce retries for faster fails
+      refetchOnWindowFocus: false, // Disable refetch on focus for better performance
+    },
+  },
+});
+
+// Critical pages - loaded immediately
 import Dashboard from "./pages/Dashboard";
+import TelaInicial from "./pages/TelaInicial"; // High priority - entry point
 
-const queryClient = new QueryClient();
+// High priority pages - preloaded
+const LoginForm = lazy(() => 
+  import("./pages/LoginForm").then(module => ({ default: module.default }))
+);
 
-// Lazy-loaded pages for better TTI
-const TelaInicial = lazy(() => import("./pages/TelaInicial"));
-const LoginForm = lazy(() => import("./pages/LoginForm"));
+// Medium priority pages - standard lazy loading
 const Settings = lazy(() => import("./pages/Settings"));
 const Calculator = lazy(() => import("./pages/Calculator"));
+const Profile = lazy(() => import("./pages/Profile"));
+
+// Low priority pages - aggressive lazy loading
 const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
 const ConsultoriaComunicacao = lazy(() => import("./pages/ConsultoriaComunicacao"));
-const MapTest = lazy(() => import("./pages/MapTest"));
-const TechnicalMap = lazy(() => import("./pages/TechnicalMap"));
 const WebhookSettings = lazy(() => import("./pages/WebhookSettings"));
+const AccountSecurity = lazy(() => import("./pages/AccountSecurity"));
 const QAAuditoria = lazy(() => import("./pages/QAAuditoria"));
-
 const Recover = lazy(() => import("./pages/Recover"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const Profile = lazy(() => import("./pages/Profile"));
-const AccountSecurity = lazy(() => import("./pages/AccountSecurity"));
+
+// Map pages - very aggressive lazy loading (heaviest components)
+const MapTest = lazy(() => 
+  import("./pages/MapTest").then(module => {
+    // Preload critical map dependencies
+    import("mapbox-gl");
+    return { default: module.default };
+  })
+);
+const TechnicalMap = lazy(() => 
+  import("./pages/TechnicalMap").then(module => {
+    // Preload critical map dependencies
+    import("mapbox-gl");
+    return { default: module.default };
+  })
+);
 
 const RouteFallback = () => (
   <div className="p-4 space-y-3">

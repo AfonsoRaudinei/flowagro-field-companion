@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useMapInstance } from './useMapInstance';
 import { globalCache } from '@/lib/cache';
-import { performanceMonitor } from '@/lib/performanceMonitor';
+import { performanceMonitor } from '@/lib/unifiedPerformance';
 
 interface PreloadTask {
   id: string;
@@ -143,7 +143,7 @@ export const usePreloadManager = (config: Partial<PreloadManagerConfig> = {}) =>
     activeTasks.current.add(task.id);
     
     try {
-      performanceMonitor.startTimer(`preload-${task.id}`);
+      performanceMonitor.startTimer('preload-' + task.id);
 
       // Check if data is already cached
       const cacheKey = `preload_${task.id}`;
@@ -197,7 +197,7 @@ export const usePreloadManager = (config: Partial<PreloadManagerConfig> = {}) =>
         totalSize: prev.totalSize + (task.estimatedSize || 0)
       }));
 
-      performanceMonitor.endTimer(`preload-${task.id}`);
+      performanceMonitor.endTimer('preload-' + task.id);
 
     } catch (error) {
       if (!signal.aborted) {

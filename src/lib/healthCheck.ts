@@ -26,12 +26,13 @@ export interface SystemHealth {
 }
 
 class HealthMonitor {
-  private checkInterval = 60000; // Check every minute
+  private checkInterval = 300000; // Check every 5 minutes (reduced from 1 minute)
   private intervalId?: NodeJS.Timeout;
   private lastResults: HealthCheckResult[] = [];
 
   constructor() {
-    if (typeof window !== 'undefined') {
+    // Only run health checks in development mode
+    if (typeof window !== 'undefined' && import.meta.env.DEV) {
       this.startPeriodicChecks();
     }
   }
@@ -40,13 +41,22 @@ class HealthMonitor {
     // Run initial check
     this.runHealthChecks();
 
-    // Set up periodic checks
+    // Set up periodic checks (only in dev mode)
     this.intervalId = setInterval(() => {
       this.runHealthChecks();
     }, this.checkInterval);
   }
 
   async runHealthChecks(): Promise<SystemHealth> {
+    // Skip health checks in production
+    if (!import.meta.env.DEV) {
+      return {
+        overall: 'unknown',
+        services: [],
+        summary: { healthy: 0, warning: 0, critical: 0, total: 0 }
+      };
+    }
+    
     logger.debug('Running health checks');
     
     const checks = [

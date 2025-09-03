@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useMapInstance } from './useMapInstance';
-import { performanceMonitor } from '@/lib/performanceMonitor';
+import { performanceMonitor } from '@/lib/unifiedPerformance';
 
 interface TileOptimizationConfig {
   enableLazyLoading: boolean;
@@ -122,7 +122,7 @@ export const useTileOptimization = (config: Partial<TileOptimizationConfig> = {}
     // Monitor tile loading performance
     const originalAddSource = map.addSource.bind(map);
     map.addSource = function(id: string, source: any) {
-      performanceMonitor.startTimer(`tile-source-${id}`);
+      performanceMonitor.startTimer('tile-source-' + id);
       
       const result = originalAddSource(id, source);
       
@@ -132,7 +132,7 @@ export const useTileOptimization = (config: Partial<TileOptimizationConfig> = {}
         // Clean up when source is loaded
         map.on('sourcedata', (e) => {
           if (e.sourceId === id && e.isSourceLoaded) {
-            performanceMonitor.endTimer(`tile-source-${id}`, 1000);
+            performanceMonitor.endTimer('tile-source-' + id, 1000);
             loadingQueue.current.delete(id);
             loadedTiles.current.set(id, Date.now());
           }

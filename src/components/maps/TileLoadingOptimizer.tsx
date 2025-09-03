@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTileOptimization } from '@/hooks/useTileOptimization';
 import { useMapInstance } from '@/hooks/useMapInstance';
-import { performanceMonitor } from '@/lib/performanceMonitor';
+import { performanceMonitor } from '@/lib/unifiedPerformance';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
