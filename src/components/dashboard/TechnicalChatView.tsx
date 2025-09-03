@@ -11,10 +11,24 @@ const ChatHeader: React.FC<{
 }> = ({
   onBack
 }) => {
-  return;
+  return (
+    <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur-sm">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onBack}
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span>Voltar</span>
+      </Button>
+      <h1 className="text-lg font-semibold text-foreground">Chat Técnico</h1>
+      <div className="w-20" /> {/* Spacer para centralizar o título */}
+    </div>
+  );
 };
 
-// Mini-componente: Tabs superiores
+// Mini-componente: Tabs superiores (estilo "Produtor")
 const ChatTabs = () => {
   const [activeTab, setActiveTab] = useState("chat");
   const tabs = [{
@@ -38,16 +52,50 @@ const ChatTabs = () => {
     icon: BarChart3,
     emoji: "📊"
   }];
-  return <div className="border-b bg-muted/30">
+  
+  return (
+    <div className="bg-background/95 backdrop-blur-sm border-b border-border/50 p-3">
       <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex gap-1 p-2">
-          {tabs.map(tab => <Button key={tab.id} variant={activeTab === tab.id ? "default" : "ghost"} size="sm" onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 min-w-fit px-4 h-9 rounded-lg transition-all ${activeTab === tab.id ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-primary/10 text-muted-foreground hover:text-foreground"}`}>
-              <span className="text-sm">{tab.emoji}</span>
-              <span className="text-sm font-medium">{tab.label}</span>
-            </Button>)}
+        <div className="flex gap-2">
+          {tabs.map(tab => {
+            const IconComponent = tab.icon;
+            const isActive = activeTab === tab.id;
+            
+            return (
+              <Button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  relative inline-flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm
+                  transition-all duration-300 ease-out min-w-fit whitespace-nowrap
+                  ${isActive 
+                    ? 'bg-gradient-to-r from-primary via-primary/95 to-primary/90 text-primary-foreground shadow-lg shadow-primary/25 scale-105' 
+                    : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-102'
+                  }
+                `}
+                variant="ghost"
+              >
+                <span className="text-base leading-none">{tab.emoji}</span>
+                {isActive && (
+                  <span className="font-semibold animate-fade-in">
+                    {tab.label}
+                  </span>
+                )}
+                {!isActive && (
+                  <IconComponent className="w-4 h-4" />
+                )}
+                
+                {/* Efeito de brilho quando ativo */}
+                {isActive && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-full animate-pulse" />
+                )}
+              </Button>
+            );
+          })}
         </div>
       </ScrollArea>
-    </div>;
+    </div>
+  );
 };
 
 // Mini-componente: Área de mensagens
