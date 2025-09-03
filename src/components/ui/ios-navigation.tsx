@@ -1,9 +1,11 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { MessageCircle, Calculator, Map, LucideIcon } from 'lucide-react';
+import { MessageSquare, Calculator, Globe, LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useHapticFeedback } from '@/hooks/useHapticFeedback';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface NavigationTab {
   id: string;
@@ -24,19 +26,21 @@ const IOSNavigation: React.FC<IOSNavigationProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { buttonPress } = useHapticFeedback();
+  const isMobile = useIsMobile();
 
   const tabs: NavigationTab[] = [
     {
       id: 'map',
       path: '/technical-map',
       label: 'Mapa',
-      icon: Map
+      icon: Globe
     },
     {
       id: 'chat', 
       path: '/dashboard',
       label: 'Chat',
-      icon: MessageCircle,
+      icon: MessageSquare,
       badge: unreadCount
     },
     {
@@ -46,6 +50,11 @@ const IOSNavigation: React.FC<IOSNavigationProps> = ({
       icon: Calculator
     }
   ];
+
+  const handleTabPress = (path: string) => {
+    if (isMobile) buttonPress();
+    navigate(path);
+  };
 
   const isActiveTab = (id: string, path: string) => {
     if (id === 'map') return location.pathname === '/technical-map';
@@ -57,12 +66,12 @@ const IOSNavigation: React.FC<IOSNavigationProps> = ({
   return (
     <nav className={cn(
       "fixed bottom-0 left-0 right-0 z-50",
-      "bg-card/95 backdrop-blur-md border-t border-border/50",
-      "shadow-ios-lg pb-safe", // Handle iPhone home indicator
+      "bg-card/98 backdrop-blur-xl border-t border-border/30",
+      "shadow-[0_-8px_32px_-8px_hsl(var(--shadow)/0.12)] pb-safe",
       className
     )}>
-      <div className="max-w-md mx-auto">
-        <div className="flex items-center justify-around px-md py-sm">
+      <div className="max-w-sm mx-auto">
+        <div className="flex items-center justify-around px-2 py-1.5">
           {tabs.map((tab) => {
             const IconComponent = tab.icon;
             const isActive = isActiveTab(tab.id, tab.path);
@@ -70,32 +79,36 @@ const IOSNavigation: React.FC<IOSNavigationProps> = ({
             return (
               <Button
                 key={tab.id}
-                onClick={() => navigate(tab.path)}
+                onClick={() => handleTabPress(tab.path)}
                 variant="ghost"
                 className={cn(
-                  "ios-button relative flex flex-col items-center gap-xs",
-                  "h-auto py-sm px-md rounded-lg min-w-0 flex-1",
-                  "transition-all duration-300 hover-lift",
+                  "relative flex flex-col items-center gap-1",
+                  "h-auto py-2 px-3 rounded-xl min-w-0 flex-1",
+                  "transition-all duration-300 ease-out",
+                  "active:scale-95 touch-manipulation",
                   isActive 
-                    ? "text-primary bg-gradient-to-t from-primary/20 to-primary/10 shadow-ios-sm border border-primary/20" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-gradient-to-t hover:from-accent/10 hover:to-transparent"
+                    ? "text-primary bg-gradient-to-t from-primary/15 to-primary/5 shadow-sm border border-primary/15 scale-105" 
+                    : "text-muted-foreground/70 hover:text-foreground hover:bg-gradient-to-t hover:from-accent/8 hover:to-transparent"
                 )}
               >
                 <div className="relative">
                   <IconComponent 
-                    size={22} 
+                    size={18} 
                     strokeWidth={isActive ? 2.5 : 2}
                     className={cn(
-                      "transition-all duration-300",
-                      isActive && "drop-shadow-sm"
+                      "transition-all duration-300 ease-out",
+                      isActive && "drop-shadow-sm transform",
+                      tab.id === 'map' && isActive && "text-emerald-500",
+                      tab.id === 'chat' && isActive && "text-blue-500", 
+                      tab.id === 'calculator' && isActive && "text-purple-500"
                     )} 
                   />
                   {tab.badge && tab.badge > 0 && (
                     <Badge 
                       className={cn(
-                        "absolute -top-2 -right-2 h-5 min-w-5 px-1",
-                        "text-xs font-bold bg-destructive text-destructive-foreground",
-                        "flex items-center justify-center animate-pulse"
+                        "absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1",
+                        "text-[10px] font-bold bg-red-500 text-white border-0",
+                        "flex items-center justify-center animate-pulse shadow-sm"
                       )}
                     >
                       {tab.badge > 99 ? '99+' : tab.badge}
@@ -103,7 +116,7 @@ const IOSNavigation: React.FC<IOSNavigationProps> = ({
                   )}
                 </div>
                 <span className={cn(
-                  "text-ios-xs font-medium transition-all duration-300 truncate",
+                  "text-[10px] font-medium transition-all duration-300 truncate leading-tight",
                   isActive && "font-semibold text-primary"
                 )}>
                   {tab.label}
