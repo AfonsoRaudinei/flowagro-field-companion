@@ -7,4 +7,8 @@ import { SecurityService } from '@/lib/securityService';
 // Inicializar monitoramento de segurança
 SecurityService.initializeDOMMonitoring();
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
