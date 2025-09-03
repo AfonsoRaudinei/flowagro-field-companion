@@ -24,16 +24,29 @@ export default {
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
+				
+				/* FlowAgro Primary - Verde Agrícola */
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))',
 					hover: 'hsl(var(--primary-hover))'
 				},
+				
+				/* FlowAgro Secondary - Neutro */
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
 					foreground: 'hsl(var(--secondary-foreground))',
 					hover: 'hsl(var(--secondary-hover))'
 				},
+				
+				/* FlowAgro Info - Azul Confiança */
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					foreground: 'hsl(var(--info-foreground))',
+					hover: 'hsl(var(--info-hover))'
+				},
+				
+				/* FlowAgro Status Colors */
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
 					foreground: 'hsl(var(--destructive-foreground))'
@@ -46,6 +59,16 @@ export default {
 					DEFAULT: 'hsl(var(--warning))',
 					foreground: 'hsl(var(--warning-foreground))'
 				},
+				
+				/* FlowAgro Seasonal Colors */
+				seasonal: {
+					spring: 'hsl(var(--seasonal-spring))',
+					summer: 'hsl(var(--seasonal-summer))',
+					autumn: 'hsl(var(--seasonal-autumn))',
+					winter: 'hsl(var(--seasonal-winter))'
+				},
+				
+				/* Base UI Colors */
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
 					foreground: 'hsl(var(--muted-foreground))'
@@ -62,6 +85,8 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				
+				/* FlowAgro Sidebar */
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -100,22 +125,29 @@ export default {
 				md: 'var(--radius)',
 				sm: 'var(--radius-sm)'
 			},
+			/* FlowAgro Shadow System */
 			boxShadow: {
 				'ios-sm': 'var(--shadow-sm)',
 				'ios-md': 'var(--shadow-md)',
 				'ios-lg': 'var(--shadow-lg)',
 				'ios-button': 'var(--shadow-button)',
-				'ios-card': 'var(--shadow-card)'
+				'ios-card': 'var(--shadow-card)',
+				'field': 'var(--shadow-field)'
 			},
+			
+			/* FlowAgro Gradients */
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',
-				'gradient-secondary': 'var(--gradient-secondary)',
+				'gradient-field': 'var(--gradient-field)',
+				'gradient-info': 'var(--gradient-info)',
 				'gradient-subtle': 'var(--gradient-subtle)'
 			},
+			/* FlowAgro Transition System */
 			transitionProperty: {
 				'all': 'var(--transition-all)',
 				'colors': 'var(--transition-colors)',
-				'transform': 'var(--transition-transform)'
+				'transform': 'var(--transition-transform)',
+				'field': 'var(--transition-field)'
 			},
 			animation: {
 				'spring': 'spring 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',

@@ -321,181 +321,104 @@
   animation: slideInFromBottom 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* Premium Animation System with Enhanced Accessibility */
-@layer utilities {
-  /* Focus Indicators - High Contrast */
-  .premium-focus {
-    @apply focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
-  }
+/* FlowAgro Premium Animation System */
 
-  .premium-focus-high-contrast {
-    @apply focus-visible:ring-4 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:outline-none;
-  }
+/* Focus indicators - Verde agrícola */
+.focus-indicator {
+  @apply ring-2 ring-primary/50 ring-offset-2 ring-offset-background transition-all duration-200;
+}
 
-  /* Premium Hover Effects */
-  .premium-hover {
-    @apply transform transition-all duration-300 cursor-pointer premium-focus;
-  }
+/* Hover effects - Campo-friendly */
+.hover-lift {
+  @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-field;
+}
 
-  .premium-hover:hover:not(:disabled) {
-    @apply animate-hover-lift;
-  }
+.hover-field {
+  @apply transition-all duration-200 hover:bg-gradient-field hover:shadow-field hover:scale-105;
+}
 
-  .premium-hover:focus-visible {
-    @apply animate-hover-lift;
-  }
+/* Press states - Responsivo */
+.press-down {
+  @apply transition-transform duration-75 active:scale-95;
+}
 
-  .premium-glow:hover:not(:disabled) {
-    @apply animate-hover-glow;
-  }
+/* Touch targets - Otimizado para campo */
+.touch-target {
+  @apply min-h-[44px] min-w-[44px];
+}
 
-  .premium-glow:focus-visible {
-    @apply animate-hover-glow;
-  }
+.touch-target-lg {
+  @apply min-h-[56px] min-w-[56px]; /* Maior para uso com luvas */
+}
 
-  /* Active/Pressed States */
-  .premium-press:active:not(:disabled) {
-    @apply animate-press-down;
-  }
+/* FlowAgro Pulse animations */
+.pulse-field {
+  @apply animate-pulse-availability;
+}
 
-  .premium-bounce:active:not(:disabled) {
-    @apply animate-bounce-press;
-  }
+.pulse-glow {
+  @apply animate-pulse-glow;
+}
 
-  /* Touch Target Helpers */
-  .touch-target-44 {
-    @apply min-h-[44px] min-w-[44px];
-  }
+/* FlowAgro Typography Classes - Hierárquico */
+.text-title {
+  @apply text-ios-xl font-bold text-primary leading-tight;
+}
 
-  .touch-target-icon {
-    @apply h-12 w-12 min-h-[44px] min-w-[44px];
-  }
+.text-subtitle {
+  @apply text-ios-lg font-medium text-foreground/80 leading-relaxed;
+}
 
-  /* Pulse Availability Indicators */
-  .availability-pulse {
-    @apply animate-pulse-availability;
-  }
+.text-body {
+  @apply text-ios-base font-normal text-muted-foreground leading-normal;
+}
 
-  .glow-pulse {
-    @apply animate-pulse-glow;
-  }
+.text-caption {
+  @apply text-ios-sm font-normal text-muted-foreground/70 leading-snug;
+}
 
-  /* High Contrast Mode Support */
-  @media (prefers-contrast: high) {
-    .premium-button {
-      @apply border-2 border-current;
-    }
-    
-    .premium-hover:hover:not(:disabled) {
-      @apply bg-foreground text-background;
-    }
-    
-    .premium-focus {
-      @apply focus-visible:ring-4 focus-visible:ring-current focus-visible:ring-offset-4;
-    }
-  }
+/* FlowAgro Status Classes */
+.status-success {
+  @apply bg-success/10 text-success border-success/20;
+}
 
-  /* Reduced Motion Support */
-  @media (prefers-reduced-motion: reduce) {
-    .premium-hover {
-      @apply transition-none;
-    }
-    
-    .premium-button {
-      animation: none !important;
-    }
-    
-    .availability-pulse,
-    .glow-pulse {
-      animation: none !important;
-    }
-    
-    .premium-hover:hover:not(:disabled) {
-      @apply scale-100 translate-y-0;
-      box-shadow: 0 4px 8px rgba(0, 87, 255, 0.2);
-    }
-    
-    .premium-press:active:not(:disabled) {
-      @apply scale-95;
-      transition: transform 0.1s ease;
-    }
-  }
+.status-warning {
+  @apply bg-warning/10 text-warning border-warning/20;
+}
 
-  /* Combined Premium Effects */
-  .premium-button {
-    @apply premium-hover premium-press transition-all duration-300 transform premium-focus;
-    box-shadow: var(--shadow-button);
-  }
+.status-error {
+  @apply bg-destructive/10 text-destructive border-destructive/20;
+}
 
-  .premium-button:hover:not(:disabled) {
-    @apply -translate-y-0.5 scale-105;
-    box-shadow: 0 10px 20px rgba(0, 87, 255, 0.3), 0 6px 6px rgba(0, 87, 255, 0.1);
-  }
+.status-info {
+  @apply bg-info/10 text-info border-info/20;
+}
 
-  .premium-button:focus-visible {
-    @apply -translate-y-0.5 scale-105;
-    box-shadow: 0 10px 20px rgba(0, 87, 255, 0.3), 0 6px 6px rgba(0, 87, 255, 0.1);
-  }
+/* Enhanced FlowAgro button styles */
+.premium-button {
+  @apply relative inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 font-medium transition-field focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 touch-target;
+}
 
-  .premium-button:active:not(:disabled) {
-    @apply translate-y-0 scale-100;
-    transition-duration: 0.1s;
-  }
+.premium-button:hover {
+  @apply -translate-y-0.5 shadow-field;
+}
 
-  .premium-button:disabled {
-    @apply opacity-50 cursor-not-allowed;
-    box-shadow: none;
-    animation: none;
-  }
+.premium-button:active {
+  @apply translate-y-0 scale-[0.98];
+}
 
-  /* State Transition Helpers */
-  .state-enter {
-    @apply animate-state-enter;
-  }
+.premium-button:disabled {
+  @apply translate-y-0 shadow-none opacity-50;
+}
 
-  .state-exit {
-    @apply animate-state-exit;
-  }
+/* FlowAgro Action Buttons */
+.btn-field-action {
+  @apply premium-button bg-gradient-primary text-primary-foreground hover:bg-gradient-field shadow-ios-button;
+}
 
-  /* Fullscreen Transition Enhancement */ 
-  .fullscreen-transition {
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .fullscreen-enter {
-    @apply animate-fullscreen-enter;
-  }
-
-  .fullscreen-exit {
-    @apply animate-fullscreen-exit;
-  }
-
-  /* Interactive Card Effects */
-  .premium-card {
-    @apply transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg premium-focus;
-    box-shadow: var(--shadow-card);
-  }
-
-  .premium-card:hover:not(:disabled) {
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  }
-
-  .premium-card:focus-visible {
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  }
-
-  /* Premium Icon Animations */
-  .premium-icon {
-    @apply transform transition-transform duration-200 hover:scale-110 hover:rotate-12 premium-focus;
-  }
-
-  .premium-icon:active:not(:disabled) {
-    @apply scale-95 rotate-0;
-  }
-
-  .premium-icon:focus-visible {
-    @apply scale-110 rotate-12;
-  }
+.btn-info-action {
+  @apply premium-button bg-gradient-info text-info-foreground hover:shadow-lg;
+}
 
   /* Screen Reader Only Content */
   .sr-only {
