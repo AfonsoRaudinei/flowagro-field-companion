@@ -14,6 +14,7 @@ const TelaInicial = lazy(() => import("./pages/TelaInicial"));
 const LoginForm = lazy(() => import("./pages/LoginForm"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Calculator = lazy(() => import("./pages/Calculator"));
 const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
 const ConsultoriaComunicacao = lazy(() => import("./pages/ConsultoriaComunicacao"));
 const MapTest = lazy(() => import("./pages/MapTest"));
@@ -46,6 +47,7 @@ const AppLayout = () => {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/calculator" element={<Calculator />} />
           <Route path="/settings/security" element={<AccountSecurity />} />
           <Route path="/settings/webhooks" element={<WebhookSettings />} />
           <Route path="/profile" element={<Profile />} />

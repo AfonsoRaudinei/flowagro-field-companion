@@ -1,7 +1,8 @@
 import React from 'react';
-import { ArrowLeft, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, MoreHorizontal, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface IOSHeaderProps {
   title: string;
@@ -10,6 +11,7 @@ interface IOSHeaderProps {
   rightActions?: React.ReactNode;
   subtitle?: string;
   className?: string;
+  showSettingsButton?: boolean;
 }
 
 export const IOSHeader: React.FC<IOSHeaderProps> = ({
@@ -18,10 +20,13 @@ export const IOSHeader: React.FC<IOSHeaderProps> = ({
   showBackButton = true,
   rightActions,
   subtitle,
-  className
+  className,
+  showSettingsButton = true
 }) => {
+  const navigate = useNavigate();
+  
   // Clean layout when no back button and no right actions
-  const isCleanLayout = !showBackButton && !rightActions && !onBack;
+  const isCleanLayout = !showBackButton && !rightActions && !onBack && !showSettingsButton;
   
   return (
     <header className={cn(
@@ -62,7 +67,16 @@ export const IOSHeader: React.FC<IOSHeaderProps> = ({
 
           {/* Right side - Actions */}
           <div className="flex items-center justify-end min-w-0 flex-1">
-            {rightActions || (
+            {rightActions || (showSettingsButton && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/settings')}
+                className="ios-button h-8 w-8 p-0 hover:bg-accent/50 active:scale-95"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
+            )) || (
               <div className="w-8 h-8" />
             )}
           </div>
