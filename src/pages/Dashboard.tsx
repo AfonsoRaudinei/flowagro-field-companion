@@ -4,11 +4,9 @@ import { ChatListView } from "@/components/dashboard/ChatListView";
 import { ConversationView } from "@/components/dashboard/ConversationView";
 import TechnicalChatView from "@/components/dashboard/TechnicalChatView";
 import { useDashboardState } from "@/hooks/useDashboardState";
-import { useSearchParams } from "react-router-dom";
 import IOSNavigation from "@/components/ui/ios-navigation";
 
 export default function Dashboard() {
-  const [searchParams] = useSearchParams();
   const [newMessage, setNewMessage] = useState("");
   
   const {
