@@ -322,103 +322,103 @@
 }
 
 /* FlowAgro Premium Animation System */
+@layer utilities {
+  /* Focus indicators - Verde agrícola */
+  .focus-indicator {
+    @apply ring-2 ring-primary/50 ring-offset-2 ring-offset-background transition-all duration-200;
+  }
 
-/* Focus indicators - Verde agrícola */
-.focus-indicator {
-  @apply ring-2 ring-primary/50 ring-offset-2 ring-offset-background transition-all duration-200;
-}
+  /* Hover effects - Campo-friendly */
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-field;
+  }
 
-/* Hover effects - Campo-friendly */
-.hover-lift {
-  @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-field;
-}
+  .hover-field {
+    @apply transition-all duration-200 hover:bg-gradient-field hover:shadow-field hover:scale-105;
+  }
 
-.hover-field {
-  @apply transition-all duration-200 hover:bg-gradient-field hover:shadow-field hover:scale-105;
-}
+  /* Press states - Responsivo */
+  .press-down {
+    @apply transition-transform duration-75 active:scale-95;
+  }
 
-/* Press states - Responsivo */
-.press-down {
-  @apply transition-transform duration-75 active:scale-95;
-}
+  /* Touch targets - Otimizado para campo */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
 
-/* Touch targets - Otimizado para campo */
-.touch-target {
-  @apply min-h-[44px] min-w-[44px];
-}
+  .touch-target-lg {
+    @apply min-h-[56px] min-w-[56px]; /* Maior para uso com luvas */
+  }
 
-.touch-target-lg {
-  @apply min-h-[56px] min-w-[56px]; /* Maior para uso com luvas */
-}
+  /* FlowAgro Pulse animations */
+  .pulse-field {
+    @apply animate-pulse-availability;
+  }
 
-/* FlowAgro Pulse animations */
-.pulse-field {
-  @apply animate-pulse-availability;
-}
+  .pulse-glow {
+    @apply animate-pulse-glow;
+  }
 
-.pulse-glow {
-  @apply animate-pulse-glow;
-}
+  /* FlowAgro Typography Classes - Hierárquico */
+  .text-title {
+    @apply text-ios-xl font-bold text-primary leading-tight;
+  }
 
-/* FlowAgro Typography Classes - Hierárquico */
-.text-title {
-  @apply text-ios-xl font-bold text-primary leading-tight;
-}
+  .text-subtitle {
+    @apply text-ios-lg font-medium text-foreground/80 leading-relaxed;
+  }
 
-.text-subtitle {
-  @apply text-ios-lg font-medium text-foreground/80 leading-relaxed;
-}
+  .text-body {
+    @apply text-ios-base font-normal text-muted-foreground leading-normal;
+  }
 
-.text-body {
-  @apply text-ios-base font-normal text-muted-foreground leading-normal;
-}
+  .text-caption {
+    @apply text-ios-sm font-normal text-muted-foreground/70 leading-snug;
+  }
 
-.text-caption {
-  @apply text-ios-sm font-normal text-muted-foreground/70 leading-snug;
-}
+  /* FlowAgro Status Classes */
+  .status-success {
+    @apply bg-success/10 text-success border-success/20;
+  }
 
-/* FlowAgro Status Classes */
-.status-success {
-  @apply bg-success/10 text-success border-success/20;
-}
+  .status-warning {
+    @apply bg-warning/10 text-warning border-warning/20;
+  }
 
-.status-warning {
-  @apply bg-warning/10 text-warning border-warning/20;
-}
+  .status-error {
+    @apply bg-destructive/10 text-destructive border-destructive/20;
+  }
 
-.status-error {
-  @apply bg-destructive/10 text-destructive border-destructive/20;
-}
+  .status-info {
+    @apply bg-info/10 text-info border-info/20;
+  }
 
-.status-info {
-  @apply bg-info/10 text-info border-info/20;
-}
+  /* Enhanced FlowAgro button styles */
+  .premium-button {
+    @apply relative inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 font-medium transition-field focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 touch-target;
+  }
 
-/* Enhanced FlowAgro button styles */
-.premium-button {
-  @apply relative inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 font-medium transition-field focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 touch-target;
-}
+  .premium-button:hover {
+    @apply -translate-y-0.5 shadow-field;
+  }
 
-.premium-button:hover {
-  @apply -translate-y-0.5 shadow-field;
-}
+  .premium-button:active {
+    @apply translate-y-0 scale-[0.98];
+  }
 
-.premium-button:active {
-  @apply translate-y-0 scale-[0.98];
-}
+  .premium-button:disabled {
+    @apply translate-y-0 shadow-none opacity-50;
+  }
 
-.premium-button:disabled {
-  @apply translate-y-0 shadow-none opacity-50;
-}
+  /* FlowAgro Action Buttons */
+  .btn-field-action {
+    @apply premium-button bg-gradient-primary text-primary-foreground hover:bg-gradient-field shadow-ios-button;
+  }
 
-/* FlowAgro Action Buttons */
-.btn-field-action {
-  @apply premium-button bg-gradient-primary text-primary-foreground hover:bg-gradient-field shadow-ios-button;
-}
-
-.btn-info-action {
-  @apply premium-button bg-gradient-info text-info-foreground hover:shadow-lg;
-}
+  .btn-info-action {
+    @apply premium-button bg-gradient-info text-info-foreground hover:shadow-lg;
+  }
 
   /* Screen Reader Only Content */
   .sr-only {
