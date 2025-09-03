@@ -47,7 +47,7 @@ const LazyMapTest = lazy(() =>
   })
 );
 const LazyTechnicalMap = lazy(() => 
-  import("./pages/TechnicalMap").then(module => {
+  import("./pages/TechnicalMapSimplified").then(module => {
     // Preload critical map dependencies
     import("mapbox-gl");
     return { default: module.default };

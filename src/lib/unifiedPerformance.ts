@@ -2,9 +2,203 @@ import React, { useRef, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 
 /**
- * Unified Performance System - Consolidates performance.ts and performanceMonitor.ts
- * Optimized for production with minimal overhead
+ * Unified Performance System - FASE 5 Optimized
+ * Smart metrics with device-based sampling and batch uploads
+ * Minimal overhead in production
  */
+
+// ============= INTELLIGENT METRICS SYSTEM =============
+
+interface DevicePerformanceProfile {
+  cpu: 'low' | 'medium' | 'high';
+  memory: 'low' | 'medium' | 'high';
+  network: 'slow' | 'fast';
+  battery: 'low' | 'high';
+}
+
+interface MetricsBatch {
+  timestamp: number;
+  sessionId: string;
+  metrics: PerformanceMetrics[];
+  deviceProfile: DevicePerformanceProfile;
+}
+
+class IntelligentMetricsSystem {
+  private static instance: IntelligentMetricsSystem;
+  private deviceProfile: DevicePerformanceProfile;
+  private metricsBatch: PerformanceMetrics[] = [];
+  private batchTimeout: NodeJS.Timeout | null = null;
+  private sessionId: string;
+  private samplingRate: number = 0.01; // Default 1%
+  
+  constructor() {
+    this.sessionId = this.generateSessionId();
+    this.deviceProfile = this.detectDeviceProfile();
+    this.samplingRate = this.calculateSamplingRate();
+    
+    // Only initialize in development or with explicit flag
+    if (this.shouldInitialize()) {
+      this.initializeBatchUpload();
+    }
+  }
+
+  static getInstance(): IntelligentMetricsSystem {
+    if (!IntelligentMetricsSystem.instance) {
+      IntelligentMetricsSystem.instance = new IntelligentMetricsSystem();
+    }
+    return IntelligentMetricsSystem.instance;
+  }
+
+  private shouldInitialize(): boolean {
+    return import.meta.env.DEV || 
+           import.meta.env.VITE_ENABLE_METRICS === 'true' ||
+           localStorage.getItem('flowagro-enable-metrics') === 'true';
+  }
+
+  private generateSessionId(): string {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  private detectDeviceProfile(): DevicePerformanceProfile {
+    const memory = (navigator as any).deviceMemory || 4;
+    const connection = (navigator as any).connection;
+    const hardwareConcurrency = navigator.hardwareConcurrency || 4;
+    
+    return {
+      cpu: hardwareConcurrency >= 8 ? 'high' : hardwareConcurrency >= 4 ? 'medium' : 'low',
+      memory: memory >= 8 ? 'high' : memory >= 4 ? 'medium' : 'low',
+      network: connection?.effectiveType === '4g' || connection?.downlink > 10 ? 'fast' : 'slow',
+      battery: (navigator as any).getBattery ? 'high' : 'low' // Simplified detection
+    };
+  }
+
+  private calculateSamplingRate(): number {
+    if (!this.shouldInitialize()) return 0;
+    
+    // Device-based sampling rate
+    let rate = 0.01; // Base 1%
+    
+    // Adjust based on device profile
+    if (this.deviceProfile.cpu === 'low') rate *= 0.5;
+    if (this.deviceProfile.memory === 'low') rate *= 0.5;
+    if (this.deviceProfile.network === 'slow') rate *= 0.3;
+    
+    // Higher rate in development
+    if (import.meta.env.DEV) rate *= 10;
+    
+    return Math.min(rate, 0.1); // Cap at 10%
+  }
+
+  shouldSample(): boolean {
+    return Math.random() < this.samplingRate;
+  }
+
+  addMetric(metric: PerformanceMetrics): void {
+    if (!this.shouldInitialize() || !this.shouldSample()) return;
+    
+    this.metricsBatch.push({
+      ...metric,
+      timestamp: Date.now(),
+      sessionId: this.sessionId
+    });
+
+    // Batch size based on device performance
+    const maxBatchSize = this.deviceProfile.memory === 'low' ? 10 : 
+                        this.deviceProfile.memory === 'medium' ? 25 : 50;
+
+    if (this.metricsBatch.length >= maxBatchSize) {
+      this.flushBatch();
+    }
+  }
+
+  private initializeBatchUpload(): void {
+    // Batch upload interval based on network
+    const uploadInterval = this.deviceProfile.network === 'slow' ? 60000 : 30000;
+    
+    this.batchTimeout = setInterval(() => {
+      if (this.metricsBatch.length > 0) {
+        this.flushBatch();
+      }
+    }, uploadInterval);
+
+    // Flush on page unload
+    window.addEventListener('beforeunload', () => {
+      this.flushBatch(true);
+    });
+
+    // Flush on visibility change (mobile apps)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && this.metricsBatch.length > 0) {
+        this.flushBatch(true);
+      }
+    });
+  }
+
+  private flushBatch(immediate: boolean = false): void {
+    if (this.metricsBatch.length === 0) return;
+
+    const batch: MetricsBatch = {
+      timestamp: Date.now(),
+      sessionId: this.sessionId,
+      metrics: [...this.metricsBatch],
+      deviceProfile: this.deviceProfile
+    };
+
+    this.metricsBatch = [];
+
+    if (import.meta.env.DEV) {
+      logger.debug('Metrics batch flushed', {
+        count: batch.metrics.length,
+        deviceProfile: batch.deviceProfile,
+        immediate
+      });
+    }
+
+    // In production, this would send to analytics endpoint
+    if (!import.meta.env.DEV) {
+      this.sendBatchToAnalytics(batch, immediate);
+    }
+  }
+
+  private async sendBatchToAnalytics(batch: MetricsBatch, immediate: boolean): Promise<void> {
+    try {
+      // Use sendBeacon for immediate sends (page unload)
+      if (immediate && navigator.sendBeacon) {
+        navigator.sendBeacon('/api/analytics/metrics', JSON.stringify(batch));
+        return;
+      }
+
+      // Regular fetch for scheduled uploads
+      await fetch('/api/analytics/metrics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batch),
+        keepalive: immediate
+      });
+    } catch (error) {
+      // Fail silently to avoid impacting user experience
+      if (import.meta.env.DEV) {
+        logger.error('Failed to send metrics batch', { error });
+      }
+    }
+  }
+
+  getDeviceProfile(): DevicePerformanceProfile {
+    return { ...this.deviceProfile };
+  }
+
+  getSamplingRate(): number {
+    return this.samplingRate;
+  }
+
+  destroy(): void {
+    if (this.batchTimeout) {
+      clearInterval(this.batchTimeout);
+      this.batchTimeout = null;
+    }
+    this.flushBatch(true);
+  }
+}
 
 // ============= HOOKS =============
 
@@ -386,6 +580,7 @@ export function usePerformanceMonitoring(componentName: string) {
 
 // Export singleton instance
 export const performanceMonitor = new UnifiedPerformanceMonitor();
+export const intelligentMetrics = IntelligentMetricsSystem.getInstance();
 
 // Export legacy aliases for compatibility
 export const PerformanceMonitor = {
