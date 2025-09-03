@@ -6,13 +6,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserProvider } from "./contexts/UserContext";
 import NotFound from "./pages/NotFound";
 import { Skeleton } from "@/components/ui/skeleton";
+import Dashboard from "./pages/Dashboard";
 
 const queryClient = new QueryClient();
 
 // Lazy-loaded pages for better TTI
 const TelaInicial = lazy(() => import("./pages/TelaInicial"));
 const LoginForm = lazy(() => import("./pages/LoginForm"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Calculator = lazy(() => import("./pages/Calculator"));
 const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
