@@ -55,45 +55,39 @@ const ChatTabs = () => {
   
   return (
     <div className="bg-background/95 backdrop-blur-sm border-b border-border/50 p-3">
-      <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex gap-2">
-          {tabs.map(tab => {
-            const IconComponent = tab.icon;
-            const isActive = activeTab === tab.id;
-            
-            return (
-              <Button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  relative inline-flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm
-                  transition-all duration-300 ease-out min-w-fit whitespace-nowrap
-                  ${isActive 
-                    ? 'bg-gradient-to-r from-primary via-primary/95 to-primary/90 text-primary-foreground shadow-lg shadow-primary/25 scale-105' 
-                    : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-102'
-                  }
-                `}
-                variant="ghost"
-              >
-                <span className="text-base leading-none">{tab.emoji}</span>
-                {isActive && (
-                  <span className="font-semibold animate-fade-in">
-                    {tab.label}
-                  </span>
-                )}
-                {!isActive && (
-                  <IconComponent className="w-4 h-4" />
-                )}
-                
-                {/* Efeito de brilho quando ativo */}
-                {isActive && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-full animate-pulse" />
-                )}
-              </Button>
-            );
-          })}
-        </div>
-      </ScrollArea>
+      <div className="flex gap-2 overflow-x-auto">
+        {tabs.map(tab => {
+          const isActive = activeTab === tab.id;
+          
+          return (
+            <Button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`
+                relative inline-flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm
+                transition-all duration-300 ease-out min-w-fit whitespace-nowrap
+                ${isActive 
+                  ? 'bg-gradient-to-r from-primary via-primary/95 to-primary/90 text-primary-foreground shadow-lg shadow-primary/25 scale-105' 
+                  : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-102'
+                }
+              `}
+              variant="ghost"
+            >
+              <span className="text-base leading-none">{tab.emoji}</span>
+              {isActive && (
+                <span className="font-semibold animate-fade-in">
+                  {tab.label}
+                </span>
+              )}
+              
+              {/* Efeito de brilho quando ativo */}
+              {isActive && (
+                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-full animate-pulse" />
+              )}
+            </Button>
+          );
+        })}
+      </div>
     </div>
   );
 };
