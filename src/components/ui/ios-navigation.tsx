@@ -1,11 +1,11 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { MessageSquare, Calculator, Globe, LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useHapticFeedback } from '@/hooks/useHapticFeedback';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useOptimizedNavigation } from '@/hooks/useOptimizedNavigation';
 
 interface NavigationTab {
   id: string;
@@ -24,8 +24,7 @@ const IOSNavigation: React.FC<IOSNavigationProps> = ({
   className,
   unreadCount = 0 
 }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { navigate, currentPath, preloadRoute, isActiveRoute } = useOptimizedNavigation();
   const { buttonPress } = useHapticFeedback();
   const isMobile = useIsMobile();
 
@@ -56,11 +55,12 @@ const IOSNavigation: React.FC<IOSNavigationProps> = ({
     navigate(path);
   };
 
+  const handleTabHover = (path: string) => {
+    preloadRoute(path);
+  };
+
   const isActiveTab = (id: string, path: string) => {
-    if (id === 'map') return location.pathname === '/technical-map';
-    if (id === 'chat') return location.pathname === '/dashboard';
-    if (id === 'calculator') return location.pathname === '/calculator';
-    return location.pathname === path;
+    return isActiveRoute(path);
   };
 
   return (
@@ -80,6 +80,7 @@ const IOSNavigation: React.FC<IOSNavigationProps> = ({
               <Button
                 key={tab.id}
                 onClick={() => handleTabPress(tab.path)}
+                onMouseEnter={() => handleTabHover(tab.path)}
                 variant="ghost"
                 className={cn(
                   "relative flex flex-col items-center gap-1",

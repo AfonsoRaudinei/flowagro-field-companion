@@ -176,13 +176,14 @@ export function useMessages(conversationId?: string) {
 
   useEffect(() => {
     let isMounted = true;
+    let channel: any = null;
     
     fetchMessages();
 
     if (!conversationId) return;
 
     // Set up realtime subscription for this conversation
-    const channel = supabase
+    channel = supabase
       .channel(`messages-${conversationId}`)
       .on(
         'postgres_changes',
@@ -214,8 +215,11 @@ export function useMessages(conversationId?: string) {
 
     return () => {
       isMounted = false;
-      logger.debug('Cleaning up messages subscription', { conversationId });
-      supabase.removeChannel(channel);
+      if (channel) {
+        logger.debug('Cleaning up messages subscription', { conversationId });
+        supabase.removeChannel(channel);
+        channel = null;
+      }
     };
   }, [conversationId, fetchMessages]);
 

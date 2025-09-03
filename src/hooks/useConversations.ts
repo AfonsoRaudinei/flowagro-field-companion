@@ -140,11 +140,12 @@ export function useConversations() {
 
   useEffect(() => {
     let isMounted = true;
+    let channel: any = null;
     
     fetchConversations();
 
     // Set up realtime subscription
-    const channel = supabase
+    channel = supabase
       .channel('conversations-changes')
       .on(
         'postgres_changes',
@@ -163,8 +164,11 @@ export function useConversations() {
 
     return () => {
       isMounted = false;
-      logger.debug('Cleaning up conversations subscription');
-      supabase.removeChannel(channel);
+      if (channel) {
+        logger.debug('Cleaning up conversations subscription');
+        supabase.removeChannel(channel);
+        channel = null;
+      }
     };
   }, [fetchConversations]);
 

@@ -23,40 +23,47 @@ const queryClient = new QueryClient({
 import Dashboard from "./pages/Dashboard";
 import TelaInicial from "./pages/TelaInicial"; // High priority - entry point
 
-// High priority pages - preloaded
-const LoginForm = lazy(() => 
-  import("./pages/LoginForm").then(module => ({ default: module.default }))
-);
-
-// Medium priority pages - standard lazy loading
-const Settings = lazy(() => import("./pages/Settings"));
-const Calculator = lazy(() => import("./pages/Calculator"));
-const Profile = lazy(() => import("./pages/Profile"));
+// Route-based code splitting with strategic loading
+const LazyLoginForm = lazy(() => import('./pages/LoginForm'));
+const LazySettings = lazy(() => import('./pages/Settings'));
+const LazyCalculator = lazy(() => import('./pages/Calculator'));
+const LazyProfile = lazy(() => import("./pages/Profile"));
 
 // Low priority pages - aggressive lazy loading
-const PhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
-const ConsultoriaComunicacao = lazy(() => import("./pages/ConsultoriaComunicacao"));
-const WebhookSettings = lazy(() => import("./pages/WebhookSettings"));
-const AccountSecurity = lazy(() => import("./pages/AccountSecurity"));
-const QAAuditoria = lazy(() => import("./pages/QAAuditoria"));
-const Recover = lazy(() => import("./pages/Recover"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const LazyPhenologicalStages = lazy(() => import("./pages/PhenologicalStages"));
+const LazyConsultoriaComunicacao = lazy(() => import("./pages/ConsultoriaComunicacao"));
+const LazyWebhookSettings = lazy(() => import("./pages/WebhookSettings"));
+const LazyAccountSecurity = lazy(() => import("./pages/AccountSecurity"));
+const LazyQAAuditoria = lazy(() => import("./pages/QAAuditoria"));
+const LazyRecover = lazy(() => import("./pages/Recover"));
+const LazyResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 // Map pages - very aggressive lazy loading (heaviest components)
-const MapTest = lazy(() => 
+const LazyMapTest = lazy(() => 
   import("./pages/MapTest").then(module => {
     // Preload critical map dependencies
     import("mapbox-gl");
     return { default: module.default };
   })
 );
-const TechnicalMap = lazy(() => 
+const LazyTechnicalMap = lazy(() => 
   import("./pages/TechnicalMap").then(module => {
     // Preload critical map dependencies
     import("mapbox-gl");
     return { default: module.default };
   })
 );
+
+// Preload critical components
+const preloadCritical = async () => {
+  if (typeof window !== 'undefined') {
+    // Preload Dashboard and TechnicalMap for faster navigation
+    Promise.all([
+      import('./pages/Dashboard'),
+      import('./pages/TechnicalMap')
+    ]);
+  }
+};
 
 const RouteFallback = () => (
   <div className="p-4 space-y-3">
@@ -73,20 +80,20 @@ const AppLayout = () => {
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<TelaInicial />} />
-          <Route path="/login-form" element={<LoginForm />} />
-          <Route path="/recover" element={<Recover />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/login-form" element={<LazyLoginForm />} />
+          <Route path="/recover" element={<LazyRecover />} />
+          <Route path="/reset-password" element={<LazyResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/calculator" element={<Calculator />} />
-          <Route path="/settings/security" element={<AccountSecurity />} />
-          <Route path="/settings/webhooks" element={<WebhookSettings />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/phenological-stages" element={<PhenologicalStages />} />
-          <Route path="/consultoria/comunicacao" element={<ConsultoriaComunicacao />} />
-          <Route path="/map-test" element={<MapTest />} />
-          <Route path="/technical-map" element={<TechnicalMap />} />
-          <Route path="/qa/auditoria" element={<QAAuditoria />} />
+          <Route path="/settings" element={<LazySettings />} />
+          <Route path="/calculator" element={<LazyCalculator />} />
+          <Route path="/settings/security" element={<LazyAccountSecurity />} />
+          <Route path="/settings/webhooks" element={<LazyWebhookSettings />} />
+          <Route path="/profile" element={<LazyProfile />} />
+          <Route path="/phenological-stages" element={<LazyPhenologicalStages />} />
+          <Route path="/consultoria/comunicacao" element={<LazyConsultoriaComunicacao />} />
+          <Route path="/map-test" element={<LazyMapTest />} />
+          <Route path="/technical-map" element={<LazyTechnicalMap />} />
+          <Route path="/qa/auditoria" element={<LazyQAAuditoria />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
@@ -94,18 +101,24 @@ const AppLayout = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <UserProvider>
-      <TooltipProvider>
-        <Toaster />
-        
-        <BrowserRouter>
-          <AppLayout />
-        </BrowserRouter>
-      </TooltipProvider>
-    </UserProvider>
-  </QueryClientProvider>
-);
+function App() {
+  // Initialize critical preloading
+  React.useEffect(() => {
+    preloadCritical();
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <UserProvider>
+        <TooltipProvider>
+          <BrowserRouter>
+            <AppLayout />
+          </BrowserRouter>
+          <Toaster />
+        </TooltipProvider>
+      </UserProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
