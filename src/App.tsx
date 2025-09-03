@@ -57,10 +57,10 @@ const LazyTechnicalMap = lazy(() =>
 // Preload critical components
 const preloadCritical = async () => {
   if (typeof window !== 'undefined') {
-    // Preload Dashboard and TechnicalMap for faster navigation
+    // Preload Dashboard and TechnicalMapSimplified for faster navigation
     Promise.all([
       import('./pages/Dashboard'),
-      import('./pages/TechnicalMap')
+      import('./pages/TechnicalMapSimplified')
     ]);
   }
 };

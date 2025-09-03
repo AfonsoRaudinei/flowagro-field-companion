@@ -19,14 +19,14 @@ interface DevicePerformanceProfile {
 interface MetricsBatch {
   timestamp: number;
   sessionId: string;
-  metrics: PerformanceMetrics[];
+  metrics: BatchedPerformanceMetric[];
   deviceProfile: DevicePerformanceProfile;
 }
 
 class IntelligentMetricsSystem {
   private static instance: IntelligentMetricsSystem;
   private deviceProfile: DevicePerformanceProfile;
-  private metricsBatch: PerformanceMetrics[] = [];
+  private metricsBatch: BatchedPerformanceMetric[] = [];
   private batchTimeout: NodeJS.Timeout | null = null;
   private sessionId: string;
   private samplingRate: number = 0.01; // Default 1%
@@ -260,6 +260,15 @@ interface PerformanceMetrics {
   cacheHitRate?: number;
   gpsLatency?: number;
   mapTileLoadTime?: number;
+  name?: string;
+  value?: number;
+  unit?: string;
+  tags?: Record<string, any>;
+}
+
+interface BatchedPerformanceMetric extends PerformanceMetrics {
+  timestamp: number;
+  sessionId: string;
 }
 
 interface PerformanceConfig {

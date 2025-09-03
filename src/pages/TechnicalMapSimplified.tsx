@@ -28,29 +28,29 @@ function TechnicalMapContent() {
   const [currentStyle, setCurrentStyle] = useState<MapStyle>("satellite");
   const [showMetrics, setShowMetrics] = useState(false);
 
-  // FASE 5: Performance monitoring initialization
-  useEffect(() => {
-    const startTime = performance.now();
-    
-    // Initialize intelligent metrics
-    if (import.meta.env.DEV) {
-      console.log('Intelligent Metrics Profile:', intelligentMetrics.getDeviceProfile());
-      console.log('Sampling Rate:', intelligentMetrics.getSamplingRate());
-      console.log('Health Monitor Status:', optimizedHealthMonitor.getStatus());
-    }
-    
-    return () => {
-      const loadTime = performance.now() - startTime;
-      performanceMonitor.measure('technical-map-lifecycle', () => {
-        intelligentMetrics.addMetric({
-          name: 'page_load_time',
-          value: loadTime,
-          unit: 'ms',
-          tags: { page: 'technical-map' }
-        } as any);
-      });
-    };
-  }, []);
+      // FASE 5: Performance monitoring initialization
+      useEffect(() => {
+        const startTime = performance.now();
+        
+        // Initialize intelligent metrics
+        if (import.meta.env.DEV) {
+          console.log('Intelligent Metrics Profile:', intelligentMetrics.getDeviceProfile());
+          console.log('Sampling Rate:', intelligentMetrics.getSamplingRate());
+          console.log('Health Monitor Status:', optimizedHealthMonitor.getStatus());
+        }
+        
+        return () => {
+          const loadTime = performance.now() - startTime;
+          performanceMonitor.measure('technical-map-lifecycle', () => {
+            intelligentMetrics.addMetric({
+              name: 'page_load_time',
+              value: loadTime,
+              unit: 'ms',
+              tags: { page: 'technical-map' }
+            });
+          });
+        };
+      }, []);
 
   const handleLocationClick = async () => {
     try {
@@ -80,12 +80,7 @@ function TechnicalMapContent() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
       <SimpleBaseMap 
-        style={getStyleUrl(currentStyle)}
-        onLoad={() => {
-          if (import.meta.env.DEV) {
-            console.log('Map loaded successfully');
-          }
-        }}
+        className="w-full h-full"
       />
       
       {/* Core Components */}
@@ -146,11 +141,24 @@ function TechnicalMapContent() {
       </Card>
 
       {/* Location Footer */}
-      <LocationFooter 
-        position={userLocation.currentPosition}
-        accuracy={userLocation.accuracy}
-        onLocationClick={handleLocationClick}
-      />
+      <div className="absolute bottom-4 left-4 right-4 z-10">
+        <Card className="p-2">
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between text-xs">
+              <span>GPS: {userLocation.currentPosition ? 'Ativo' : 'Inativo'}</span>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                onClick={handleLocationClick}
+                className="h-6 text-xs"
+              >
+                <Target className="w-3 h-3 mr-1" />
+                Localizar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* FASE 5: Advanced Debug Panel - Only in Development */}
       <DevOnly>
