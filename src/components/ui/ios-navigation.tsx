@@ -70,8 +70,8 @@ const IOSNavigation: React.FC<IOSNavigationProps> = ({
       "shadow-[0_-8px_32px_-8px_hsl(var(--shadow)/0.12)] pb-safe",
       className
     )}>
-      <div className="max-w-sm mx-auto">
-        <div className="flex items-center justify-around px-2 py-1.5">
+      <div className="max-w-sm md:max-w-md mx-auto">
+        <div className="flex items-center justify-around px-2 py-1.5 md:px-4 md:py-2">
           {tabs.map((tab) => {
             const IconComponent = tab.icon;
             const isActive = isActiveTab(tab.id, tab.path);

@@ -1,10 +1,7 @@
 import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from './AppSidebar';
 import { NavigationHeader } from '@/components/ui/unified-header';
 import { useOptimizedNavigation } from '@/hooks/useOptimizedNavigation';
-import { useIsMobile } from '@/hooks/use-mobile';
 import IOSNavigation from '@/components/ui/ios-navigation';
 import { HeaderSettings } from './HeaderSettings';
 
@@ -49,10 +46,9 @@ interface NavigationStackProps {
 
 export const NavigationStack: React.FC<NavigationStackProps> = () => {
   const location = useLocation();
-  const { getRouteTitle, navigate } = useOptimizedNavigation();
-  const isMobile = useIsMobile();
+  const { getRouteTitle } = useOptimizedNavigation();
   
-  // Routes that don't need sidebar
+  // Routes that don't need navigation
   const publicRoutes = [
     '/',
     '/login-form',
@@ -64,7 +60,7 @@ export const NavigationStack: React.FC<NavigationStackProps> = () => {
   const currentTitle = getRouteTitle(location.pathname);
   
   if (isPublicRoute) {
-    // Public routes without sidebar
+    // Public routes without navigation
     return (
       <div className="w-full max-w-md mx-auto bg-background min-h-screen">
         <Suspense fallback={<RouteFallback />}>
@@ -79,85 +75,38 @@ export const NavigationStack: React.FC<NavigationStackProps> = () => {
     );
   }
 
-  // Mobile layout
-  if (isMobile) {
-    return (
-      <div className="min-h-screen w-full bg-background">
-        {/* Mobile header */}
-        <NavigationHeader
-          title={currentTitle}
-          onBack={() => window.history.back()}
-          showBackButton={location.pathname !== '/dashboard'}
-          rightActions={<HeaderSettings />}
-        />
-        
-        {/* Main content area with bottom padding for navigation */}
-        <div className="flex-1 overflow-auto pb-20">
-          <div className="max-w-md mx-auto">
-            <Suspense fallback={<RouteFallback />}>
-              <Routes>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/settings" element={<LazySettings />} />
-                <Route path="/calculator" element={<LazyCalculator />} />
-                <Route path="/settings/security" element={<LazyAccountSecurity />} />
-                <Route path="/profile" element={<LazyProfile />} />
-                <Route path="/phenological-stages" element={<LazyPhenologicalStages />} />
-                <Route path="/consultoria/comunicacao" element={<LazyConsultoriaComunicacao />} />
-                <Route path="/technical-map" element={<LazyTechnicalMap />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
-          </div>
-        </div>
-        
-        {/* Mobile bottom navigation */}
-        <IOSNavigation />
-      </div>
-    );
-  }
-
-  // Desktop layout with sidebar
+  // Unified layout for all authenticated routes
   return (
-    <SidebarProvider 
-      defaultOpen={true} // Open by default on desktop
-    >
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        
-        <main className="flex-1 flex flex-col">
-          {/* Desktop header with settings */}
-          <NavigationHeader
-            title={currentTitle}
-            onBack={() => window.history.back()}
-            showBackButton={location.pathname !== '/dashboard'}
-            rightActions={
-              <div className="flex items-center gap-2">
-                <SidebarTrigger />
-                <HeaderSettings />
-              </div>
-            }
-          />
-          
-          {/* Main content area */}
-          <div className="flex-1 overflow-auto">
-            <div className="w-full px-4 py-4">
-              <Suspense fallback={<RouteFallback />}>
-                <Routes>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/settings" element={<LazySettings />} />
-                  <Route path="/calculator" element={<LazyCalculator />} />
-                  <Route path="/settings/security" element={<LazyAccountSecurity />} />
-                  <Route path="/profile" element={<LazyProfile />} />
-                  <Route path="/phenological-stages" element={<LazyPhenologicalStages />} />
-                  <Route path="/consultoria/comunicacao" element={<LazyConsultoriaComunicacao />} />
-                  <Route path="/technical-map" element={<LazyTechnicalMap />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </div>
-          </div>
-        </main>
+    <div className="min-h-screen w-full bg-background">
+      {/* Header for all screens */}
+      <NavigationHeader
+        title={currentTitle}
+        onBack={() => window.history.back()}
+        showBackButton={location.pathname !== '/dashboard'}
+        rightActions={<HeaderSettings />}
+      />
+      
+      {/* Main content area with bottom padding for navigation */}
+      <div className="flex-1 overflow-auto pb-20 md:pb-20">
+        <div className="w-full max-w-6xl mx-auto px-4 py-4">
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/settings" element={<LazySettings />} />
+              <Route path="/calculator" element={<LazyCalculator />} />
+              <Route path="/settings/security" element={<LazyAccountSecurity />} />
+              <Route path="/profile" element={<LazyProfile />} />
+              <Route path="/phenological-stages" element={<LazyPhenologicalStages />} />
+              <Route path="/consultoria/comunicacao" element={<LazyConsultoriaComunicacao />} />
+              <Route path="/technical-map" element={<LazyTechnicalMap />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </div>
       </div>
-    </SidebarProvider>
+      
+      {/* Bottom navigation for all screens */}
+      <IOSNavigation />
+    </div>
   );
 };
