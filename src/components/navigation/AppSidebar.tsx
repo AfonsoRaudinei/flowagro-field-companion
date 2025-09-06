@@ -147,7 +147,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      className={`${collapsed ? 'w-14' : 'w-64'} transition-all duration-300`}
+      className={`${collapsed ? 'w-12' : 'w-48'} transition-all duration-300`}
       collapsible="icon"
     >
       <SidebarContent className="bg-card border-r border-border">
