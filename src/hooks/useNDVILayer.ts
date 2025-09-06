@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useMapInstance } from './useMapInstance';
-import mapboxgl from 'mapbox-gl';
+import * as mapboxgl from 'mapbox-gl';
 import { logger } from '@/lib/logger';
 
 export interface NDVILayerConfig {

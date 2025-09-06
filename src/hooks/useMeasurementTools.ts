@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useMapInstance } from './useMapInstance';
 import { UnitService, UnitType, AreaMeasurement } from '@/services/unitService';
 import * as turf from '@turf/turf';
-import mapboxgl from 'mapbox-gl';
+import * as mapboxgl from 'mapbox-gl';
 import { logger } from '@/lib/logger';
 
 export type MeasurementTool = 'ruler' | 'area' | 'perimeter' | 'select';

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useMapInstance } from './useMapInstance';
 import { useNDVILayer } from './useNDVILayer';
-import mapboxgl from 'mapbox-gl';
+import * as mapboxgl from 'mapbox-gl';
 import { logger } from '@/lib/logger';
 
 // Layer types with comprehensive configuration

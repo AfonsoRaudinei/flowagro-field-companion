@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import mapboxgl from 'mapbox-gl';
+import * as mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMap } from './MapProvider';
 import { getMapTilerToken, getStyleUrl, DEFAULT_MAP_CONFIG } from '@/services/mapService';

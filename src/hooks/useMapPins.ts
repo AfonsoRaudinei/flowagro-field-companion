@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useMapInstance } from './useMapInstance';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
-import mapboxgl from 'mapbox-gl';
+import * as mapboxgl from 'mapbox-gl';
 
 export interface MapPin {
   id: string;
