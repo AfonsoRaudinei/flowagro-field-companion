@@ -1,11 +1,9 @@
-import React, { useEffect, lazy, Suspense } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogIn } from "lucide-react";
-
-// Lazy load the map for better performance
-const SimpleBaseMap = lazy(() => import("@/components/maps/SimpleBaseMap").then(module => ({ default: module.SimpleBaseMap })));
+import { SimpleBaseMap } from "@/components/maps/SimpleBaseMap";
 
 const TelaInicial = () => {
   const navigate = useNavigate();
@@ -43,14 +41,12 @@ const TelaInicial = () => {
     >
       {/* Full-screen Map Background */}
       <div className="absolute inset-0">
-        <Suspense fallback={<div className="w-full h-full bg-gradient-to-br from-primary via-secondary to-accent" />}>
-          <SimpleBaseMap 
-            className="w-full h-full"
-            center={[-47.8825, -15.7942]} // Brasília coordinates
-            zoom={5}
-            showNativeControls={false}
-          />
-        </Suspense>
+        <SimpleBaseMap 
+          className="w-full h-full"
+          center={[-47.8825, -15.7942]} // Brasília coordinates
+          zoom={5}
+          showNativeControls={false}
+        />
         {/* Subtle overlay for better contrast */}
         <div className="absolute inset-0 bg-black/20" />
       </div>
