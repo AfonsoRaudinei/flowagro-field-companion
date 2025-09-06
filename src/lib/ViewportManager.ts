@@ -1,4 +1,5 @@
 import type { Map as MapboxMap } from 'mapbox-gl';
+import { logger } from '@/lib/logger';
 
 export interface ViewportState {
   center: [number, number];
@@ -35,7 +36,7 @@ export class ViewportManager {
       const saved = Object.fromEntries(this.savedViewports);
       localStorage.setItem('mapViewports', JSON.stringify(saved));
     } catch (error) {
-      console.warn('Failed to save viewport to localStorage:', error);
+      logger.warn('Failed to save viewport to localStorage', { error });
     }
   }
 
@@ -93,7 +94,7 @@ export class ViewportManager {
         this.savedViewports = new Map(Object.entries(parsed));
       }
     } catch (error) {
-      console.warn('Failed to load saved viewports:', error);
+      logger.warn('Failed to load saved viewports', { error });
     }
   }
 

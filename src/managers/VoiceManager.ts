@@ -1,3 +1,6 @@
+import { Capacitor } from '@capacitor/core';
+import { logger } from '@/lib/logger';
+
 type VoiceState = 'idle' | 'recording' | 'processing' | 'error';
 
 interface VoiceListener {
@@ -61,7 +64,7 @@ class VoiceManager {
       this.mediaRecorder.start();
       this.setState('recording');
     } catch (error) {
-      console.error('Recording error:', error);
+      logger.error('Recording error', { error });
       this.setState('error');
       this.cleanup();
     }

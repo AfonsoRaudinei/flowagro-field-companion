@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 export interface WebhookEvent {
   event_type: string;
@@ -10,11 +11,11 @@ export class WebhookTrigger {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.warn('User not authenticated, skipping webhook trigger');
+        logger.warn('User not authenticated, skipping webhook trigger');
         return;
       }
 
-      console.log(`Triggering webhook event: ${event.event_type}`);
+      logger.businessLogic('Triggering webhook event', { eventType: event.event_type });
 
       const { data, error } = await supabase.functions.invoke('webhook-sender', {
         body: {
@@ -25,14 +26,14 @@ export class WebhookTrigger {
       });
 
       if (error) {
-        console.error('Error triggering webhook:', error);
+        logger.error('Error triggering webhook', { error, eventType: event.event_type });
         return;
       }
 
-      console.log('Webhook triggered successfully:', data);
+      logger.businessLogic('Webhook triggered successfully', { data });
       return data;
     } catch (error) {
-      console.error('Error in webhook trigger:', error);
+      logger.error('Error in webhook trigger', { error });
     }
   }
 

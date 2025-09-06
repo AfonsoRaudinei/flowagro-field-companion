@@ -1,4 +1,5 @@
 import { toast } from "@/hooks/use-toast";
+import { logger } from '@/lib/logger';
 
 // Standardized Supabase error reporting
 export function reportSupabaseError(context: string, error: unknown, opts?: { showToast?: boolean }) {
@@ -11,5 +12,11 @@ export function reportSupabaseError(context: string, error: unknown, opts?: { sh
   }
 
   // Keep logs structured and short
-  console.error("[SUPABASE]", { context, correlationId, message });
+  logger.error('[SUPABASE] Database error', { 
+    context, 
+    correlationId, 
+    message,
+    errorCode: error instanceof Error ? (error as any).code : undefined,
+    details: error instanceof Error ? (error as any).details : undefined 
+  });
 }

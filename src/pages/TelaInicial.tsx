@@ -15,6 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { logger } from '@/lib/logger';
 
 const TelaInicial = () => {
   const navigate = useNavigate();
@@ -48,10 +49,10 @@ const TelaInicial = () => {
     try {
       await Geolocation.requestPermissions();
       const position = await Geolocation.getCurrentPosition();
-      console.log('Location granted:', position);
+      logger.businessLogic('Location granted', { position: { lat: position.coords.latitude, lng: position.coords.longitude } });
       localStorage.setItem('flowagro-location-permission-requested', 'granted');
     } catch (error) {
-      console.log('Location permission denied or failed:', error);
+      logger.warn('Location permission denied or failed', { error });
       localStorage.setItem('flowagro-location-permission-requested', 'denied');
     } finally {
       setIsRequestingLocation(false);

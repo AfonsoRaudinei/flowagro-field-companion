@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 export interface SecurityEvent {
   eventType: string;
@@ -26,10 +27,10 @@ export class SecurityService {
       });
 
       if (error) {
-        console.error('Falha ao registrar evento de segurança:', error);
+        logger.error('Falha ao registrar evento de segurança', { error, eventType: event.eventType, details: event.details });
       }
     } catch (error) {
-      console.error('Erro ao registrar evento de segurança:', error);
+      logger.error('Erro ao registrar evento de segurança', { error, eventType: event.eventType, details: event.details });
     }
   }
 
@@ -43,13 +44,13 @@ export class SecurityService {
       });
 
       if (error) {
-        console.error('Falha ao verificar atividade suspeita:', error);
+        logger.error('Falha ao verificar atividade suspeita', { error, minutes });
         return 0;
       }
 
       return data || 0;
     } catch (error) {
-      console.error('Erro ao verificar atividade suspeita:', error);
+      logger.error('Erro ao verificar atividade suspeita', { error, minutes });
       return 0;
     }
   }
@@ -78,7 +79,7 @@ export class SecurityService {
       
       return true;
     } catch (error) {
-      console.error('Erro ao verificar rate limit:', error);
+      logger.error('Erro ao verificar rate limit', { error, action });
       return true; // Em caso de erro, permitir
     }
   }
@@ -100,7 +101,7 @@ export class SecurityService {
       
       return true;
     } catch (error) {
-      console.error('Erro ao validar autenticação:', error);
+      logger.error('Erro ao validar autenticação', { error });
       return false;
     }
   }

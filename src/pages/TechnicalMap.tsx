@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Camera, Layers, Target, PenTool } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { logger } from '@/lib/logger';
 
 function TechnicalMapContent() {
   const { toast } = useToast();
@@ -34,9 +35,9 @@ function TechnicalMapContent() {
         
         // Initialize intelligent metrics
         if (import.meta.env.DEV) {
-          console.log('Intelligent Metrics Profile:', intelligentMetrics.getDeviceProfile());
-          console.log('Sampling Rate:', intelligentMetrics.getSamplingRate());
-          console.log('Health Monitor Status:', optimizedHealthMonitor.getStatus());
+          logger.debug('Intelligent Metrics Profile', { profile: intelligentMetrics.getDeviceProfile() });
+          logger.debug('Sampling Rate', { rate: intelligentMetrics.getSamplingRate() });
+          logger.debug('Health Monitor Status', { status: optimizedHealthMonitor.getStatus() });
         }
         
         return () => {

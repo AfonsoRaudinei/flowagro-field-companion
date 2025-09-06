@@ -93,5 +93,13 @@ export default defineConfig(({ mode }) => ({
       'mapbox-gl',
       'recharts'
     ]
+  },
+  
+  // Fase 6: Production optimizations
+  esbuild: {
+    // Remove console statements in production
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
+    // Optimize for production
+    legalComments: 'none'
   }
 }));
