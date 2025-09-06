@@ -7,6 +7,7 @@ import { CameraService } from '@/services/cameraService';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 interface FloatingCameraButtonProps {
   onCaptureStart?: () => void;
@@ -69,7 +70,7 @@ export const FloatingCameraButton: React.FC<FloatingCameraButtonProps> = ({
         });
       }
     } catch (error) {
-      console.error('Camera capture error:', error);
+      logger.error('Camera capture error', { error });
       // Error haptic feedback
       if (isMobile) {
         await Haptics.impact({ style: ImpactStyle.Heavy });

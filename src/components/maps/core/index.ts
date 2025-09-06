@@ -14,7 +14,13 @@ export { IntegratedMapInterface } from '../IntegratedMapInterface';
 export { MapProvider, useMap } from '../MapProvider';
 
 // Error handling
-export { MapErrorBoundary } from '../MapErrorBoundary';
+export { 
+  UnifiedErrorBoundary,
+  ErrorBoundary,
+  ChatErrorBoundary,
+  MapErrorBoundary,
+  PerformanceErrorBoundary
+} from '@/components/errors/UnifiedErrorBoundary';
 
 // Component registry for lazy loading
 export { 

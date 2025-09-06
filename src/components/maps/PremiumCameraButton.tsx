@@ -5,6 +5,7 @@ import { usePremiumMapAnimations } from '@/hooks/usePremiumMapAnimations';
 import { CameraService } from '@/services/cameraService';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface PremiumCameraButtonProps {
   onPhotoTaken?: (photoData: string, location?: { latitude: number; longitude: number }) => void;
@@ -58,7 +59,7 @@ export const PremiumCameraButton: React.FC<PremiumCameraButtonProps> = ({
         onPhotoTaken?.(photoData, location || undefined);
       }
     } catch (error) {
-      console.error('Camera capture error:', error);
+      logger.error('Camera capture error', { error });
       toast({
         title: "Erro na captura",
         description: "Não foi possível acessar a câmera",

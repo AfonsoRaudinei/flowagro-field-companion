@@ -8,7 +8,7 @@ import { EmptyStateView } from "./EmptyStateView";
 import { ProducerThread } from "@/hooks/useDashboardState";
 import { useChatDensity } from "@/hooks/useChatDensity";
 import { IOSHeader } from "@/components/ui/unified-header";
-import ChatErrorBoundary from "@/components/ErrorBoundary/ChatErrorBoundary";
+import { ChatErrorBoundary } from "@/components/errors/UnifiedErrorBoundary";
 import { DebugPanel } from "@/components/Debug/DebugPanel";
 import { logger } from "@/lib/logger";
 import { Users, Calendar, Bot, Wheat, Bell, MessageCircle, Search } from "lucide-react";

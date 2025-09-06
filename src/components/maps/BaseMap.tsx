@@ -3,8 +3,9 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMap } from './MapProvider';
 import { getMapTilerToken, getStyleUrl, DEFAULT_MAP_CONFIG } from '@/services/mapService';
-import { MapErrorBoundary } from './MapErrorBoundary';
+import { MapErrorBoundary } from '@/components/errors/UnifiedErrorBoundary';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface BaseMapProps {
   className?: string;
@@ -59,24 +60,24 @@ export const BaseMap: React.FC<BaseMapProps> = ({
       try {
         setLoading(true);
         setError(null);
-        console.log('Initializing map...');
+        logger.info('Map initialization started');
 
         // Get MapTiler token with fallback
         let apiToken = token;
         if (!apiToken) {
-          console.log('No token available, fetching from server...');
+          logger.debug('No token available, fetching from server...');
           apiToken = await getMapTilerToken();
           if (apiToken) {
             setToken(apiToken);
-            console.log('MapTiler token obtained successfully');
+            logger.info('MapTiler token obtained successfully');
           } else {
-            console.warn('MapTiler token not available, will use fallback');
+            logger.warn('MapTiler token not available, will use fallback');
           }
         }
 
         // Initialize Mapbox GL with fallback handling
         const styleUrl = getStyleUrl(currentStyle, apiToken || undefined);
-        console.log('Using style URL:', typeof styleUrl === 'string' ? 'MapTiler' : 'OpenStreetMap fallback');
+        logger.info('Using map style', { styleType: typeof styleUrl === 'string' ? 'MapTiler' : 'OpenStreetMap' });
         
         const mapInstance = new mapboxgl.Map({
           container: mapContainer.current,
@@ -91,7 +92,7 @@ export const BaseMap: React.FC<BaseMapProps> = ({
           failIfMajorPerformanceCaveat: false // Allow fallback rendering
         });
 
-        console.log('Mapbox instance created, waiting for load...');
+        logger.info('Mapbox instance created, waiting for load...');
 
         // Add navigation controls
         if (showNavigation) {
@@ -132,39 +133,42 @@ export const BaseMap: React.FC<BaseMapProps> = ({
 
         // Handle map events with detailed logging
         mapInstance.on('load', () => {
-          console.log('Map loaded successfully!');
-          console.log('Map style loaded:', mapInstance.getStyle().name || 'Unknown style');
+          logger.info('Map loaded successfully', { 
+            style: mapInstance.getStyle().name || 'Unknown style' 
+          });
         });
 
         mapInstance.on('error', (e) => {
-          console.error('Map error:', e);
+          logger.error('Map error occurred', { error: e });
           setError(`Map error: ${e.error?.message || 'Unknown error'}`);
         });
 
         mapInstance.on('styledata', () => {
-          console.log('Map style data loaded');
+          logger.debug('Map style data loaded');
         });
 
         mapInstance.on('sourcedata', (e) => {
           if (e.isSourceLoaded && e.sourceId) {
-            console.log(`Source loaded: ${e.sourceId}`);
+            logger.debug('Map source loaded', { sourceId: e.sourceId });
           }
         });
 
       } catch (error) {
-        console.error('Map initialization failed:', error);
+        logger.error('Map initialization failed', { 
+          error: error.message,
+          stack: error.stack 
+        });
         const errorMessage = error instanceof Error ? error.message : 'Map initialization failed';
-        console.error('Full error details:', error);
         setError(errorMessage);
         setLoading(false);
         
         // Try to provide helpful error context
         if (errorMessage.includes('token')) {
-          console.error('Token-related error - check MAPTILER_API_KEY configuration');
+          logger.error('Token-related error - check MAPTILER_API_KEY configuration');
         } else if (errorMessage.includes('network')) {
-          console.error('Network error - check internet connection');
+          logger.error('Network error - check internet connection');
         } else if (errorMessage.includes('WebGL')) {
-          console.error('WebGL error - browser may not support map rendering');
+          logger.error('WebGL error - browser may not support map rendering');
         }
       }
     };

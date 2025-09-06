@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 export type CardSize = 'small' | 'medium' | 'large';
 
@@ -15,7 +16,7 @@ export function useCardSizes() {
       try {
         setCardSizes(JSON.parse(saved));
       } catch (error) {
-        console.error('Error loading card sizes:', error);
+        logger.error('Error loading card sizes', { error });
       }
     }
   }, []);

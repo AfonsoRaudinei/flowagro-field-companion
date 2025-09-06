@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface SimpleBaseMapProps {
   className?: string;
@@ -30,27 +31,27 @@ export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
     const initializeMap = async () => {
       if (!mapContainer.current || map.current) return;
       
-      console.log('SimpleBaseMap: Iniciando configuração do mapa...');
+      logger.info('SimpleBaseMap: Starting map configuration...');
       setIsLoading(true);
       setError(null);
       
       try {
-        console.log('SimpleBaseMap: Buscando token MapTiler...');
+        logger.debug('SimpleBaseMap: Fetching MapTiler token...');
         const { data, error: tokenError } = await supabase.functions.invoke('maptiler-token');
         
         if (!isMounted) return;
         
         let token = null;
         if (tokenError) {
-          console.log('SimpleBaseMap: Erro ao buscar token:', tokenError.message);
+          logger.warn('SimpleBaseMap: Error fetching token', { error: tokenError.message });
         } else if (data?.key) {
           token = data.key;
-          console.log('SimpleBaseMap: Token MapTiler obtido com sucesso');
+          logger.info('SimpleBaseMap: MapTiler token obtained successfully');
         } else {
-          console.log('SimpleBaseMap: Token não encontrado, usando OpenStreetMap');
+          logger.info('SimpleBaseMap: Token not found, using OpenStreetMap');
         }
         
-        console.log('SimpleBaseMap: Criando instância Mapbox GL...');
+        logger.info('SimpleBaseMap: Creating Mapbox GL instance...');
         const mapInstance = new mapboxgl.Map({
           container: mapContainer.current,
           style: token ? 
@@ -79,7 +80,7 @@ export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
           accessToken: token || undefined,
         });
         
-        console.log('SimpleBaseMap: Instância criada, aguardando carregamento...');
+        logger.debug('SimpleBaseMap: Instance created, waiting for load...');
         
         // Add controls conditionally
         if (showNativeControls) {
@@ -98,13 +99,13 @@ export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
         // Event listeners
         mapInstance.on('load', () => {
           if (!isMounted) return;
-          console.log('SimpleBaseMap: Mapa carregado completamente');
+          logger.info('SimpleBaseMap: Map loaded completely');
           setIsLoading(false);
         });
         
         mapInstance.on('error', (e) => {
           if (!isMounted) return;
-          console.error('SimpleBaseMap: Erro no mapa:', e);
+          logger.error('SimpleBaseMap: Map error occurred', { error: e });
           setError(`Erro ao carregar o mapa: ${e.error?.message || 'Erro desconhecido'}`);
           setIsLoading(false);
         });
@@ -115,7 +116,7 @@ export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
         
       } catch (err) {
         if (!isMounted) return;
-        console.error('SimpleBaseMap: Erro na inicialização:', err);
+        logger.error('SimpleBaseMap: Initialization error', { error: err });
         setError(`Erro na inicialização do mapa: ${err instanceof Error ? err.message : 'Erro desconhecido'}`);
         setIsLoading(false);
       }
@@ -126,7 +127,7 @@ export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
     return () => {
       isMounted = false;
       if (map.current) {
-        console.log('SimpleBaseMap: Limpando instância do mapa');
+        logger.debug('SimpleBaseMap: Cleaning up map instance');
         map.current.remove();
         map.current = null;
       }

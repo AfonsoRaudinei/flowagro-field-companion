@@ -3,6 +3,7 @@ import { useMapInstance } from './useMapInstance';
 import * as turf from '@turf/turf';
 import { AgroMonitoringService, Polygon } from '@/services/agromonitoringService';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export type DrawingTool = 'select' | 'polygon' | 'rectangle' | 'circle' | 'freehand';
 
@@ -51,7 +52,7 @@ export const useMapDrawing = (): UseMapDrawingReturn => {
       const area = turf.area(polygon);
       return area / 10000; // Convert m² to hectares
     } catch (error) {
-      console.error('Error calculating area:', error);
+      logger.error('Error calculating area', { error });
       return 0;
     }
   }, []);
@@ -119,12 +120,19 @@ export const useMapDrawing = (): UseMapDrawingReturn => {
           description: `Área de ${area.toFixed(2)} hectares salva no AgroMonitoring.`,
         });
         
-        console.log('Polygon saved to AgroMonitoring:', result.data);
+        logger.businessLogic('Polygon saved to AgroMonitoring', { 
+          polygonId: result.data.id,
+          area: area 
+        });
       } else {
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Failed to save polygon to AgroMonitoring:', error);
+      logger.error('Failed to save polygon to AgroMonitoring', { 
+        error, 
+        shapeId: newShape.id,
+        shapeName: newShape.name 
+      });
       
       // Update shape to remove analyzing state
       setDrawnShapes(prev => prev.map(shape => 
@@ -167,7 +175,10 @@ export const useMapDrawing = (): UseMapDrawingReturn => {
           throw new Error(result.error);
         }
       } catch (error) {
-        console.error('Failed to delete polygon from AgroMonitoring:', error);
+        logger.error('Failed to delete polygon from AgroMonitoring', { 
+          error, 
+          polygonId: shapeToDelete.id 
+        });
         toast({
           title: "Erro ao remover",
           description: `Não foi possível remover do AgroMonitoring: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
@@ -237,7 +248,11 @@ export const useMapDrawing = (): UseMapDrawingReturn => {
         throw new Error(result.error || 'Sem dados NDVI disponíveis');
       }
     } catch (error) {
-      console.error('NDVI analysis failed:', error);
+      logger.error('NDVI analysis failed', { 
+        error, 
+        shapeId: shape.id,
+        shapeName: shape.name 
+      });
       
       toast({
         title: "Erro na análise",

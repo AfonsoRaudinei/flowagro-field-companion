@@ -14,6 +14,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface MapControlsProps {
   className?: string;
@@ -89,7 +90,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
           });
         },
         (error) => {
-          console.error('Geolocation error:', error);
+          logger.error('Geolocation error', { error });
         },
         { enableHighAccuracy: true }
       );

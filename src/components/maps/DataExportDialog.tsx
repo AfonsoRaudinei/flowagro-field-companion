@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
+import { logger } from '@/lib/logger';
 import { Card, CardContent } from '@/components/ui/card';
 import { useMapPins } from '@/hooks/useMapPins';
 import { DataExporter } from '@/lib/dataExport';
@@ -187,7 +188,7 @@ export const DataExportDialog: React.FC<DataExportDialogProps> = ({
       }, 500);
 
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error', { error });
       setIsExporting(false);
       setExportProgress(0);
     }
