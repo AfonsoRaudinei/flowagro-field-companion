@@ -63,9 +63,10 @@ export default defineConfig(({ mode }) => ({
             '@supabase/supabase-js'
           ],
           
-          // Charting (usado apenas em algumas páginas)
-          'chunk-charts': [
-            'recharts'
+          // Utilities
+          'chunk-utils': [
+            'lodash',
+            'jszip'
           ]
         }
       }
@@ -90,8 +91,7 @@ export default defineConfig(({ mode }) => ({
       '@radix-ui/react-tabs'
     ],
     exclude: [
-      'mapbox-gl',
-      'recharts'
+      'mapbox-gl'
     ]
   },
   
