@@ -1,3 +1,6 @@
+// ⚠️ DEPRECATED: Use UnifiedErrorBoundary from '@/components/errors/UnifiedErrorBoundary' instead
+// This file is kept for backward compatibility only
+
 import React, { Component, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';

@@ -1,3 +1,6 @@
+// ⚠️ DEPRECATED: Use UnifiedErrorBoundary from '@/components/errors/UnifiedErrorBoundary' instead
+// This file is kept for backward compatibility only
+
 import React, { Component, ReactNode } from 'react';
 import { logger } from '@/lib/logger';
 import { MemoryMonitor, PerformanceMonitor } from '@/lib/unifiedPerformance';
