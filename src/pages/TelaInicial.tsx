@@ -1,10 +1,11 @@
-import React, { useEffect } from "react";
+import React, { useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { MapProvider } from "@/components/maps/MapProvider";
-import { BaseMap } from "@/components/maps/BaseMap";
 import { LogIn } from "lucide-react";
+
+// Lazy load the map for better performance
+const SimpleBaseMap = lazy(() => import("@/components/maps/SimpleBaseMap").then(module => ({ default: module.SimpleBaseMap })));
 
 const TelaInicial = () => {
   const navigate = useNavigate();
@@ -35,64 +36,36 @@ const TelaInicial = () => {
   };
 
   return (
-    <MapProvider>
-      <div 
-        className="min-h-screen flex flex-col relative overflow-hidden"
-        onWheel={handleSwipeOrScroll}
-        onTouchStart={handleSwipeOrScroll}
-      >
-        {/* Map Background */}
-        <div className="absolute inset-0">
-          <BaseMap 
+    <div 
+      className="min-h-screen relative overflow-hidden"
+      onWheel={handleSwipeOrScroll}
+      onTouchStart={handleSwipeOrScroll}
+    >
+      {/* Full-screen Map Background */}
+      <div className="absolute inset-0">
+        <Suspense fallback={<div className="w-full h-full bg-gradient-to-br from-primary via-secondary to-accent" />}>
+          <SimpleBaseMap 
             className="w-full h-full"
-            showNavigation={false}
-            showFullscreen={false}
-            showGeolocate={false}
-            interactive={false}
+            center={[-47.8825, -15.7942]} // Brasília coordinates
+            zoom={5}
+            showNativeControls={false}
           />
-          {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-background/50 to-secondary/30" />
-        </div>
-
-        {/* Logo/Brand */}
-        <div className="absolute top-8 left-8 z-10">
-          <h1 className="text-2xl font-bold text-white drop-shadow-lg">FlowAgro</h1>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 flex items-center justify-center px-8 z-10">
-          <div className="text-center space-y-6 max-w-lg">
-            <h2 className="text-4xl md:text-6xl font-bold text-white drop-shadow-lg">
-              Bem-vindo ao FlowAgro
-            </h2>
-            <p className="text-lg text-white/90 drop-shadow">
-              Sua plataforma completa para gestão agrícola inteligente
-            </p>
-          </div>
-        </div>
-
-        {/* Login Button */}
-        <div className="absolute bottom-8 right-8 z-10">
-          <Button
-            onClick={handleLoginClick}
-            size="lg"
-            className="rounded-full w-16 h-16 p-0 text-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300"
-          >
-            <LogIn className="w-6 h-6" />
-          </Button>
-        </div>
-
-        {/* Saiba mais link */}
-        <div className="absolute bottom-8 left-8 z-10">
-          <button 
-            className="text-sm text-white/80 hover:text-white transition-colors drop-shadow"
-            onClick={() => navigate("/technical-map")}
-          >
-            Saiba mais
-          </button>
-        </div>
+        </Suspense>
+        {/* Subtle overlay for better contrast */}
+        <div className="absolute inset-0 bg-black/20" />
       </div>
-    </MapProvider>
+
+      {/* Floating Login Button */}
+      <div className="absolute bottom-8 right-8 z-50">
+        <Button
+          onClick={handleLoginClick}
+          size="lg"
+          className="rounded-full w-16 h-16 p-0 shadow-2xl hover:shadow-3xl transition-all duration-300 animate-pulse hover:animate-none"
+        >
+          <LogIn className="w-6 h-6" />
+        </Button>
+      </div>
+    </div>
   );
 };
 
