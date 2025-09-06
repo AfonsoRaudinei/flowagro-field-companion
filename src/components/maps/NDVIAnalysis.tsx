@@ -9,20 +9,6 @@ import { useMapInstance } from '@/hooks/useMapInstance';
 import { useNDVILayer } from '@/hooks/useNDVILayer';
 import { DataExportDialog } from './DataExportDialog';
 import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  LineChart,
-  Line,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
-import { 
   BarChart3, 
   TrendingUp, 
   FileText, 
@@ -304,77 +290,12 @@ export const NDVIAnalysis: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="charts" className="space-y-4">
-              {/* Time Series Chart */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium flex items-center space-x-2">
-                  <TrendingUp className="w-4 h-4" />
-                  <span>Evolução Temporal NDVI</span>
-                </h4>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={timeSeriesChart}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
-                      <XAxis 
-                        dataKey="date" 
-                        fontSize={10}
-                        stroke="hsl(var(--muted-foreground))"
-                      />
-                      <YAxis 
-                        fontSize={10}
-                        stroke="hsl(var(--muted-foreground))"
-                        domain={[0, 1]}
-                      />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--background))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="ndvi" 
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={2}
-                        dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 3 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Distribution Pie Chart */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Distribuição por Categoria</h4>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={vegetationDistribution}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={60}
-                        dataKey="value"
-                        label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
-                        labelLine={false}
-                        fontSize={10}
-                      >
-                        {vegetationDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: 'hsl(var(--background))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+              <div className="bg-muted/50 p-8 rounded-xl text-center">
+                <BarChart3 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <h4 className="text-sm font-medium mb-2">Gráficos Temporariamente Indisponíveis</h4>
+                <p className="text-xs text-muted-foreground">
+                  Os dados estão disponíveis nas abas Estatísticas e Relatório
+                </p>
               </div>
             </TabsContent>
 

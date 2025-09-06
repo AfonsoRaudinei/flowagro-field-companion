@@ -1,446 +1,218 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Calendar, TrendingUp, BarChart3, Download, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DatePickerWithRange } from "@/components/ui/date-range-picker";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Area, AreaChart } from "recharts";
-import { format, subMonths, subDays, differenceInDays } from "date-fns";
-import { toast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
-// Mock data para histórico NDVI
-const generateNDVIHistory = (startDate: Date, endDate: Date) => {
-  const days = differenceInDays(endDate, startDate);
-  const data = [];
-  
-  for (let i = 0; i <= days; i += 7) { // Dados semanais
-    const currentDate = new Date(startDate);
-    currentDate.setDate(startDate.getDate() + i);
-    
-    // Simulação de variação sazonal
-    const dayOfYear = Math.floor((currentDate.getTime() - new Date(currentDate.getFullYear(), 0, 0).getTime()) / 86400000);
-    const seasonalFactor = 0.3 * Math.sin((dayOfYear / 365) * 2 * Math.PI) + 0.7;
-    
-    const baseNDVI = 0.6 + (Math.random() - 0.5) * 0.3;
-    const ndvi = Math.max(0.1, Math.min(0.9, baseNDVI * seasonalFactor));
-    
-    data.push({
-      date: format(currentDate, 'yyyy-MM-dd'),
-      dateLabel: format(currentDate, 'dd/MM'),
-      ndvi: parseFloat(ndvi.toFixed(3)),
-      health: ndvi > 0.6 ? 'Alta' : ndvi > 0.4 ? 'Média' : 'Baixa',
-      rainfall: Math.random() * 50, // mm simulados
-      temperature: 20 + Math.random() * 15, // °C simulados
-    });
-  }
-  
-  return data;
-};
+interface NDVIHistoryData {
+  date: string;
+  ndvi: number;
+  temperature: number;
+  precipitation: number;
+}
 
-const NDVIHistory: React.FC = () => {
-  const [dateRange, setDateRange] = useState<{from: Date, to: Date}>({
-    from: subMonths(new Date(), 6),
-    to: new Date()
-  });
-  
-  const [analysisType, setAnalysisType] = useState<'trend' | 'seasonal' | 'comparison'>('trend');
+interface SeasonalData {
+  season: string;
+  avgNdvi: number;
+  maxNdvi: number;
+  minNdvi: number;
+}
+
+export const NDVIHistory: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+  const [dateRange, setDateRange] = useState("12m");
   const [chartType, setChartType] = useState<'line' | 'area' | 'bar'>('line');
-  const [isLoading, setIsLoading] = useState(false);
+  const [data, setData] = useState<NDVIHistoryData[]>([]);
 
-  // Gerar dados históricos baseado no período selecionado
-  const historyData = useMemo(() => {
-    if (!dateRange.from || !dateRange.to) return [];
-    return generateNDVIHistory(dateRange.from, dateRange.to);
-  }, [dateRange]);
-
-  // Análise estatística dos dados
-  const statistics = useMemo(() => {
-    if (historyData.length === 0) return null;
-    
-    const ndviValues = historyData.map(d => d.ndvi);
-    const avgNDVI = ndviValues.reduce((a, b) => a + b, 0) / ndviValues.length;
-    const maxNDVI = Math.max(...ndviValues);
-    const minNDVI = Math.min(...ndviValues);
-    
-    // Calcular tendência (regressão linear simples)
-    const n = historyData.length;
-    const sumX = historyData.reduce((sum, _, i) => sum + i, 0);
-    const sumY = ndviValues.reduce((sum, val) => sum + val, 0);
-    const sumXY = historyData.reduce((sum, data, i) => sum + i * data.ndvi, 0);
-    const sumXX = historyData.reduce((sum, _, i) => sum + i * i, 0);
-    
-    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    const trend = slope > 0.001 ? 'Crescimento' : slope < -0.001 ? 'Declínio' : 'Estável';
-    
-    return {
-      avg: avgNDVI,
-      max: maxNDVI,
-      min: minNDVI,
-      trend,
-      slope: slope * 100, // Percentual
-      dataPoints: n
-    };
-  }, [historyData]);
-
-  // Análise sazonal
-  const seasonalAnalysis = useMemo(() => {
-    const seasons = {
-      'Verão': historyData.filter(d => {
-        const month = new Date(d.date).getMonth();
-        return month === 11 || month <= 1; // Dez, Jan, Fev
-      }),
-      'Outono': historyData.filter(d => {
-        const month = new Date(d.date).getMonth();
-        return month >= 2 && month <= 4; // Mar, Abr, Mai
-      }),
-      'Inverno': historyData.filter(d => {
-        const month = new Date(d.date).getMonth();
-        return month >= 5 && month <= 7; // Jun, Jul, Ago
-      }),
-      'Primavera': historyData.filter(d => {
-        const month = new Date(d.date).getMonth();
-        return month >= 8 && month <= 10; // Set, Out, Nov
-      })
-    };
-
-    return Object.entries(seasons).map(([season, data]) => ({
-      season,
-      avgNDVI: data.length > 0 ? data.reduce((sum, d) => sum + d.ndvi, 0) / data.length : 0,
-      count: data.length
-    })).filter(s => s.count > 0);
-  }, [historyData]);
-
-  const handleRefresh = async () => {
-    setIsLoading(true);
-    // Simular carregamento de dados
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    toast({
-      title: "Dados atualizados",
-      description: "Histórico NDVI foi atualizado com sucesso",
+  // Generate sample historical data
+  const sampleData = useMemo(() => {
+    const months = 12;
+    return Array.from({ length: months }, (_, i) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (months - 1 - i));
+      return {
+        date: date.toISOString().split('T')[0],
+        ndvi: 0.3 + Math.random() * 0.5 + Math.sin(i * Math.PI / 6) * 0.2,
+        temperature: 20 + Math.random() * 15 + Math.sin(i * Math.PI / 6) * 10,
+        precipitation: Math.random() * 100
+      };
     });
+  }, []);
+
+  const seasonalAnalysis: SeasonalData[] = useMemo(() => [
+    { season: 'Verão', avgNdvi: 0.75, maxNdvi: 0.92, minNdvi: 0.58 },
+    { season: 'Outono', avgNdvi: 0.62, maxNdvi: 0.78, minNdvi: 0.45 },
+    { season: 'Inverno', avgNdvi: 0.48, maxNdvi: 0.65, minNdvi: 0.32 },
+    { season: 'Primavera', avgNdvi: 0.68, maxNdvi: 0.85, minNdvi: 0.52 }
+  ], []);
+
+  useEffect(() => {
+    setData(sampleData);
+  }, [sampleData]);
+
+  const refreshData = async () => {
+    setLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setData(sampleData);
+    setLoading(false);
   };
 
-  const handleExport = () => {
-    const csvContent = [
-      'Data,NDVI,Saúde da Vegetação,Chuva (mm),Temperatura (°C)',
-      ...historyData.map(d => 
-        `${d.date},${d.ndvi},${d.health},${d.rainfall.toFixed(1)},${d.temperature.toFixed(1)}`
-      )
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+  const exportData = () => {
+    const exportData = {
+      historicalData: data,
+      seasonalAnalysis,
+      metadata: {
+        dateRange,
+        chartType,
+        exportDate: new Date().toISOString()
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ndvi-history-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.download = `ndvi-history-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Exportação concluída",
-      description: "Histórico NDVI exportado para CSV",
-    });
-  };
-
-  const renderChart = () => {
-    const commonProps = {
-      data: historyData,
-      margin: { top: 5, right: 30, left: 20, bottom: 5 }
-    };
-
-    switch (chartType) {
-      case 'area':
-        return (
-          <AreaChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis 
-              dataKey="dateLabel" 
-              className="text-xs text-muted-foreground"
-            />
-            <YAxis 
-              domain={[0, 1]}
-              className="text-xs text-muted-foreground"
-            />
-            <Tooltip 
-              labelFormatter={(label) => `Data: ${label}`}
-              formatter={(value: number) => [value.toFixed(3), 'NDVI']}
-              contentStyle={{
-                backgroundColor: 'hsl(var(--background))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '6px'
-              }}
-            />
-            <Area 
-              type="monotone" 
-              dataKey="ndvi" 
-              stroke="hsl(var(--primary))" 
-              fill="hsl(var(--primary))"
-              fillOpacity={0.3}
-            />
-          </AreaChart>
-        );
-      
-      case 'bar':
-        return (
-          <BarChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis 
-              dataKey="dateLabel" 
-              className="text-xs text-muted-foreground"
-            />
-            <YAxis 
-              domain={[0, 1]}
-              className="text-xs text-muted-foreground"
-            />
-            <Tooltip 
-              labelFormatter={(label) => `Data: ${label}`}
-              formatter={(value: number) => [value.toFixed(3), 'NDVI']}
-              contentStyle={{
-                backgroundColor: 'hsl(var(--background))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '6px'
-              }}
-            />
-            <Bar dataKey="ndvi" fill="hsl(var(--primary))" />
-          </BarChart>
-        );
-      
-      default:
-        return (
-          <LineChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis 
-              dataKey="dateLabel" 
-              className="text-xs text-muted-foreground"
-            />
-            <YAxis 
-              domain={[0, 1]}
-              className="text-xs text-muted-foreground"
-            />
-            <Tooltip 
-              labelFormatter={(label) => `Data: ${label}`}
-              formatter={(value: number) => [value.toFixed(3), 'NDVI']}
-              contentStyle={{
-                backgroundColor: 'hsl(var(--background))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '6px'
-              }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="ndvi" 
-              stroke="hsl(var(--primary))" 
-              strokeWidth={2}
-              dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-            />
-          </LineChart>
-        );
-    }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Controles */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+    <Card className="h-full">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
             <TrendingUp className="w-5 h-5" />
-            Histórico NDVI - Análise Temporal
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Período</label>
-              <DatePickerWithRange
-                date={dateRange}
-                onDateChange={(range) => range && range.from && range.to && setDateRange({from: range.from, to: range.to})}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tipo de Análise</label>
-              <Select value={analysisType} onValueChange={(value: any) => setAnalysisType(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="trend">Tendência</SelectItem>
-                  <SelectItem value="seasonal">Sazonal</SelectItem>
-                  <SelectItem value="comparison">Comparação</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tipo de Gráfico</label>
-              <Select value={chartType} onValueChange={(value: any) => setChartType(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="line">Linha</SelectItem>
-                  <SelectItem value="area">Área</SelectItem>
-                  <SelectItem value="bar">Barras</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Ações</label>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleRefresh}
-                  disabled={isLoading}
-                >
-                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleExport}
-                >
-                  <Download className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+            <span>Histórico NDVI</span>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Estatísticas Resumidas */}
-      {statistics && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-primary">
-                {statistics.avg.toFixed(3)}
-              </div>
-              <p className="text-xs text-muted-foreground">NDVI Médio</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-green-600">
-                {statistics.max.toFixed(3)}
-              </div>
-              <p className="text-xs text-muted-foreground">NDVI Máximo</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-orange-600">
-                {statistics.min.toFixed(3)}
-              </div>
-              <p className="text-xs text-muted-foreground">NDVI Mínimo</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2">
-                <Badge 
-                  variant={
-                    statistics.trend === 'Crescimento' ? 'default' : 
-                    statistics.trend === 'Declínio' ? 'destructive' : 
-                    'secondary'
-                  }
-                >
-                  {statistics.trend}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">Tendência</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">
-                {statistics.slope > 0 ? '+' : ''}{statistics.slope.toFixed(2)}%
-              </div>
-              <p className="text-xs text-muted-foreground">Taxa de Variação</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">
-                {statistics.dataPoints}
-              </div>
-              <p className="text-xs text-muted-foreground">Pontos de Dados</p>
-            </CardContent>
-          </Card>
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={refreshData}
+              variant="outline"
+              size="sm"
+              disabled={loading}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button onClick={exportData} variant="secondary" size="sm">
+              <Download className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Controls */}
+        <div className="flex space-x-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Período</label>
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3m">3 meses</SelectItem>
+                <SelectItem value="6m">6 meses</SelectItem>
+                <SelectItem value="12m">12 meses</SelectItem>
+                <SelectItem value="24m">24 meses</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Tipo de Gráfico</label>
+            <Select value={chartType} onValueChange={(value: any) => setChartType(value)}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="line">Linha</SelectItem>
+                <SelectItem value="area">Área</SelectItem>
+                <SelectItem value="bar">Barras</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      )}
 
-      {/* Gráfico Principal */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
-            Evolução do NDVI ao Longo do Tempo
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              {renderChart()}
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+        <Tabs defaultValue="historical" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="historical">Histórico</TabsTrigger>
+            <TabsTrigger value="seasonal">Análise Sazonal</TabsTrigger>
+          </TabsList>
 
-      {/* Análise Sazonal */}
-      {analysisType === 'seasonal' && seasonalAnalysis.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Análise Sazonal</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {seasonalAnalysis.map((season, index) => (
-                <Card key={season.season}>
-                  <CardContent className="pt-6">
-                    <div className="text-xl font-semibold text-primary">
-                      {season.avgNDVI.toFixed(3)}
+          <TabsContent value="historical" className="space-y-4">
+            {/* Chart Placeholder */}
+            <div className="bg-muted/50 p-8 rounded-xl text-center">
+              <BarChart3 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <h4 className="text-sm font-medium mb-2">Gráfico Temporariamente Indisponível</h4>
+              <p className="text-xs text-muted-foreground mb-4">
+                Os dados históricos estão disponíveis na tabela abaixo
+              </p>
+            </div>
+
+            {/* Data Table */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Dados Históricos NDVI</h4>
+              <div className="border rounded-lg">
+                <div className="grid grid-cols-4 gap-4 p-3 border-b bg-muted/50 text-xs font-medium">
+                  <div>Data</div>
+                  <div>NDVI</div>
+                  <div>Temperatura (°C)</div>
+                  <div>Precipitação (mm)</div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {data.map((item, index) => (
+                    <div key={index} className="grid grid-cols-4 gap-4 p-3 border-b last:border-b-0 text-xs">
+                      <div>{new Date(item.date).toLocaleDateString('pt-BR')}</div>
+                      <div className="font-mono">{item.ndvi.toFixed(3)}</div>
+                      <div className="font-mono">{item.temperature.toFixed(1)}</div>
+                      <div className="font-mono">{item.precipitation.toFixed(1)}</div>
                     </div>
-                    <p className="text-sm font-medium">{season.season}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {season.count} medições
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
+                  ))}
+                </div>
+              </div>
             </div>
-            
-            <div className="mt-6 h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={seasonalAnalysis}>
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis dataKey="season" className="text-xs text-muted-foreground" />
-                  <YAxis className="text-xs text-muted-foreground" />
-                  <Tooltip 
-                    formatter={(value: number) => [value.toFixed(3), 'NDVI Médio']}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px'
-                    }}
-                  />
-                  <Bar dataKey="avgNDVI" fill="hsl(var(--primary))" />
-                </BarChart>
-              </ResponsiveContainer>
+          </TabsContent>
+
+          <TabsContent value="seasonal" className="space-y-4">
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium flex items-center space-x-2">
+                <Calendar className="w-4 h-4" />
+                <span>Análise por Estação</span>
+              </h4>
+              
+              <div className="bg-muted/50 p-4 rounded-xl text-center mb-4">
+                <BarChart3 className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">Análise sazonal indisponível</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {seasonalAnalysis.map((season, index) => (
+                  <Card key={index}>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h5 className="font-medium">{season.season}</h5>
+                        <Badge variant="outline">{season.avgNdvi.toFixed(3)}</Badge>
+                      </div>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Máximo:</span>
+                          <span className="font-mono text-green-600">{season.maxNdvi.toFixed(3)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Mínimo:</span>
+                          <span className="font-mono text-red-600">{season.minNdvi.toFixed(3)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 
