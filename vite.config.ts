@@ -42,11 +42,6 @@ export default defineConfig(({ mode }) => ({
             '@turf/turf'
           ],
           
-          // Canvas e desenho
-          'chunk-canvas': [
-            'fabric'
-          ],
-          
           // Data/Query management
           'chunk-data': [
             '@tanstack/react-query',
@@ -75,13 +70,7 @@ export default defineConfig(({ mode }) => ({
     
     // Otimizações adicionais
     target: 'esnext',
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: mode === 'production',
-        drop_debugger: mode === 'production'
-      }
-    },
+    minify: 'esbuild', // Changed from terser to esbuild (default)
     
     // Chunk size warnings
     chunkSizeWarningLimit: 1000
@@ -99,7 +88,6 @@ export default defineConfig(({ mode }) => ({
     ],
     exclude: [
       'mapbox-gl',
-      'fabric',
       'recharts'
     ]
   }
