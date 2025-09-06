@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ExternalLink, Zap, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export default function ZapierWebhook() {
   const [webhookUrl, setWebhookUrl] = useState('');
@@ -32,7 +33,7 @@ export default function ZapierWebhook() {
     }
 
     setIsLoading(true);
-    console.log("Triggering Zapier webhook:", webhookUrl);
+    logger.info("Triggering Zapier webhook", { url: webhookUrl });
 
     try {
       let payload;
@@ -62,7 +63,7 @@ export default function ZapierWebhook() {
         description: "A requisição foi enviada para o Zapier. Verifique o histórico do seu Zap para confirmar que foi acionado.",
       });
     } catch (error) {
-      console.error("Error triggering webhook:", error);
+      logger.error("Error triggering webhook", { error });
       toast({
         title: "Erro",
         description: "Falha ao acionar o webhook do Zapier. Verifique a URL e tente novamente.",

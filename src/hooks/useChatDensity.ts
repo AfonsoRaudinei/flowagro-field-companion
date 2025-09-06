@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
 
 export type ChatDensity = 'compact' | 'comfortable' | 'spacious';
@@ -25,7 +26,7 @@ export function useChatDensity() {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching preferences:', error);
+        logger.error('Error fetching preferences', { error });
         return;
       }
 
@@ -33,7 +34,7 @@ export function useChatDensity() {
         setDensity(data.chat_density as ChatDensity);
       }
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error in chat density', { error });
     } finally {
       setLoading(false);
     }
@@ -63,7 +64,7 @@ export function useChatDensity() {
         description: `Cards agora em modo ${newDensity}`,
       });
     } catch (error) {
-      console.error('Error updating density:', error);
+      logger.error('Error updating density', { error });
     }
   };
 

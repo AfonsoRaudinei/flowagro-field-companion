@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { logger } from '@/lib/logger';
 
 export type HapticFeedbackType = 'light' | 'medium' | 'heavy' | 'selection' | 'success' | 'warning' | 'error';
 
@@ -55,7 +56,7 @@ export function useHapticFeedback() {
         }
         return;
       } catch (error) {
-        console.warn('Capacitor Haptics not available, falling back to vibration API');
+        logger.warn('Capacitor Haptics not available, falling back to vibration API');
       }
     }
 

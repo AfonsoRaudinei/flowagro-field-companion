@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { performanceMonitor } from '@/lib/unifiedPerformance';
 import { preloadSystem } from '@/lib/preloadSystem';
+import { logger } from '@/lib/logger';
 
 interface BundleStats {
   totalSize: number;
@@ -205,7 +206,7 @@ export const BundleAnalyzer: React.FC<{ isVisible?: boolean }> = ({
             size="sm"
             onClick={() => {
               preloadSystem.reset();
-              console.log('Preload system reset');
+              logger.info('Preload system reset');
             }}
           >
             Reset Preload

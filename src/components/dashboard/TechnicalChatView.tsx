@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { logger } from '@/lib/logger';
 
 // Mini-componente: Header do Chat
 const ChatHeader: React.FC<{
@@ -103,7 +104,13 @@ const ChatInput = () => {
   const [message, setMessage] = useState("");
   const handleSend = () => {
     if (!message.trim()) return;
-    // TODO: Implementar envio de mensagem
+    
+    logger.info('Technical chat message sent', {
+      messageLength: message.length,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Clear message after sending
     setMessage("");
   };
   const handleKeyPress = (e: React.KeyboardEvent) => {
