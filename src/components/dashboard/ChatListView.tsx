@@ -7,7 +7,7 @@ import TechnicalChatView from "./TechnicalChatView";
 import { EmptyStateView } from "./EmptyStateView";
 import { ProducerThread } from "@/hooks/useDashboardState";
 import { useChatDensity } from "@/hooks/useChatDensity";
-import { IOSHeader } from "@/components/ui/ios-header";
+import { IOSHeader } from "@/components/ui/unified-header";
 import ChatErrorBoundary from "@/components/ErrorBoundary/ChatErrorBoundary";
 import { DebugPanel } from "@/components/Debug/DebugPanel";
 import { logger } from "@/lib/logger";

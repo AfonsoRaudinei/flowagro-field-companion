@@ -1,3 +1,6 @@
+// ⚠️ DEPRECATED: Use UnifiedHeader from '@/components/ui/unified-header' instead
+// This file is kept for backward compatibility only
+
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';

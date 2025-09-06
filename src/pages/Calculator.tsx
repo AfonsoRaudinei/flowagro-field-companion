@@ -1,5 +1,5 @@
 import React from 'react';
-import { IOSHeader } from '@/components/ui/ios-header';
+import { IOSHeader } from '@/components/ui/unified-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calculator as CalculatorIcon, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';

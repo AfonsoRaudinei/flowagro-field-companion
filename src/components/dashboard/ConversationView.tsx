@@ -16,7 +16,7 @@ import {
 import { ProducerThread, ChatMessage } from '@/hooks/useDashboardState';
 import useVoiceManager from '@/hooks/useVoiceManager';
 import { toast } from '@/hooks/use-toast';
-import { ConversationHeader } from '@/components/ui/ios-header';
+import { ConversationHeader } from '@/components/ui/unified-header';
 
 interface ConversationViewProps {
   selectedChat: ProducerThread;

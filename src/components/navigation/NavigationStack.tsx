@@ -2,7 +2,7 @@ import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
-import { NavigationHeader } from '@/components/ui/navigation';
+import { NavigationHeader } from '@/components/ui/unified-header';
 import { useOptimizedNavigation } from '@/hooks/useOptimizedNavigation';
 
 // Import critical pages
