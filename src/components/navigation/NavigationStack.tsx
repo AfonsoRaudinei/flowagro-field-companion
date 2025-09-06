@@ -4,6 +4,9 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { NavigationHeader } from '@/components/ui/unified-header';
 import { useOptimizedNavigation } from '@/hooks/useOptimizedNavigation';
+import { useIsMobile } from '@/hooks/use-mobile';
+import IOSNavigation from '@/components/ui/ios-navigation';
+import { HeaderSettings } from './HeaderSettings';
 
 // Import critical pages
 import Dashboard from '@/pages/Dashboard';
@@ -20,19 +23,11 @@ const LazyCalculator = lazy(() => import('@/pages/Calculator'));
 const LazyProfile = lazy(() => import('@/pages/Profile'));
 const LazyPhenologicalStages = lazy(() => import('@/pages/PhenologicalStages'));
 const LazyConsultoriaComunicacao = lazy(() => import('@/pages/ConsultoriaComunicacao'));
-const LazyWebhookSettings = lazy(() => import('@/pages/WebhookSettings'));
 const LazyAccountSecurity = lazy(() => import('@/pages/AccountSecurity'));
-const LazyQAAuditoria = lazy(() => import('@/pages/QAAuditoria'));
 const LazyRecover = lazy(() => import('@/pages/Recover'));
 const LazyResetPassword = lazy(() => import('@/pages/ResetPassword'));
 
 // Heavy map components
-const LazyMapTest = lazy(() => 
-  import('@/pages/MapTest').then(module => {
-    import('mapbox-gl');
-    return { default: module.default };
-  })
-);
 const LazyTechnicalMap = lazy(() => 
   import('@/pages/TechnicalMap').then(module => {
     import('mapbox-gl');
@@ -55,6 +50,7 @@ interface NavigationStackProps {
 export const NavigationStack: React.FC<NavigationStackProps> = () => {
   const location = useLocation();
   const { getRouteTitle, navigate } = useOptimizedNavigation();
+  const isMobile = useIsMobile();
   
   // Routes that don't need sidebar
   const publicRoutes = [
@@ -83,43 +79,78 @@ export const NavigationStack: React.FC<NavigationStackProps> = () => {
     );
   }
 
-  // Authenticated routes with sidebar
+  // Mobile layout
+  if (isMobile) {
+    return (
+      <div className="min-h-screen w-full bg-background">
+        {/* Mobile header */}
+        <NavigationHeader
+          title={currentTitle}
+          onBack={() => window.history.back()}
+          showBackButton={location.pathname !== '/dashboard'}
+          rightActions={<HeaderSettings />}
+        />
+        
+        {/* Main content area with bottom padding for navigation */}
+        <div className="flex-1 overflow-auto pb-20">
+          <div className="max-w-md mx-auto">
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/settings" element={<LazySettings />} />
+                <Route path="/calculator" element={<LazyCalculator />} />
+                <Route path="/settings/security" element={<LazyAccountSecurity />} />
+                <Route path="/profile" element={<LazyProfile />} />
+                <Route path="/phenological-stages" element={<LazyPhenologicalStages />} />
+                <Route path="/consultoria/comunicacao" element={<LazyConsultoriaComunicacao />} />
+                <Route path="/technical-map" element={<LazyTechnicalMap />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </div>
+        </div>
+        
+        {/* Mobile bottom navigation */}
+        <IOSNavigation />
+      </div>
+    );
+  }
+
+  // Desktop layout with sidebar
   return (
     <SidebarProvider 
-      defaultOpen={false} // Start collapsed on mobile
+      defaultOpen={true} // Open by default on desktop
     >
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         
         <main className="flex-1 flex flex-col">
-          {/* Global header with sidebar trigger */}
+          {/* Desktop header with settings */}
           <NavigationHeader
             title={currentTitle}
             onBack={() => window.history.back()}
             showBackButton={location.pathname !== '/dashboard'}
             rightActions={
-              <SidebarTrigger className="lg:hidden" />
+              <div className="flex items-center gap-2">
+                <SidebarTrigger />
+                <HeaderSettings />
+              </div>
             }
           />
           
           {/* Main content area */}
           <div className="flex-1 overflow-auto">
-            <div className="max-w-md mx-auto lg:max-w-none lg:mx-0">
+            <div className="w-full px-4 py-4">
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/settings" element={<LazySettings />} />
                   <Route path="/calculator" element={<LazyCalculator />} />
                   <Route path="/settings/security" element={<LazyAccountSecurity />} />
-                  <Route path="/settings/webhooks" element={<LazyWebhookSettings />} />
                   <Route path="/profile" element={<LazyProfile />} />
                   <Route path="/phenological-stages" element={<LazyPhenologicalStages />} />
                   <Route path="/consultoria/comunicacao" element={<LazyConsultoriaComunicacao />} />
-                  <Route path="/map-test" element={<LazyMapTest />} />
                   <Route path="/technical-map" element={<LazyTechnicalMap />} />
-                  {/* Backward compatibility redirect */}
-                  <Route path="/technical-map-simplified" element={<LazyTechnicalMap />} />
-                  <Route path="/qa/auditoria" element={<LazyQAAuditoria />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>

@@ -1,16 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Calculator,
-  Settings,
-  User,
   MapPin,
   Leaf,
-  MessageSquare,
-  Bug,
-  Webhook,
-  Shield
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 import {
@@ -43,60 +39,15 @@ const mainItems = [
     url: '/technical-map',
     icon: MapPin,
     group: 'main'
-  },
+  }
+];
+
+const phenologyItems = [
   {
     title: 'Estágios Fenológicos',
     url: '/phenological-stages',
     icon: Leaf,
-    group: 'main'
-  }
-];
-
-const toolsItems = [
-  {
-    title: 'Teste de Mapa',
-    url: '/map-test',
-    icon: MapPin,
-    group: 'tools'
-  },
-  {
-    title: 'Consultoria',
-    url: '/consultoria/comunicacao',
-    icon: MessageSquare,
-    group: 'tools'
-  },
-  {
-    title: 'QA Auditoria',
-    url: '/qa/auditoria',
-    icon: Bug,
-    group: 'tools'
-  }
-];
-
-const settingsItems = [
-  {
-    title: 'Configurações',
-    url: '/settings',
-    icon: Settings,
-    group: 'settings'
-  },
-  {
-    title: 'Perfil',
-    url: '/profile',
-    icon: User,
-    group: 'settings'
-  },
-  {
-    title: 'Segurança',
-    url: '/settings/security',
-    icon: Shield,
-    group: 'settings'
-  },
-  {
-    title: 'Webhooks',
-    url: '/settings/webhooks',
-    icon: Webhook,
-    group: 'settings'
+    group: 'phenology'
   }
 ];
 
@@ -105,6 +56,7 @@ export function AppSidebar() {
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === 'collapsed';
+  const [phenologyOpen, setPhenologyOpen] = useState(false);
 
   const isActive = (path: string) => currentPath === path;
   
@@ -130,6 +82,7 @@ export function AppSidebar() {
                   <NavLink
                     to={item.url}
                     className={getNavClasses(item.url)}
+                    title={collapsed ? item.title : undefined}
                   >
                     <Icon className={`${collapsed ? 'h-5 w-5' : 'h-4 w-4 mr-3'} shrink-0`} />
                     {!collapsed && (
@@ -142,6 +95,42 @@ export function AppSidebar() {
           })}
         </SidebarMenu>
       </SidebarGroupContent>
+    </SidebarGroup>
+  );
+
+  const renderExpandableGroup = () => (
+    <SidebarGroup>
+      <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+        <button
+          onClick={() => !collapsed && setPhenologyOpen(!phenologyOpen)}
+          className={`flex items-center gap-2 w-full ${collapsed ? 'pointer-events-none' : ''}`}
+        >
+          Ferramentas Avançadas
+          {!collapsed && (phenologyOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)}
+        </button>
+      </SidebarGroupLabel>
+      {(!collapsed && phenologyOpen) && (
+        <SidebarGroupContent>
+          <SidebarMenu>
+            {phenologyItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className={getNavClasses(item.url)}
+                    >
+                      <Icon className="h-4 w-4 mr-3 shrink-0" />
+                      <span className="truncate">{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroupContent>
+      )}
     </SidebarGroup>
   );
 
@@ -169,8 +158,7 @@ export function AppSidebar() {
         {/* Navigation Groups */}
         <div className="flex-1 space-y-1 p-2">
           {renderMenuGroup(mainItems, "Principal")}
-          {renderMenuGroup(toolsItems, "Ferramentas")}
-          {renderMenuGroup(settingsItems, "Configurações")}
+          {renderExpandableGroup()}
         </div>
 
         {/* Footer */}
