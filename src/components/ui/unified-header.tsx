@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, MoreHorizontal, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BackButton } from '@/components/ui/back-button';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
@@ -59,15 +60,8 @@ export const UnifiedHeader: React.FC<UnifiedHeaderProps> = (props) => {
         className
       )}>
         <div className="flex items-center space-x-3">
-          {showBackButton && onBack && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onBack}
-              className="h-9 w-9 p-0 hover:bg-accent"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+          {showBackButton && (
+            <BackButton variant="ghost" size="sm" />
           )}
           <h1 className="text-xl font-semibold text-foreground">{title}</h1>
         </div>
@@ -107,15 +101,8 @@ export const UnifiedHeader: React.FC<UnifiedHeaderProps> = (props) => {
           <>
             {/* Left side - Back button */}
             <div className="flex items-center min-w-0 flex-1">
-              {showBackButton && onBack && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onBack}
-                  className="ios-button h-8 w-8 p-0 mr-md hover:bg-accent/50 active:scale-95"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
+              {showBackButton && (
+                <BackButton variant="ios" className="mr-md" />
               )}
             </div>
 
@@ -179,14 +166,7 @@ export const UnifiedHeader: React.FC<UnifiedHeaderProps> = (props) => {
         {/* Left side - Back button */}
         <div className="flex items-center min-w-0">
           {onBack && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onBack}
-              className="ios-button h-8 w-8 p-0 mr-md hover:bg-accent/50 active:scale-95"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+            <BackButton variant="ios" className="mr-md" customHandler={onBack} />
           )}
         </div>
 
