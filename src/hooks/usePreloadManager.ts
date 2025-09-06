@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { useMapInstance } from './useMapInstance';
 import { globalCache } from '@/lib/cache';
 import { performanceMonitor } from '@/lib/unifiedPerformance';
+import { logger } from '@/lib/logger';
 
 interface PreloadTask {
   id: string;

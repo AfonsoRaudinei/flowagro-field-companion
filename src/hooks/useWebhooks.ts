@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export interface WebhookConfiguration {
   id: string;
@@ -43,7 +44,7 @@ export const useWebhooks = () => {
       if (error) throw error;
       setWebhooks(data || []);
     } catch (error: any) {
-      console.error('Error fetching webhooks:', error);
+      logger.error('Error fetching webhooks', { error });
       toast({
         title: "Erro",
         description: "Não foi possível carregar os webhooks",
@@ -72,7 +73,7 @@ export const useWebhooks = () => {
       if (error) throw error;
       setLogs(data || []);
     } catch (error: any) {
-      console.error('Error fetching webhook logs:', error);
+      logger.error('Error fetching webhook logs', { error, webhookId });
       toast({
         title: "Erro",
         description: "Não foi possível carregar os logs",
@@ -105,7 +106,7 @@ export const useWebhooks = () => {
 
       return data;
     } catch (error: any) {
-      console.error('Error creating webhook:', error);
+      logger.error('Error creating webhook', { error, webhook });
       toast({
         title: "Erro",
         description: "Não foi possível criar o webhook",
@@ -134,7 +135,7 @@ export const useWebhooks = () => {
 
       return data;
     } catch (error: any) {
-      console.error('Error updating webhook:', error);
+      logger.error('Error updating webhook', { error, id, updates });
       toast({
         title: "Erro",
         description: "Não foi possível atualizar o webhook",
@@ -159,7 +160,7 @@ export const useWebhooks = () => {
         description: "Webhook removido com sucesso",
       });
     } catch (error: any) {
-      console.error('Error deleting webhook:', error);
+      logger.error('Error deleting webhook', { error, id });
       toast({
         title: "Erro",
         description: "Não foi possível remover o webhook",
@@ -196,7 +197,7 @@ export const useWebhooks = () => {
 
       return data;
     } catch (error: any) {
-      console.error('Error testing webhook:', error);
+      logger.error('Error testing webhook', { error, webhookId: webhook.id });
       toast({
         title: "Erro",
         description: "Não foi possível testar o webhook",
@@ -222,7 +223,7 @@ export const useWebhooks = () => {
       if (error) throw error;
       return result;
     } catch (error: any) {
-      console.error('Error sending webhook:', error);
+      logger.error('Error sending webhook', { error, eventType, data });
       throw error;
     }
   };

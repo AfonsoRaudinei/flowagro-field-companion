@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useMapInstance } from './useMapInstance';
 import { MapPin } from './useMapPins';
 import mapboxgl from 'mapbox-gl';
+import { logger } from '@/lib/logger';
 
 export type SmartMarkerCategory = 
   | 'irrigation' 

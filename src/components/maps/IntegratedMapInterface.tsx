@@ -11,6 +11,7 @@ import { TileLoadingOptimizer } from '@/components/maps/TileLoadingOptimizer';
 import { MobileRenderOptimizer } from '@/components/maps/MobileRenderOptimizer';
 import { usePremiumMapAnimations } from '@/hooks/usePremiumMapAnimations';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface IntegratedMapInterfaceProps {
   className?: string;
@@ -132,9 +133,9 @@ export const IntegratedMapInterface: React.FC<IntegratedMapInterfaceProps> = ({
       
       <EnhancedMapClickPopover
         className="pointer-events-auto"
-        onAddPin={(coordinates) => console.log('Add pin at:', coordinates)}
-        onAnalyzeArea={(coordinates) => console.log('Analyze area at:', coordinates)}
-        onViewHistory={(coordinates) => console.log('View history at:', coordinates)}
+        onAddPin={(coordinates) => logger.businessLogic('Map pin addition requested', { coordinates })}
+        onAnalyzeArea={(coordinates) => logger.businessLogic('Area analysis requested', { coordinates })}
+        onViewHistory={(coordinates) => logger.businessLogic('History view requested', { coordinates })}
       />
       
       <DiagnosticPanel 
@@ -145,8 +146,8 @@ export const IntegratedMapInterface: React.FC<IntegratedMapInterfaceProps> = ({
       <TemporalNavigator 
         position="bottom"
         className="pointer-events-auto"
-        onDateChange={(date) => console.log('Date changed to:', date)}
-        onDataExport={(data) => console.log('Exporting data:', data)}
+        onDateChange={(date) => logger.businessLogic('Date filter changed', { date })}
+        onDataExport={(data) => logger.businessLogic('Data export initiated', { dataType: typeof data })}
       />
 
       {/* Fullscreen Overlay (for enhanced transitions) */}

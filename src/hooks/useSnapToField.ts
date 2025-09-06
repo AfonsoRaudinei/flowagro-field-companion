@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useMapInstance } from './useMapInstance';
 import * as turf from '@turf/turf';
+import { logger } from '@/lib/logger';
 
 export interface SnapSettings {
   enabled: boolean;
@@ -106,7 +107,7 @@ export const useSnapToField = (): UseSnapToFieldReturn => {
 
       setFieldBoundaries(mockBoundaries);
     } catch (error) {
-      console.error('Error analyzing field boundaries:', error);
+      logger.error('Error analyzing field boundaries', { error });
     } finally {
       setIsAnalyzing(false);
     }
