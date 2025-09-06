@@ -62,8 +62,7 @@ export default defineConfig(({ mode }) => ({
           
           // Firebase/Supabase (backend)
           'chunk-backend': [
-            '@supabase/supabase-js',
-            'firebase'
+            '@supabase/supabase-js'
           ],
           
           // Charting (usado apenas em algumas páginas)
