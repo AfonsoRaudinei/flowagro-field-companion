@@ -1,5 +1,4 @@
 import React, { memo, useMemo, useCallback, useRef, useEffect } from "react";
-import { FixedSizeList as List } from "react-window";
 import { ProducerThread } from "@/hooks/useDashboardState";
 import LazySquareProducerCard from "./LazySquareProducerCard";
 import OptimizedSmartProducerCard from "./OptimizedSmartProducerCard";
@@ -16,82 +15,7 @@ interface VirtualizedChatListProps {
   className?: string;
 }
 
-interface ItemData {
-  threads: ProducerThread[];
-  onChatSelect: (chat: ProducerThread) => void;
-  onTogglePin: (chatId: string) => void;
-  onArchive?: (chatId: string) => void;
-  onMarkAsRead?: (chatId: string) => void;
-  viewType: 'square' | 'list';
-  columnsPerRow: number;
-}
-
-// Componente para renderizar item individual
-const ListItem = memo(({ index, style, data }: {
-  index: number;
-  style: React.CSSProperties;
-  data: ItemData;
-}) => {
-  const { 
-    threads, 
-    onChatSelect, 
-    onTogglePin, 
-    onArchive, 
-    onMarkAsRead, 
-    viewType, 
-    columnsPerRow 
-  } = data;
-
-  if (viewType === 'list') {
-    const thread = threads[index];
-    if (!thread) return null;
-
-    // Prioridade baseada na posição (primeiros 10 são high priority)
-    const priority = index < 10 ? 'high' : index < 30 ? 'normal' : 'low';
-
-    return (
-      <div style={style}>
-        <div className="px-base py-1">
-          <OptimizedSmartProducerCard
-            chat={thread}
-            onClick={onChatSelect}
-            onTogglePin={onTogglePin}
-            onArchive={onArchive}
-            onMarkAsRead={onMarkAsRead}
-          />
-        </div>
-      </div>
-    );
-  } else {
-    // Para view em grid, cada "item" pode conter múltiplos cards
-    const startIndex = index * columnsPerRow;
-    const rowThreads = threads.slice(startIndex, startIndex + columnsPerRow);
-
-    return (
-      <div style={style}>
-        <div className="flex gap-lg px-base">
-          {rowThreads.map((thread, colIndex) => {
-            const absoluteIndex = startIndex + colIndex;
-            const priority = absoluteIndex < 10 ? 'high' : absoluteIndex < 30 ? 'normal' : 'low';
-            
-            return (
-              <div key={thread.id} className="flex-1">
-                <LazySquareProducerCard
-                  chat={thread}
-                  onClick={onChatSelect}
-                  priority={priority}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-});
-
-ListItem.displayName = 'VirtualizedListItem';
-
+// Componente simplificado sem react-window para evitar problemas de dependência
 const VirtualizedChatList = memo(function VirtualizedChatList({
   threads,
   onChatSelect,
@@ -102,7 +26,6 @@ const VirtualizedChatList = memo(function VirtualizedChatList({
   className = ''
 }: VirtualizedChatListProps) {
   const { density } = useChatDensity();
-  const listRef = useRef<List>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Observador para lazy loading da lista
@@ -111,63 +34,19 @@ const VirtualizedChatList = memo(function VirtualizedChatList({
     triggerOnce: false
   });
 
-  // Calcular dimensões baseado no tipo de view e densidade
-  const { itemHeight, columnsPerRow, itemCount } = useMemo(() => {
-    if (viewType === 'list') {
-      return {
-        itemHeight: 80, // Altura fixa para lista
-        columnsPerRow: 1,
-        itemCount: threads.length
-      };
-    } else {
-      // Para grid view
-      const cols = density === 'compact' ? 4 : density === 'comfortable' ? 3 : 2;
-      const height = density === 'compact' ? 120 : density === 'comfortable' ? 150 : 180;
-      
-      return {
-        itemHeight: height,
-        columnsPerRow: cols,
-        itemCount: Math.ceil(threads.length / cols)
-      };
-    }
-  }, [viewType, density, threads.length]);
-
-  // Data para passar para os items
-  const itemData: ItemData = useMemo(() => ({
-    threads,
-    onChatSelect,
-    onTogglePin,
-    onArchive,
-    onMarkAsRead,
-    viewType,
-    columnsPerRow
-  }), [threads, onChatSelect, onTogglePin, onArchive, onMarkAsRead, viewType, columnsPerRow]);
-
-  // Callback para scroll virtual otimizado
-  const handleScroll = useCallback(({ scrollOffset }: { scrollOffset: number }) => {
-    // Implementar preload baseado na posição do scroll
-    const viewportHeight = containerRef.current?.clientHeight || 0;
-    const totalHeight = itemCount * itemHeight;
-    const scrollPercentage = scrollOffset / (totalHeight - viewportHeight);
-    
-    // Preload quando próximo do final
-    if (scrollPercentage > 0.8) {
-      // Trigger preload de mais dados se necessário
-      // onRequestMoreData?.();
-    }
-  }, [itemCount, itemHeight]);
-
-  // Scroll para o topo quando os threads mudam
-  useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollToItem(0, 'start');
-    }
-  }, [threads.length]);
+  // Calcular colunas baseado na densidade
+  const columnsPerRow = useMemo(() => {
+    if (viewType === 'list') return 1;
+    return density === 'compact' ? 4 : density === 'comfortable' ? 3 : 2;
+  }, [viewType, density]);
 
   // Não renderizar se não está visível (performance)
   if (!isVisible && threads.length > 20) {
     return (
-      <div ref={elementRef} className={`h-96 ${className}`}>
+      <div 
+        ref={(el) => { elementRef.current = el as HTMLElement; }}
+        className={`h-96 ${className}`}
+      >
         <div className="flex items-center justify-center h-full text-muted-foreground">
           Carregando conversas...
         </div>
@@ -175,28 +54,113 @@ const VirtualizedChatList = memo(function VirtualizedChatList({
     );
   }
 
+  // Separar threads fixados
+  const pinnedThreads = threads.filter(thread => thread.isPinned);
+  const unpinnedThreads = threads.filter(thread => !thread.isPinned);
+
   return (
     <div 
       ref={(el) => {
-        if (elementRef.current !== el) {
-          elementRef.current = el as HTMLElement;
-        }
+        elementRef.current = el as HTMLElement;
         containerRef.current = el;
       }}
-      className={`h-full ${className}`}
+      className={`h-full overflow-auto ${className}`}
     >
-      <List
-        ref={listRef}
-        height={600} // Altura padrão, será ajustada pelo CSS
-        itemCount={itemCount}
-        itemSize={itemHeight}
-        itemData={itemData}
-        onScroll={handleScroll}
-        overscanCount={5} // Renderizar 5 itens extras para smoother scroll
-        className="scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent"
-      >
-        {ListItem}
-      </List>
+      {viewType === 'list' ? (
+        // Lista simples
+        <div className="space-y-1 px-base py-sm">
+          {threads.map((thread, index) => {
+            const priority = index < 10 ? 'high' : index < 30 ? 'normal' : 'low';
+            return (
+              <div 
+                key={thread.id} 
+                className="animate-slide-up" 
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <OptimizedSmartProducerCard 
+                  chat={thread} 
+                  onClick={onChatSelect} 
+                  onTogglePin={onTogglePin} 
+                  onArchive={onArchive} 
+                  onMarkAsRead={onMarkAsRead} 
+                />
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        // Grid view otimizado
+        <div className="p-base space-y-lg">
+          {/* Pinned Conversations */}
+          {pinnedThreads.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-md px-sm">
+                📌 Fixadas ({pinnedThreads.length})
+              </h3>
+              <div 
+                className="grid gap-lg transition-all duration-300" 
+                style={{
+                  gridTemplateColumns: `repeat(auto-fill, minmax(160px, 1fr))`,
+                  gridAutoRows: 'auto',
+                  alignItems: 'start'
+                }}
+              >
+                {pinnedThreads.map((thread, index) => {
+                  const priority = index < 10 ? 'high' : 'normal';
+                  return (
+                    <div 
+                      key={thread.id} 
+                      className="animate-spring" 
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >
+                      <LazySquareProducerCard 
+                        chat={thread} 
+                        onClick={onChatSelect}
+                        priority={priority}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Regular Conversations */}
+          {unpinnedThreads.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-md px-sm">
+                💬 Conversas ({unpinnedThreads.length})
+              </h3>
+              <div 
+                className="grid gap-lg transition-all duration-300" 
+                style={{
+                  gridTemplateColumns: `repeat(auto-fill, minmax(160px, 1fr))`,
+                  gridAutoRows: 'auto',
+                  alignItems: 'start'
+                }}
+              >
+                {unpinnedThreads.map((thread, index) => {
+                  const absoluteIndex = pinnedThreads.length + index;
+                  const priority = absoluteIndex < 10 ? 'high' : absoluteIndex < 30 ? 'normal' : 'low';
+                  return (
+                    <div 
+                      key={thread.id} 
+                      className="animate-spring" 
+                      style={{ animationDelay: `${absoluteIndex * 100}ms` }}
+                    >
+                      <LazySquareProducerCard 
+                        chat={thread} 
+                        onClick={onChatSelect}
+                        priority={priority}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 });

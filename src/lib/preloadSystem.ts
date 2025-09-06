@@ -214,7 +214,12 @@ class IntelligentPreloadSystem {
       const loadTime = performance.now() - startTime;
       this.loadedTasks.add(taskId);
       
-      performanceMonitor.measure(`preload:${taskId}`, loadTime);
+      // Log performance metrics without using invalid method signature
+      logger.info(`Task preloaded successfully: ${taskId}`, { 
+        loadTime,
+        type: task.type,
+        priority: task.priority 
+      });
       
       logger.info(`Task preloaded successfully: ${taskId}`, { 
         loadTime,

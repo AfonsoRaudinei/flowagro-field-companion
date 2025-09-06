@@ -56,7 +56,10 @@ export const LazyImageLoader: React.FC<LazyImageLoaderProps> = ({
   // Show skeleton while not visible or loading
   if (!isVisible || (!isLoaded && !hasError)) {
     return (
-      <div ref={elementRef as any} className={cn('relative overflow-hidden', className)}>
+      <div 
+        ref={(el) => { elementRef.current = el as HTMLElement; }}
+        className={cn('relative overflow-hidden', className)}
+      >
         <Skeleton className={cn('w-full h-full', skeletonClassName)} />
         {placeholder && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
@@ -81,7 +84,10 @@ export const LazyImageLoader: React.FC<LazyImageLoaderProps> = ({
 
   // Show loaded image
   return (
-    <div ref={elementRef} className={cn('relative overflow-hidden', className)}>
+    <div 
+      ref={(el) => { elementRef.current = el as HTMLElement; }}
+      className={cn('relative overflow-hidden', className)}
+    >
       <img
         ref={imgRef}
         src={imageSrc || src}
