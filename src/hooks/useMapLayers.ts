@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useMapInstance } from './useMapInstance';
 import { useNDVILayer } from './useNDVILayer';
 import mapboxgl from 'mapbox-gl';
+import { logger } from '@/lib/logger';
 
 // Layer types with comprehensive configuration
 export interface LayerConfig {
@@ -309,12 +310,12 @@ export const useMapLayers = () => {
           break;
           
         default:
-          console.warn(`Layer type ${layer.type} not implemented yet`);
+          logger.warn('Layer type not implemented', { layerType: layer.type });
       }
       
       setIsLoading(false);
     } catch (err) {
-      console.error(`Error loading ${layerId}:`, err);
+      logger.error('Error loading layer', { layerId, error: err });
       setError(err instanceof Error ? err.message : `Erro ao carregar camada ${layer.name}`);
       setIsLoading(false);
     }
@@ -385,30 +386,30 @@ export const useMapLayers = () => {
 // Helper functions for loading different layer types
 async function loadWeatherData(layer: LayerConfig) {
   // Mock implementation - replace with real weather API
-  console.log(`Loading weather data for layer ${layer.id}`);
+  logger.debug('Loading weather data for layer', { layerId: layer.id });
 }
 
 async function loadSoilData(layer: LayerConfig) {
   // Mock implementation - replace with real soil API
-  console.log(`Loading soil data for layer ${layer.id}`);
+  logger.debug('Loading soil data for layer', { layerId: layer.id });
 }
 
 async function loadZoneData(layer: LayerConfig) {
   // Mock implementation - replace with real zone API
-  console.log(`Loading zone data for layer ${layer.id}`);
+  logger.debug('Loading zone data for layer', { layerId: layer.id });
 }
 
 async function loadPestRiskData(layer: LayerConfig) {
   // Mock implementation - replace with real pest risk API
-  console.log(`Loading pest risk data for layer ${layer.id}`);
+  logger.debug('Loading pest risk data for layer', { layerId: layer.id });
 }
 
 async function loadIrrigationData(layer: LayerConfig) {
   // Mock implementation - replace with real irrigation API
-  console.log(`Loading irrigation data for layer ${layer.id}`);
+  logger.debug('Loading irrigation data for layer', { layerId: layer.id });
 }
 
 async function loadGrowthStageData(layer: LayerConfig) {
   // Mock implementation - replace with real growth stage API
-  console.log(`Loading growth stage data for layer ${layer.id}`);
+  logger.debug('Loading growth stage data for layer', { layerId: layer.id });
 }

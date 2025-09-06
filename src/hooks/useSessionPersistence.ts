@@ -24,7 +24,7 @@ export function useSessionPersistence<T>(
       
       return JSON.parse(stored);
     } catch (error) {
-      console.warn(`Failed to parse stored value for key "${key}":`, error);
+      logger.warn('Failed to parse stored value', { key, error });
       return defaultValue;
     }
   });
@@ -37,7 +37,7 @@ export function useSessionPersistence<T>(
       
       localStorage.setItem(`flowagro-${key}`, valueToStore);
     } catch (error) {
-      console.warn(`Failed to store value for key "${key}":`, error);
+      logger.warn('Failed to store value', { key, error });
     }
   }, [key, state, serializer]);
 

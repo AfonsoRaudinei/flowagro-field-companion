@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 import { NetworkService, NetworkStatus } from '@/services/networkService';
 import { SyncService, SyncStats } from '@/services/syncService';
 import { useToast } from '@/hooks/use-toast';
@@ -46,7 +47,7 @@ export function useNetworkSync() {
         });
 
       } catch (error) {
-        console.error('❌ Failed to initialize network sync services:', error);
+        logger.error('Failed to initialize network sync services', { error });
       }
     };
 

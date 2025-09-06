@@ -296,7 +296,7 @@ export const useSmartMarkers = (): UseSmartMarkersReturn => {
       
       return suggestions;
     } catch (error) {
-      console.error('Error generating marker suggestions:', error);
+      logger.error('Error generating marker suggestions', { error });
       return [];
     } finally {
       setIsAnalyzing(false);

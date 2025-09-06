@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMap } from '@/components/maps/MapProvider';
 import type { Map as MapboxMap } from 'mapbox-gl';
+import { logger } from '@/lib/logger';
 
 /**
  * Hook to safely access map instance with loading state
@@ -50,7 +51,10 @@ export const useMapNavigation = () => {
 
   const flyTo = (coordinates: [number, number], zoom?: number, showMarker: boolean = false) => {
     if (map) {
-      console.log('🛩️ Flying to coordinates:', coordinates, 'at zoom:', zoom);
+      logger.userAction('Navigation to coordinates', 'useMapInstance', { 
+        coordinates,
+        zoom: zoom || 'default' 
+      });
       
       if (showMarker) {
         // Add a more visible temporary marker for location display
@@ -149,13 +153,13 @@ export const useMapNavigation = () => {
   const validateCoordinates = (lng: number, lat: number): boolean => {
     // Validate longitude (-180 to 180)
     if (lng < -180 || lng > 180) {
-      console.error('Invalid longitude:', lng);
+      logger.error('Invalid longitude', { lng });
       return false;
     }
     
     // Validate latitude (-90 to 90)
     if (lat < -90 || lat > 90) {
-      console.error('Invalid latitude:', lat);
+      logger.error('Invalid latitude', { lat });
       return false;
     }
     
@@ -169,7 +173,7 @@ export const useMapNavigation = () => {
     
     if (lat > brazilBounds.north || lat < brazilBounds.south || 
         lng > brazilBounds.east || lng < brazilBounds.west) {
-      console.warn('Coordinates outside Brazil bounds. Lat:', lat, 'Lng:', lng);
+      logger.warn('Coordinates outside Brazil bounds', { lat, lng });
       // Don't reject, just warn - could be a border area or valid international location
     }
     
@@ -183,7 +187,7 @@ export const useMapNavigation = () => {
         return;
       }
 
-      console.log('🔍 Requesting current location...');
+      logger.info('Requesting current location via GPS');
       
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -191,11 +195,12 @@ export const useMapNavigation = () => {
           const lat = position.coords.latitude;
           const accuracy = position.coords.accuracy;
           
-          console.log('📍 Raw GPS coordinates:');
-          console.log('  Latitude:', lat);
-          console.log('  Longitude:', lng);
-          console.log('  Accuracy:', accuracy, 'meters');
-          console.log('  Timestamp:', new Date(position.timestamp));
+          logger.debug('GPS coordinates obtained', {
+            latitude: lat,
+            longitude: lng,
+            accuracy: `${accuracy} meters`,
+            timestamp: new Date(position.timestamp).toISOString()
+          });
           
           // Validate coordinates
           if (!validateCoordinates(lng, lat)) {
@@ -204,17 +209,17 @@ export const useMapNavigation = () => {
           }
           
           // Log formatted coordinates for Mapbox
-          console.log('🗺️ Mapbox format [lng, lat]:', [lng, lat]);
+          logger.debug('Mapbox format coordinates', { coordinates: [lng, lat] });
           
           // Check accuracy and warn if poor
           if (accuracy > 100) {
-            console.warn('⚠️ GPS accuracy is poor:', accuracy, 'meters');
+            logger.warn('GPS accuracy is poor', { accuracy: `${accuracy} meters` });
           }
           
           resolve([lng, lat]);
         },
         (error) => {
-          console.error('❌ Geolocation error:', error);
+          logger.error('Geolocation error', { error });
           
           let errorMessage = 'Não foi possível obter sua localização';
           switch (error.code) {
@@ -242,24 +247,36 @@ export const useMapNavigation = () => {
 
   const flyToCurrentLocation = async (zoom: number = 15, retryCount: number = 0) => {
     try {
-      console.log(`🚀 Attempt ${retryCount + 1} to get current location`);
+      logger.info('Attempting to get current location', { 
+        attempt: retryCount + 1, 
+        maxRetries: 3 
+      });
       
       const coordinates = await getCurrentLocation();
       
-      console.log('✅ Successfully obtained location coordinates:');
-      console.log('  Formatted for Mapbox [lng, lat]:', coordinates);
-      console.log('  Decimal degrees: Lng =', coordinates[0], ', Lat =', coordinates[1]);
+      logger.info('Successfully obtained location coordinates', {
+        coordinates,
+        longitude: coordinates[0],
+        latitude: coordinates[1]
+      });
       
       // Fly to location with marker
       flyTo(coordinates, zoom, true);
       
       return coordinates;
     } catch (error) {
-      console.error(`❌ Failed to get current location (attempt ${retryCount + 1}):`, error);
+      logger.error('Failed to get current location', { 
+        error, 
+        attempt: retryCount + 1,
+        maxRetries: 3
+      });
       
       // Retry up to 2 times with different settings
       if (retryCount < 2) {
-        console.log(`🔄 Retrying with different settings... (${retryCount + 1}/2)`);
+        logger.info('Retrying location request', { 
+          attempt: retryCount + 1, 
+          maxRetries: 2 
+        });
         
         // Wait a bit before retry
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -269,7 +286,10 @@ export const useMapNavigation = () => {
       
       // If all retries failed, provide fallback coordinates (center of Brazil)
       if (retryCount >= 2) {
-        console.log('🗺️ Using fallback location (center of Brazil)');
+        logger.info('Using fallback location', { 
+          fallback: 'center of Brazil',
+          coordinates: [-15.7975, -47.8919]
+        });
         const fallbackCoords: [number, number] = [-47.8919, -15.7975]; // Brasília
         flyTo(fallbackCoords, zoom, true);
         

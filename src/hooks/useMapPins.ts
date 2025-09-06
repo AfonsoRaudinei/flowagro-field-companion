@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useMapInstance } from './useMapInstance';
+import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 import mapboxgl from 'mapbox-gl';
 
@@ -28,7 +29,7 @@ export const useMapPins = () => {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error loading pins:', error);
+      logger.error('Error loading pins', { error });
       return;
     }
 
@@ -61,7 +62,7 @@ export const useMapPins = () => {
       .single();
 
     if (error) {
-      console.error('Error saving pin:', error);
+      logger.error('Error saving pin', { error });
       return null;
     }
 
@@ -87,7 +88,7 @@ export const useMapPins = () => {
       .eq('id', pinId);
 
     if (error) {
-      console.error('Error deleting pin:', error);
+      logger.error('Error deleting pin', { error });
       return;
     }
 
@@ -119,7 +120,7 @@ export const useMapPins = () => {
       .eq('id', pinId);
 
     if (error) {
-      console.error('Error updating pin:', error);
+      logger.error('Error updating pin', { error });
       return;
     }
 
@@ -136,7 +137,7 @@ export const useMapPins = () => {
       .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all user's pins
 
     if (error) {
-      console.error('Error clearing pins:', error);
+      logger.error('Error clearing pins', { error });
       return;
     }
 

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
+import { logger } from '@/lib/logger';
 
 export interface ViewportBounds {
   x: number;
@@ -52,7 +53,7 @@ export const useMiniMap = (width: number, height: number) => {
         height: Math.max(0, maxY - y)
       };
     } catch (error) {
-      console.warn('Error calculating viewport bounds:', error);
+      logger.warn('Error calculating viewport bounds', { error });
       return null;
     }
   }, [width, height]);
@@ -137,7 +138,7 @@ export const useMiniMap = (width: number, height: number) => {
       }));
 
     } catch (error) {
-      console.error('Error initializing mini-map:', error);
+      logger.error('Error initializing mini-map', { error });
     }
   }, [syncMiniMap]);
 

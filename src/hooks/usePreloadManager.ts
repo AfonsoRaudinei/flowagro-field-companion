@@ -93,7 +93,7 @@ export const usePreloadManager = (config: Partial<PreloadManagerConfig> = {}) =>
           userPatterns.current = new Map(patterns);
         }
       } catch (error) {
-        console.warn('Failed to load user patterns:', error);
+        logger.warn('Failed to load user patterns', { error });
       }
     }
   }, [defaultConfig.userBehaviorLearning]);
@@ -201,7 +201,7 @@ export const usePreloadManager = (config: Partial<PreloadManagerConfig> = {}) =>
 
     } catch (error) {
       if (!signal.aborted) {
-        console.warn(`Preload task ${task.id} failed:`, error);
+        logger.warn('Preload task failed', { taskId: task.id, error });
         setPreloadStats(prev => ({ ...prev, failed: prev.failed + 1 }));
       }
     } finally {

@@ -3,6 +3,7 @@ import { useMapInstance } from './useMapInstance';
 import { UnitService, UnitType, AreaMeasurement } from '@/services/unitService';
 import * as turf from '@turf/turf';
 import mapboxgl from 'mapbox-gl';
+import { logger } from '@/lib/logger';
 
 export type MeasurementTool = 'ruler' | 'area' | 'perimeter' | 'select';
 
@@ -118,7 +119,7 @@ export const useMeasurementTools = (): UseMeasurementToolsReturn => {
       const areaM2 = turf.area(polygon);
       return UnitService.convertArea(areaM2);
     } catch (error) {
-      console.error('Error calculating area:', error);
+      logger.error('Error calculating area', { error });
       return UnitService.convertArea(0);
     }
   }

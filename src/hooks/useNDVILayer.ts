@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useMapInstance } from './useMapInstance';
 import mapboxgl from 'mapbox-gl';
+import { logger } from '@/lib/logger';
 
 export interface NDVILayerConfig {
   opacity: number;
@@ -63,7 +64,10 @@ export const useNDVILayer = () => {
         bounds.getNorth()
       ];
 
-      console.log('Loading NDVI data for bbox:', bbox, 'date range:', config.dateRange);
+      logger.debug('Loading NDVI data', { 
+        bbox, 
+        dateRange: config.dateRange 
+      });
 
       // Try Sentinel Hub API first (free tier available)
       let imageData;
@@ -86,10 +90,10 @@ export const useNDVILayer = () => {
         }
 
         imageData = sentinelResponse.data;
-        console.log('✅ NDVI data loaded from Sentinel Hub');
+        logger.info('NDVI data loaded from Sentinel Hub');
         
       } catch (sentinelError) {
-        console.warn('Sentinel Hub failed, trying Planet Labs:', sentinelError);
+        logger.warn('Sentinel Hub failed, trying Planet Labs', { error: sentinelError });
         
         // Fallback to Planet Labs API
         try {
@@ -109,10 +113,10 @@ export const useNDVILayer = () => {
 
           imageData = planetResponse.data;
           apiUsed = 'planet-labs';
-          console.log('✅ NDVI data loaded from Planet Labs');
+          logger.info('NDVI data loaded from Planet Labs');
           
         } catch (planetError) {
-          console.error('Both APIs failed:', planetError);
+          logger.error('Both NDVI APIs failed', { planetError });
           throw new Error('Falha ao carregar dados NDVI de ambas as APIs');
         }
       }
@@ -173,7 +177,7 @@ export const useNDVILayer = () => {
 
       setIsLoading(false);
     } catch (err) {
-      console.error('NDVI loading error:', err);
+      logger.error('NDVI loading error', { error: err });
       setError(err instanceof Error ? err.message : 'Falha ao carregar dados NDVI');
       setIsLoading(false);
     }
@@ -205,7 +209,7 @@ export const useNDVILayer = () => {
             map.removeSource('ndvi-data');
           }
         } catch (error) {
-          console.warn('Error cleaning up NDVI layer:', error);
+          logger.warn('Error cleaning up NDVI layer', { error });
         }
       }
     };

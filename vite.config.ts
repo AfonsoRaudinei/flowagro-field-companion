@@ -11,14 +11,17 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  
+  // Log level configuration 
+  logLevel: mode === 'development' ? 'info' : 'warn',
+  
   build: {
     rollupOptions: {
       output: {

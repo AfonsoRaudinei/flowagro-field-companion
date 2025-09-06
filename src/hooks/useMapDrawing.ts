@@ -308,12 +308,14 @@ export const useMapDrawing = (): UseMapDrawingReturn => {
           description: `"${name}" salva no AgroMonitoring com sucesso.`,
         });
         
-        console.log('Polygon saved to AgroMonitoring:', result.data);
+        logger.businessLogic('Polygon saved to AgroMonitoring', { 
+          polygonId: result.data.id
+        });
       } else {
         throw new Error(result.error);
       }
     } catch (error) {
-      console.error('Failed to save polygon to AgroMonitoring:', error);
+      logger.error('Failed to save polygon to AgroMonitoring', { error });
       
       toast({
         title: "Erro ao salvar",
@@ -347,10 +349,12 @@ export const useMapDrawing = (): UseMapDrawingReturn => {
           return [...prev, ...newShapes];
         });
         
-        console.log(`Loaded ${loadedShapes.length} polygons from AgroMonitoring`);
+        logger.info('AgroMonitoring polygons loaded', { 
+          count: loadedShapes.length 
+        });
       }
     } catch (error) {
-      console.error('Failed to load polygons from AgroMonitoring:', error);
+      logger.error('Failed to load polygons from AgroMonitoring', { error });
     }
   }, []);
 
