@@ -4,6 +4,9 @@ import App from './App.tsx'
 import './index.css'
 import { SecurityService } from '@/lib/securityService';
 
+// Import FlowAgro Brand System
+import './lib/brand-system';
+
 // Inicializar monitoramento de segurança
 SecurityService.initializeDOMMonitoring();
 

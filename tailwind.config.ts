@@ -110,6 +110,14 @@ export default {
 				'3xl': 'var(--space-3xl)',
 				'touch': 'var(--space-3xl)', /* 44px iOS touch target */
 			},
+			/* FlowAgro Typography System */
+			fontFamily: {
+				'primary': ['Sora', 'system-ui', '-apple-system', 'sans-serif'],
+				'secondary': ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+				'mono': ['JetBrains Mono', 'Consolas', 'Monaco', 'monospace'],
+				'display': ['Sora', 'system-ui', '-apple-system', 'sans-serif'],
+				'body': ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+			},
 			/* iOS typography scale */
 			fontSize: {
 				'ios-xs': 'var(--text-xs)',
@@ -119,6 +127,17 @@ export default {
 				'ios-xl': 'var(--text-xl)',
 				'ios-2xl': 'var(--text-2xl)',
 				'ios-3xl': 'var(--text-3xl)',
+				
+				// FlowAgro semantic scales
+				'flow-xs': '0.75rem',
+				'flow-sm': '0.875rem', 
+				'flow-base': '1rem',
+				'flow-lg': '1.125rem',
+				'flow-xl': '1.25rem',
+				'flow-2xl': '1.5rem',
+				'flow-3xl': '1.875rem',
+				'flow-4xl': '2.25rem',
+				'flow-5xl': '3rem'
 			},
 			borderRadius: {
 				lg: 'var(--radius-lg)',
