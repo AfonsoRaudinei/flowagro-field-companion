@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogIn, MapPin, CheckCircle } from "lucide-react";
 import { SimpleBaseMap } from "@/components/maps/SimpleBaseMap";
-import { useUserLocation } from "@/hooks/useUserLocation";
+import { Geolocation } from '@capacitor/geolocation';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +18,6 @@ import {
 
 const TelaInicial = () => {
   const navigate = useNavigate();
-  const { getCurrentLocation } = useUserLocation();
   const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
 
@@ -47,7 +46,9 @@ const TelaInicial = () => {
   const handleLocationPermission = async () => {
     setIsRequestingLocation(true);
     try {
-      await getCurrentLocation();
+      await Geolocation.requestPermissions();
+      const position = await Geolocation.getCurrentPosition();
+      console.log('Location granted:', position);
       localStorage.setItem('flowagro-location-permission-requested', 'granted');
     } catch (error) {
       console.log('Location permission denied or failed:', error);
