@@ -23,22 +23,8 @@ const TelaInicial = () => {
     navigate("/login-form");
   };
 
-  const handleSwipeOrScroll = (event: React.WheelEvent | React.TouchEvent) => {
-    // Navigate to login on scroll down or swipe up
-    if ('deltaY' in event && event.deltaY > 0) {
-      navigate("/login-form");
-    } else if ('touches' in event && event.touches.length === 1) {
-      // Handle touch events for swipe
-      navigate("/login-form");
-    }
-  };
-
   return (
-    <div 
-      className="min-h-screen relative overflow-hidden"
-      onWheel={handleSwipeOrScroll}
-      onTouchStart={handleSwipeOrScroll}
-    >
+    <div className="min-h-screen relative overflow-hidden">
       {/* Full-screen Map Background */}
       <div className="absolute inset-0">
         <SimpleBaseMap 
