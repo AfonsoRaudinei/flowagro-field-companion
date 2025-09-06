@@ -34,7 +34,7 @@ const LazyMapTest = lazy(() =>
   })
 );
 const LazyTechnicalMap = lazy(() => 
-  import('@/pages/TechnicalMapSimplified').then(module => {
+  import('@/pages/TechnicalMap').then(module => {
     import('mapbox-gl');
     return { default: module.default };
   })
@@ -117,6 +117,8 @@ export const NavigationStack: React.FC<NavigationStackProps> = () => {
                   <Route path="/consultoria/comunicacao" element={<LazyConsultoriaComunicacao />} />
                   <Route path="/map-test" element={<LazyMapTest />} />
                   <Route path="/technical-map" element={<LazyTechnicalMap />} />
+                  {/* Backward compatibility redirect */}
+                  <Route path="/technical-map-simplified" element={<LazyTechnicalMap />} />
                   <Route path="/qa/auditoria" element={<LazyQAAuditoria />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>

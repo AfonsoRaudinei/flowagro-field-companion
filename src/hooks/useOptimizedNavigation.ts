@@ -25,7 +25,7 @@ export function useOptimizedNavigation() {
             import('@/pages/Dashboard');
             break;
           case '/technical-map':
-            import('@/pages/TechnicalMapSimplified');
+            import('@/pages/TechnicalMap');
             break;
           case '/calculator':
             import('@/pages/Calculator');

@@ -21,10 +21,10 @@ const queryClient = new QueryClient({
 // Preload critical components
 const preloadCritical = async () => {
   if (typeof window !== 'undefined') {
-    // Preload Dashboard and TechnicalMapSimplified for faster navigation
+    // Preload Dashboard and TechnicalMap for faster navigation
     Promise.all([
       import('./pages/Dashboard'),
-      import('./pages/TechnicalMapSimplified')
+      import('./pages/TechnicalMap')
     ]);
   }
 };

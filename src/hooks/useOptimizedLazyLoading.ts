@@ -157,7 +157,7 @@ export const useRoutePreload = () => {
           case '/dashboard':
             return import('@/pages/Dashboard');
           case '/technical-map':
-            return import('@/pages/TechnicalMapSimplified');
+            return import('@/pages/TechnicalMap');
           case '/calculator':
             return import('@/pages/Calculator');
           case '/phenological-stages':
