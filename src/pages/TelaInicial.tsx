@@ -21,6 +21,7 @@ const TelaInicial = () => {
   const navigate = useNavigate();
   const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -49,6 +50,8 @@ const TelaInicial = () => {
     try {
       await Geolocation.requestPermissions();
       const position = await Geolocation.getCurrentPosition();
+      const coords: [number, number] = [position.coords.longitude, position.coords.latitude];
+      setUserLocation(coords);
       logger.businessLogic('Location granted', { position: { lat: position.coords.latitude, lng: position.coords.longitude } });
       localStorage.setItem('flowagro-location-permission-requested', 'granted');
     } catch (error) {
@@ -71,9 +74,10 @@ const TelaInicial = () => {
       <div className="absolute inset-0">
         <SimpleBaseMap 
           className="w-full h-full"
-          center={[-47.8825, -15.7942]} // Brasília coordinates
-          zoom={5}
+          center={userLocation || [-47.8825, -15.7942]} // User location or Brasília
+          zoom={userLocation ? 15 : 5}
           showNativeControls={false}
+          showUserMarker={!!userLocation}
         />
         {/* Subtle overlay for better contrast */}
         <div className="absolute inset-0 bg-black/20" />

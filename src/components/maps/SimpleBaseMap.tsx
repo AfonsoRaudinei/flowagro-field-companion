@@ -11,6 +11,7 @@ interface SimpleBaseMapProps {
   zoom?: number;
   style?: React.CSSProperties;
   showNativeControls?: boolean;
+  showUserMarker?: boolean;
 }
 
 export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
@@ -18,7 +19,8 @@ export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
   center = [-15.7975, -47.8919], // Brasília
   zoom = 4,
   style,
-  showNativeControls = true
+  showNativeControls = true,
+  showUserMarker = false
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -133,6 +135,69 @@ export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
       }
     };
   }, []);
+
+  // Update map center when center prop changes
+  useEffect(() => {
+    if (map.current && center) {
+      logger.debug('SimpleBaseMap: Updating map center', { center, zoom });
+      map.current.flyTo({
+        center: center,
+        zoom: zoom,
+        speed: 1.2,
+        curve: 1.42,
+        essential: true
+      });
+      
+      // Add or update user marker if showUserMarker is true
+      if (showUserMarker) {
+        // Remove existing marker if any
+        if (map.current.getSource('user-location')) {
+          map.current.removeLayer('user-location-circle');
+          map.current.removeLayer('user-location-dot');
+          map.current.removeSource('user-location');
+        }
+        
+        // Add new marker
+        map.current.addSource('user-location', {
+          type: 'geojson',
+          data: {
+            type: 'Point',
+            coordinates: center
+          }
+        });
+        
+        // Add pulsing circle
+        map.current.addLayer({
+          id: 'user-location-circle',
+          type: 'circle',
+          source: 'user-location',
+          paint: {
+            'circle-radius': 20,
+            'circle-color': '#3b82f6',
+            'circle-opacity': 0.3,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#3b82f6',
+            'circle-stroke-opacity': 0.8
+          }
+        });
+        
+        // Add center dot
+        map.current.addLayer({
+          id: 'user-location-dot',
+          type: 'circle',
+          source: 'user-location',
+          paint: {
+            'circle-radius': 6,
+            'circle-color': '#3b82f6',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+          }
+        });
+        
+        logger.info('SimpleBaseMap: User location marker added', { center });
+      }
+    }
+  }, [center, zoom, showUserMarker]);
 
   const handleRetry = () => {
     setError(null);
