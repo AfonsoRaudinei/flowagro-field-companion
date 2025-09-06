@@ -62,7 +62,7 @@ export const NavigationStack: React.FC<NavigationStackProps> = () => {
   if (isPublicRoute) {
     // Public routes without navigation
     return (
-      <div className="w-full max-w-md mx-auto bg-background min-h-screen">
+      <div className="w-full min-h-screen bg-background">
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<TelaInicial />} />
@@ -87,8 +87,8 @@ export const NavigationStack: React.FC<NavigationStackProps> = () => {
       />
       
       {/* Main content area with bottom padding for navigation */}
-      <div className="flex-1 overflow-auto pb-20 md:pb-20">
-        <div className="w-full max-w-6xl mx-auto px-4 py-4">
+      <div className="flex-1 overflow-auto pb-20">
+        <div className="w-full px-4 py-4">
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />

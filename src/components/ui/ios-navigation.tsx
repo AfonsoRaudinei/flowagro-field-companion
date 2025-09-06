@@ -67,11 +67,11 @@ const IOSNavigation: React.FC<IOSNavigationProps> = ({
     <nav className={cn(
       "fixed bottom-0 left-0 right-0 z-50",
       "bg-card/98 backdrop-blur-xl border-t border-border/30",
-      "shadow-[0_-8px_32px_-8px_hsl(var(--shadow)/0.12)] pb-safe",
+      "shadow-[0_-8px_32px_-8px_hsl(var(--shadow)/0.12)] pb-safe w-full",
       className
     )}>
-      <div className="max-w-sm md:max-w-md mx-auto">
-        <div className="flex items-center justify-around px-2 py-1.5 md:px-4 md:py-2">
+      <div className="w-full">
+        <div className="flex items-center justify-around px-4 py-2">
           {tabs.map((tab) => {
             const IconComponent = tab.icon;
             const isActive = isActiveTab(tab.id, tab.path);
