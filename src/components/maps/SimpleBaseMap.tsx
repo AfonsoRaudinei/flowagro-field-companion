@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as mapboxgl from 'mapbox-gl';
+import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -54,6 +54,12 @@ export const SimpleBaseMap: React.FC<SimpleBaseMapProps> = ({
         }
         
         logger.info('SimpleBaseMap: Creating Mapbox GL instance...');
+        
+        // Verify mapboxgl is properly loaded
+        if (!mapboxgl || typeof mapboxgl.Map !== 'function') {
+          throw new Error('Mapbox GL JS não foi carregado corretamente');
+        }
+        
         const mapInstance = new mapboxgl.Map({
           container: mapContainer.current,
           style: token ? 
