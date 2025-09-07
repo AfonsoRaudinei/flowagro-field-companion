@@ -31,10 +31,10 @@ const TelaInicial = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="fixed inset-0 w-full h-full overflow-hidden">
       <UnifiedMap 
         config={mapConfig}
-        className="w-full h-full"
+        className="absolute inset-0 w-full h-full"
       />
     </div>
   );
