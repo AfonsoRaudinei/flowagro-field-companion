@@ -2,7 +2,6 @@ import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { NavigationHeader } from '@/components/ui/unified-header';
 import { useOptimizedNavigation } from '@/hooks/useOptimizedNavigation';
-import IOSNavigation from '@/components/ui/ios-navigation';
 import { HeaderSettings } from './HeaderSettings';
 
 // Import critical pages
@@ -86,8 +85,8 @@ export const NavigationStack: React.FC<NavigationStackProps> = () => {
         rightActions={<HeaderSettings />}
       />
       
-      {/* Main content area with bottom padding for navigation */}
-      <div className="flex-1 overflow-auto pb-20">
+      {/* Main content area */}
+      <div className="flex-1 overflow-auto">
         <div className="w-full px-4 py-4">
           <Suspense fallback={<RouteFallback />}>
             <Routes>
@@ -104,9 +103,6 @@ export const NavigationStack: React.FC<NavigationStackProps> = () => {
           </Suspense>
         </div>
       </div>
-      
-      {/* Bottom navigation for all screens */}
-      <IOSNavigation />
     </div>
   );
 };
