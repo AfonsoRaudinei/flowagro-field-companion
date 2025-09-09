@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { ChatListView } from "@/components/dashboard/ChatListView";
 import { ConversationView } from "@/components/dashboard/ConversationView";
 import TechnicalChatView from "@/components/dashboard/TechnicalChatView";
+import { DashboardQuickCards } from "@/components/dashboard/DashboardQuickCards";
 import { useDashboardState } from "@/hooks/useDashboardState";
 
 export default function Dashboard() {
@@ -46,32 +47,42 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="h-screen bg-background relative">
-      {viewMode === "list" ? (
-        <ChatListView 
-          chatFilter={chatFilter}
+    <div className="h-screen bg-background relative flex flex-col">
+      {/* Quick Access Cards - sempre visíveis no topo */}
+      <div className="flex-shrink-0">
+        <DashboardQuickCards 
           onChatFilterChange={setChatFilter}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          threads={producerThreads}
-          loading={loadingConversations || loadingProducers}
-          onChatSelect={handleChatSelect}
-          onTogglePin={handleTogglePin}
-          onShowTechnicalChat={handleShowTechnicalChat}
-          onBackFromTechnicalChat={handleBackFromTechnicalChat}
         />
-      ) : selectedChat ? (
-        <ConversationView
-          selectedChat={selectedChat}
-          isAIMode={isAIMode}
-          chatMessages={chatMessages}
-          newMessage={newMessage}
-          onNewMessageChange={setNewMessage}
-          onSendMessage={handleSendMessage}
-          onBackToList={handleBackToList}
-          sendingMessage={sendingMessage}
-        />
-      ) : null}
+      </div>
+      
+      {/* Chat Content - ocupa o resto da tela */}
+      <div className="flex-1 overflow-hidden">
+        {viewMode === "list" ? (
+          <ChatListView 
+            chatFilter={chatFilter}
+            onChatFilterChange={setChatFilter}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            threads={producerThreads}
+            loading={loadingConversations || loadingProducers}
+            onChatSelect={handleChatSelect}
+            onTogglePin={handleTogglePin}
+            onShowTechnicalChat={handleShowTechnicalChat}
+            onBackFromTechnicalChat={handleBackFromTechnicalChat}
+          />
+        ) : selectedChat ? (
+          <ConversationView
+            selectedChat={selectedChat}
+            isAIMode={isAIMode}
+            chatMessages={chatMessages}
+            newMessage={newMessage}
+            onNewMessageChange={setNewMessage}
+            onSendMessage={handleSendMessage}
+            onBackToList={handleBackToList}
+            sendingMessage={sendingMessage}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

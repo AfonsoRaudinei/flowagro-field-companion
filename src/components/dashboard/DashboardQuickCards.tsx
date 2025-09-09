@@ -106,70 +106,91 @@ export const DashboardQuickCards: React.FC<DashboardQuickCardsProps> = ({
   // Card actions
   const handleClimateCard = () => {
     toast({
-      title: "Clima",
-      description: "Funcionalidade em desenvolvimento",
+      title: "🌤️ Clima",
+      description: "Previsão do tempo em desenvolvimento. Em breve você poderá acompanhar as condições climáticas da sua propriedade.",
+      duration: 4000,
     });
   };
 
   const handleMapCard = () => {
-    navigate("/technical-map");
+    toast({
+      title: "🗺️ Abrindo Mapa Técnico",
+      description: "Carregando visualização de propriedades...",
+      duration: 2000,
+    });
+    // Pequeno delay para melhor UX
+    setTimeout(() => {
+      navigate("/technical-map");
+    }, 300);
   };
 
   const handleAgendaCard = () => {
     toast({
-      title: "Agenda",
-      description: "Funcionalidade em desenvolvimento",
+      title: "📅 Agenda",
+      description: "Sistema de agenda em desenvolvimento. Em breve você poderá gerenciar suas atividades programadas.",
+      duration: 4000,
     });
   };
 
   const handleIACard = () => {
     if (onChatFilterChange) {
       onChatFilterChange("IA");
+      toast({
+        title: "🤖 Assistente IA Ativado",
+        description: "Agora você pode conversar com nosso assistente inteligente!",
+        duration: 3000,
+      });
+    } else {
+      toast({
+        title: "🤖 Assistente IA",
+        description: "Modo de chat inteligente ativado",
+        duration: 2000,
+      });
     }
-    toast({
-      title: "Assistente IA",
-      description: "Modo IA ativado no chat",
-    });
   };
 
   return (
     <div className={cn("w-full px-4 py-3", className)}>
       {/* Grid responsivo: 2x2 em mobile, 4x1 em desktop */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {/* Card de Clima */}
+        {/* Card de Clima - Azul Samsung */}
         <QuickCard
           icon={<CloudSun size={20} />}
           title="Clima"
           subtitle="Previsão local"
           onClick={handleClimateCard}
           accentColor="#0057FF" // FlowAgro Blue
+          className="hover:bg-gradient-to-br from-blue-50/50 to-transparent"
         />
 
-        {/* Card de Mapa */}
+        {/* Card de Mapa - Verde FlowAgro */}
         <QuickCard
           icon={<MapPin size={20} />}
           title="Mapa Técnico"
           subtitle="Visualizar propriedades"
           onClick={handleMapCard}
           accentColor="#16A34A" // FlowAgro Green
+          className="hover:bg-gradient-to-br from-green-50/50 to-transparent"
         />
 
-        {/* Card de Agenda */}
+        {/* Card de Agenda - Verde Água */}
         <QuickCard
           icon={<Calendar size={20} />}
           title="Agenda"
           subtitle="Atividades programadas"
           onClick={handleAgendaCard}
           accentColor="#00C4B4" // FlowAgro Teal
+          className="hover:bg-gradient-to-br from-teal-50/50 to-transparent"
         />
 
-        {/* Card de IA */}
+        {/* Card de IA - Azul Samsung */}
         <QuickCard
           icon={<Bot size={20} />}
           title="Assistente IA"
           subtitle="Chat inteligente"
           onClick={handleIACard}
           accentColor="#0057FF" // FlowAgro Blue
+          className="hover:bg-gradient-to-br from-blue-50/50 to-transparent"
         />
       </div>
     </div>
