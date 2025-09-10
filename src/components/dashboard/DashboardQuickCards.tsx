@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { cn } from '@/lib/utils';
-import { QuickAccessGrid } from './QuickAccessGrid';
+import { HorizontalCardCarousel } from './HorizontalCardCarousel';
 
 interface DashboardQuickCardsProps {
   onChatFilterChange?: (filter: "Produtor" | "Agenda" | "IA" | "Campo") => void;
@@ -41,8 +41,8 @@ export const DashboardQuickCards = memo<DashboardQuickCardsProps>(({
         </p>
       </div>
 
-      {/* Optimized grid component */}
-      <QuickAccessGrid
+      {/* Grok-style horizontal carousel */}
+      <HorizontalCardCarousel
         onChatFilterChange={onChatFilterChange}
         currentFilter={currentFilter}
       />
