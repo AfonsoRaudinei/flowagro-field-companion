@@ -19,7 +19,7 @@ export const DashboardQuickCards = memo<DashboardQuickCardsProps>(({
 }) => {
   return (
     <div className={cn(
-      "w-full px-3 sm:px-4 py-1 sm:py-2",
+      "w-full px-3 sm:px-4 py-0",
       // Subtle background with silver undertones
       "bg-gradient-to-b from-muted/20 to-transparent", 
       className
