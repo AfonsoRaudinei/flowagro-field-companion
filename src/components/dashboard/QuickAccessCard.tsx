@@ -98,12 +98,12 @@ export const QuickAccessCard = memo<QuickAccessCardProps>(({
       </div>
       
       {/* Content container */}
-      <div className="relative z-10 flex items-start space-x-3 sm:space-x-4">
+      <div className="relative z-10 flex items-start space-x-2.5 sm:space-x-3">
         {/* Icon container with enhanced styling */}
         <div 
           className={cn(
             "flex-shrink-0 rounded-xl",
-            "p-2 sm:p-3",
+            "p-1.5 sm:p-2",
             "bg-gradient-to-br from-muted/40 to-muted/20",
             "border border-border/30",
             "sm:group-hover:scale-110 sm:group-hover:rotate-3",
@@ -116,12 +116,12 @@ export const QuickAccessCard = memo<QuickAccessCardProps>(({
           }}
         >
           <div className="transform sm:group-hover:scale-110 transition-transform duration-300">
-            <div className="w-5 h-5 sm:w-6 sm:h-6">{icon}</div>
+            <div className="w-4 h-4 sm:w-5 sm:h-5">{icon}</div>
           </div>
         </div>
         
         {/* Text content with Grok typography */}
-        <div className="flex-1 min-w-0 pt-0.5 sm:pt-1">
+        <div className="flex-1 min-w-0 pt-0.5">
           {/* Title with FlowAgro secondary font */}
           <h3 className={cn(
             "font-secondary font-semibold text-card-foreground",
@@ -133,8 +133,8 @@ export const QuickAccessCard = memo<QuickAccessCardProps>(({
           
           {/* Subtitle with muted styling */}
           <p className={cn(
-            "font-secondary text-muted-foreground mt-0.5 sm:mt-1",
-            "text-xs sm:text-[13px] leading-tight tracking-[-0.005em]",  // Responsive text size
+            "font-secondary text-muted-foreground mt-0.5",
+            "text-xs sm:text-[12px] leading-tight tracking-[-0.005em]",  // Responsive text size
             "group-hover:text-muted-foreground/80 transition-colors duration-200",
             "line-clamp-1"  // Prevent text overflow on small screens
           )}>
