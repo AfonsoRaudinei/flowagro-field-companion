@@ -26,7 +26,7 @@ interface UnifiedMapProps {
   onLocationUpdate?: (location: [number, number]) => void;
 }
 
-const UnifiedMapContent: React.FC<UnifiedMapProps> = ({
+export const UnifiedMapContent: React.FC<UnifiedMapProps> = ({
   config,
   className = "w-full h-full",
   onLocationUpdate
@@ -94,9 +94,6 @@ const UnifiedMapContent: React.FC<UnifiedMapProps> = ({
     </div>
   );
 };
-
-// Export the content component for custom provider usage
-export { UnifiedMapContent };
 
 export const UnifiedMap: React.FC<UnifiedMapProps> = (props) => {
   return (
