@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react';
 import type { Map as MapboxMap } from 'mapbox-gl';
 import { MapStyle } from '@/services/mapService';
 
@@ -164,19 +164,32 @@ export const MapProvider: React.FC<MapProviderProps> = ({ children }) => {
     }
   };
 
+  // Memoized dispatch functions to prevent infinite loops
+  const setMap = useCallback((map: MapboxMap | null) => dispatch({ type: 'SET_MAP', payload: map }), []);
+  const setLoading = useCallback((loading: boolean) => dispatch({ type: 'SET_LOADING', payload: loading }), []);
+  const setError = useCallback((error: string | null) => dispatch({ type: 'SET_ERROR', payload: error }), []);
+  const setStyle = useCallback((style: MapStyle) => dispatch({ type: 'SET_STYLE', payload: style }), []);
+  const setToken = useCallback((token: string | null) => dispatch({ type: 'SET_TOKEN', payload: token }), []);
+  const setFullscreen = useCallback((fullscreen: boolean) => dispatch({ type: 'SET_FULLSCREEN', payload: fullscreen }), []);
+  const setFullscreenState = useCallback((state: 'idle' | 'entering' | 'entered' | 'exiting') => dispatch({ type: 'SET_FULLSCREEN_STATE', payload: state }), []);
+  const setTransitioning = useCallback((transitioning: boolean) => dispatch({ type: 'SET_TRANSITIONING', payload: transitioning }), []);
+  const setOrientation = useCallback((orientation: 'portrait' | 'landscape') => dispatch({ type: 'SET_ORIENTATION', payload: orientation }), []);
+  const setPreviousViewport = useCallback((viewport: ViewportState | null) => dispatch({ type: 'SET_PREVIOUS_VIEWPORT', payload: viewport }), []);
+  const setShowControls = useCallback((show: boolean) => dispatch({ type: 'SET_SHOW_CONTROLS', payload: show }), []);
+
   const contextValue: MapContextType = {
     ...state,
-    setMap: (map) => dispatch({ type: 'SET_MAP', payload: map }),
-    setLoading: (loading) => dispatch({ type: 'SET_LOADING', payload: loading }),
-    setError: (error) => dispatch({ type: 'SET_ERROR', payload: error }),
-    setStyle: (style) => dispatch({ type: 'SET_STYLE', payload: style }),
-    setToken: (token) => dispatch({ type: 'SET_TOKEN', payload: token }),
-    setFullscreen: (fullscreen) => dispatch({ type: 'SET_FULLSCREEN', payload: fullscreen }),
-    setFullscreenState: (state) => dispatch({ type: 'SET_FULLSCREEN_STATE', payload: state }),
-    setTransitioning: (transitioning) => dispatch({ type: 'SET_TRANSITIONING', payload: transitioning }),
-    setOrientation: (orientation) => dispatch({ type: 'SET_ORIENTATION', payload: orientation }),
-    setPreviousViewport: (viewport) => dispatch({ type: 'SET_PREVIOUS_VIEWPORT', payload: viewport }),
-    setShowControls: (show) => dispatch({ type: 'SET_SHOW_CONTROLS', payload: show }),
+    setMap,
+    setLoading,
+    setError,
+    setStyle,
+    setToken,
+    setFullscreen,
+    setFullscreenState,
+    setTransitioning,
+    setOrientation,
+    setPreviousViewport,
+    setShowControls,
     enterFullscreen,
     exitFullscreen
   };

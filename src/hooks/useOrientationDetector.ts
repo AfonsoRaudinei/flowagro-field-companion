@@ -65,7 +65,7 @@ export function useOrientationDetector() {
       window.removeEventListener('resize', handleResize);
       screen.orientation?.removeEventListener('change', handleOrientationChange);
     };
-  }, [setOrientation]);
+  }, []); // Remove unstable dependency
 
   return orientationInfo;
 }
