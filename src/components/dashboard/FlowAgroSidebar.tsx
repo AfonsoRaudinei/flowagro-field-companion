@@ -16,12 +16,20 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-// Mock data for employees
+// Mock data for employees and producers
 const mockEmployees = [
   { id: 'emp1', name: 'Carlos Silva', role: 'Operador de Campo', isOnline: true },
   { id: 'emp2', name: 'Ana Souza', role: 'Técnico Agrícola', isOnline: false },
   { id: 'emp3', name: 'João Santos', role: 'Supervisor', isOnline: true },
   { id: 'emp4', name: 'Maria Lima', role: 'Analista de Solo', isOnline: false }
+];
+
+// Mock data for producers (when user is consultant)
+const mockProducers = [
+  { id: 'prod1', name: 'José da Silva', farm: 'Fazenda Santa Maria', location: 'Ribeirão Preto, SP' },
+  { id: 'prod2', name: 'Maria Santos', farm: 'Sítio Boa Esperança', location: 'Uberaba, MG' },
+  { id: 'prod3', name: 'Carlos Oliveira', farm: 'Fazenda Progresso', location: 'Goiânia, GO' },
+  { id: 'prod4', name: 'Ana Costa', farm: 'Rancho Verde', location: 'Campo Grande, MS' }
 ];
 
 interface FlowAgroSidebarProps {
@@ -30,6 +38,10 @@ interface FlowAgroSidebarProps {
 
 export function FlowAgroSidebar({ onItemSelect }: FlowAgroSidebarProps) {
   const { isConsultor, isProdutor, linkedProducers } = useUser();
+  
+  // Use mock data if no real data is available
+  const displayProducers = linkedProducers.length > 0 ? linkedProducers : mockProducers;
+  const producerCount = displayProducers.length;
 
   const handleItemClick = (item: any) => {
     onItemSelect?.(item);
@@ -37,8 +49,8 @@ export function FlowAgroSidebar({ onItemSelect }: FlowAgroSidebarProps) {
 
   return (
     <Sidebar 
-      className="w-80 border-0" 
-      style={{ backgroundColor: '#2D2D30' }}
+      className="w-80 border-0 bg-[#2D2D30] z-50" 
+      side="left"
     >
       <SidebarHeader className="px-6 py-4 border-b border-white/10">
         <div className="flex items-center gap-3">
@@ -51,7 +63,7 @@ export function FlowAgroSidebar({ onItemSelect }: FlowAgroSidebarProps) {
             </h3>
             <p className="text-white/60 text-sm">
               {isConsultor 
-                ? `${linkedProducers.length} produtores` 
+                ? `${producerCount} produtores` 
                 : `${mockEmployees.length} funcionários`
               }
             </p>
@@ -67,7 +79,7 @@ export function FlowAgroSidebar({ onItemSelect }: FlowAgroSidebarProps) {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2">
               {isConsultor ? (
-                linkedProducers.map((producer) => (
+                displayProducers.map((producer) => (
                   <SidebarMenuItem key={producer.id}>
                     <SidebarMenuButton
                       className={cn(
