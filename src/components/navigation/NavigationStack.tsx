@@ -54,8 +54,12 @@ export const NavigationStack: React.FC<NavigationStackProps> = () => {
     '/recover',
     '/reset-password'
   ];
+
+  // Routes with custom headers (no default header)
+  const customHeaderRoutes = ['/technical-map'];
   
   const isPublicRoute = publicRoutes.includes(location.pathname);
+  const isCustomHeaderRoute = customHeaderRoutes.includes(location.pathname);
   const currentTitle = getRouteTitle(location.pathname);
   
   if (isPublicRoute) {
@@ -68,6 +72,19 @@ export const NavigationStack: React.FC<NavigationStackProps> = () => {
             <Route path="/login-form" element={<LazyLoginForm />} />
             <Route path="/recover" element={<LazyRecover />} />
             <Route path="/reset-password" element={<LazyResetPassword />} />
+          </Routes>
+        </Suspense>
+      </div>
+    );
+  }
+
+  // Routes with custom headers - no default navigation
+  if (isCustomHeaderRoute) {
+    return (
+      <div className="w-full min-h-screen bg-background">
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/technical-map" element={<LazyTechnicalMap />} />
           </Routes>
         </Suspense>
       </div>
@@ -97,7 +114,6 @@ export const NavigationStack: React.FC<NavigationStackProps> = () => {
               <Route path="/profile" element={<LazyProfile />} />
               <Route path="/phenological-stages" element={<LazyPhenologicalStages />} />
               <Route path="/consultoria/comunicacao" element={<LazyConsultoriaComunicacao />} />
-              <Route path="/technical-map" element={<LazyTechnicalMap />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
