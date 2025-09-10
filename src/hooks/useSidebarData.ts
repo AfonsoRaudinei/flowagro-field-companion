@@ -11,6 +11,7 @@ export interface Producer {
   phone?: string;
   farm_name?: string;
   farm_location?: string;
+  location?: string; // Add this for backward compatibility
   created_at?: string;
   updated_at?: string;
   is_online?: boolean;
@@ -51,8 +52,8 @@ const cache = {
 };
 
 // Mock data for fallback
-const getMockData = (user: any): SidebarItem[] => {
-  const isConsultant = user?.type === 'consultant';
+const getMockData = (userContext: any): SidebarItem[] => {
+  const isConsultant = userContext?.isConsultor || false;
   
   if (isConsultant) {
     // Mock producers for consultants
@@ -113,6 +114,12 @@ export function useSidebarData(): SidebarData {
   const refreshTimeoutRef = useRef<NodeJS.Timeout>();
 
   const fetchData = useCallback(async (useCache = true) => {
+    // Guard clause for undefined userContext
+    if (!userContext) {
+      setIsLoading(false);
+      return;
+    }
+
     // Check cache first for performance
     if (useCache && cache.isValid()) {
       setItems(cache.data!);
@@ -125,7 +132,7 @@ export function useSidebarData(): SidebarData {
 
     try {
       const result = await performanceMonitor.measure('sidebar-data-fetch', async () => {
-        const isConsultant = userContext.isConsultor;
+        const isConsultant = userContext.isConsultor || false;
         
         if (isConsultant) {
           // Consultants see their assigned producers - using existing producers table
@@ -179,7 +186,7 @@ export function useSidebarData(): SidebarData {
     } finally {
       setIsLoading(false);
     }
-  }, [userContext]);
+  }, [userContext?.isConsultor, userContext?.isProdutor]);
 
   // Optimized refresh with debouncing to prevent spam
   const refresh = useCallback(async () => {

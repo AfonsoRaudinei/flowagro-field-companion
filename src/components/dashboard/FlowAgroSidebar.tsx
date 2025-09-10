@@ -1,20 +1,21 @@
-import React from 'react';
-import { Users, Building2, MapPin, UserCheck, Loader2, RefreshCw } from 'lucide-react';
+import React, { memo } from 'react';
+import { RefreshCw, Users2, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useSidebarData, Producer, TeamMember } from '@/hooks/useSidebarData';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { useSidebarData, type Producer, type Employee } from '@/hooks/useSidebarData';
 
 interface FlowAgroSidebarProps {
-  onItemSelect?: (item: Producer | Employee) => void;
-  isOpen?: boolean;
+  onItemSelect?: (item: any) => void;
+  isOpen: boolean;
 }
 
-export function FlowAgroSidebar({ onItemSelect, isOpen = false }: FlowAgroSidebarProps) {
-  const { displayData, loading, error, refresh, stats } = useSidebarData();
+export const FlowAgroSidebar = memo<FlowAgroSidebarProps>(({ onItemSelect, isOpen }) => {
+  const { items, isLoading, error, onlineCount, refresh } = useSidebarData();
 
-  const handleItemClick = (item: Producer | Employee) => {
+  // Event handlers
+  const handleItemClick = (item: Producer | TeamMember) => {
     onItemSelect?.(item);
   };
 
@@ -22,230 +23,179 @@ export function FlowAgroSidebar({ onItemSelect, isOpen = false }: FlowAgroSideba
     await refresh();
   };
 
+  // Helper functions
   const getItemInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  const isProducer = (item: Producer | Employee): item is Producer => {
-    return displayData.type === 'producers';
+  const isProducer = (item: Producer | TeamMember): item is Producer => {
+    return 'farm_name' in item;
   };
 
-  const formatLastSeen = (lastSeen?: string) => {
-    if (!lastSeen) return '';
+  const formatLastSeen = (lastSeen: string) => {
+    const now = new Date();
+    const lastSeenDate = new Date(lastSeen);
+    const diffInMinutes = Math.floor((now.getTime() - lastSeenDate.getTime()) / (1000 * 60));
     
-    const diff = Date.now() - new Date(lastSeen).getTime();
-    const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 1) return 'Agora mesmo';
-    if (minutes < 60) return `${minutes}min atrás`;
-    
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h atrás`;
-    
-    const days = Math.floor(hours / 24);
-    return `${days}d atrás`;
+    if (diffInMinutes < 1) return 'agora mesmo';
+    if (diffInMinutes < 60) return `${diffInMinutes}min atrás`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h atrás`;
+    return `${Math.floor(diffInMinutes / 1440)}d atrás`;
   };
 
   return (
-    <div 
-      className={cn(
-        "fixed left-0 top-0 h-screen z-[9998]",
-        "bg-[#2D2D30] shadow-2xl border-r border-white/10",
-        "transform transition-all duration-300 ease-out",
-        "sm:w-80 w-[85vw] max-w-sm",
-        isOpen ? "translate-x-0 animate-fade-in" : "-translate-x-full"
-      )}
-    >
-      {/* Header Section */}
-      <div className="px-6 py-6 border-b border-white/10">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-            {displayData.type === 'producers' ? (
-              <Users className="w-6 h-6 text-white" />
-            ) : (
-              <Building2 className="w-6 h-6 text-white" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-white text-lg truncate">
-              {displayData.title}
-            </h3>
-            <p className="text-white/60 text-sm font-medium truncate">
-              {displayData.subtitle}
-            </p>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-              <span className="text-xs text-white/50">
-                {stats.onlineCount} online
-              </span>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleRefresh}
-            disabled={loading}
-            className="text-white/60 hover:text-white hover:bg-white/10 w-8 h-8"
-          >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-          </Button>
-        </div>
-      </div>
-
-      {/* Content Section */}
-      <div className="flex-1 overflow-y-auto py-4">
-        <div className="px-4">
-          <div className="text-white/70 font-medium mb-4 text-xs uppercase tracking-wider px-2">
-            {displayData.type === 'producers' ? 'Produtores Vinculados' : 'Equipe de Trabalho'}
-          </div>
+    <>
+      {/* Sidebar overlay/container */}
+      <div className={cn(
+        "fixed top-0 left-0 h-full w-80 bg-sidebar-background border-r border-sidebar-border z-[9998]",
+        "transform transition-transform duration-300 ease-out shadow-2xl",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        
+        {/* Sidebar content */}
+        <div className="flex flex-col h-full">
           
-          {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <p className="text-red-400 text-sm">{error}</p>
+          {/* Header Section */}
+          <div className="flex-shrink-0 p-6 border-b border-sidebar-border bg-gradient-to-br from-sidebar-background to-sidebar-background/95">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Users2 className="w-5 h-5 text-flowagro-primary" />
+                <div>
+                  <h2 className="font-heading font-semibold text-sm text-foreground">
+                    Equipe FlowAgro
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {items.length} {items.length === 1 ? 'pessoa' : 'pessoas'} • {onlineCount} online
+                  </p>
+                </div>
+              </div>
+              
               <Button
                 variant="ghost"
-                size="sm"
+                size="sm" 
                 onClick={handleRefresh}
-                className="mt-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 px-2"
+                disabled={isLoading}
+                className="h-8 w-8 p-0 hover:bg-flowagro-primary/10"
               >
-                Tentar novamente
+                <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
               </Button>
             </div>
-          )}
-          
-          {loading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="p-4 bg-white/5 rounded-xl animate-pulse">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 bg-white/10 rounded-full" />
+          </div>
+
+          {/* Content Section */}
+          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            
+            {isLoading ? (
+              <div className="space-y-3 animate-pulse">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center space-x-3 p-3 rounded-xl bg-muted/30">
+                    <div className="w-10 h-10 rounded-xl bg-muted/50" />
                     <div className="flex-1">
-                      <div className="h-4 bg-white/10 rounded mb-2" />
-                      <div className="h-3 bg-white/5 rounded w-3/4" />
+                      <div className="h-3 bg-muted/60 rounded w-24 mb-2" />
+                      <div className="h-2 bg-muted/40 rounded w-32" />
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {displayData.items.map((item, index) => {
-                const isOnline = isProducer(item) ? item.is_online : item.isOnline;
-                const lastSeen = isProducer(item) ? item.last_seen : item.last_seen;
-                
-                return (
-                  <button
-                    key={item.id}
-                    className={cn(
-                      "w-full p-4 rounded-xl border-0 transition-all duration-200",
-                      "bg-white/5 hover:bg-white/10 text-white text-left group",
-                      "hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.01]",
-                      "focus:ring-2 focus:ring-primary/50 focus:ring-offset-0 focus:outline-none",
-                      "active:scale-[0.98]"
-                    )}
-                    onClick={() => handleItemClick(item)}
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex items-center gap-3 w-full">
-                      <div className="relative">
-                        <Avatar className="w-11 h-11 border-2 border-white/20 group-hover:border-primary/30 transition-colors">
-                          <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-white font-semibold text-sm">
-                            {getItemInitials(item.name)}
+                ))}
+              </div>
+            ) : error ? (
+              <div className="text-center py-6">
+                <p className="text-sm text-destructive mb-2">Erro ao carregar dados</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  className="text-xs"
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Tentar Novamente
+                </Button>
+              </div>
+            ) : items.length === 0 ? (
+              <div className="text-center py-8">
+                <Users2 className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">Nenhum item encontrado</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {items.map((item) => {
+                  const displayName = item.name || 'Usuário';
+                  const displayDetail = isProducer(item) 
+                    ? item.farm_name || item.location || item.farm_location || 'Fazenda' 
+                    : item.role || 'Função';
+                  const isOnline = item.is_online || false;
+                  
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleItemClick(item)}
+                      className={cn(
+                        "w-full flex items-center space-x-3 p-3 rounded-xl transition-all duration-200",
+                        "hover:bg-flowagro-primary/5 active:scale-[0.98]",
+                        "focus:outline-none focus:ring-2 focus:ring-flowagro-primary/20 focus:bg-flowagro-primary/5"
+                      )}
+                    >
+                      <div className="relative flex-shrink-0">
+                        <Avatar className="w-10 h-10 border-2 border-background shadow-sm">
+                          <AvatarFallback className="bg-flowagro-secondary/10 text-flowagro-primary font-medium text-sm">
+                            {getItemInitials(displayName)}
                           </AvatarFallback>
                         </Avatar>
-                        {isOnline && (
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-accent rounded-full border-2 border-[#2D2D30] animate-pulse">
-                            <div className="w-2 h-2 bg-white rounded-full m-auto mt-0.5" />
+                        
+                        <div className={cn(
+                          "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-sidebar-background",
+                          isOnline ? "bg-green-500" : "bg-muted-foreground/40"
+                        )} />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="font-medium text-sm text-foreground truncate font-secondary">
+                          {displayName}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {displayDetail}
+                        </p>
+                        
+                        {!isOnline && item.last_seen && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <Clock className="w-3 h-3 text-muted-foreground/60" />
+                            <span className="text-xs text-muted-foreground/80">
+                              {formatLastSeen(item.last_seen)}
+                            </span>
                           </div>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-white mb-1 group-hover:text-primary/90 transition-colors truncate">
-                          {item.name}
-                        </div>
-                        
-                        {isProducer(item) ? (
-                          <>
-                            <div className="flex items-center gap-2 mb-1">
-                              <Building2 className="w-3 h-3 text-white/50 flex-shrink-0" />
-                              <span className="text-sm text-white/70 truncate">
-                                {item.farm_name}
-                              </span>
-                            </div>
-                            {item.location && (
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-3 h-3 text-white/50 flex-shrink-0" />
-                                <span className="text-xs text-white/50 truncate">
-                                  {item.location}
-                                </span>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="text-sm text-white/70 mb-1 truncate">
-                            {item.role}
-                          </div>
-                        )}
-                        
-                        {!isOnline && lastSeen && (
-                          <div className="text-xs text-white/40 truncate">
-                            {formatLastSeen(lastSeen)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
+                      
+                      <div className="flex-shrink-0">
                         <Badge 
-                          variant="secondary" 
+                          variant={isOnline ? "default" : "secondary"}
                           className={cn(
-                            "border-0 text-xs font-medium",
+                            "text-xs px-2 py-0.5 font-medium",
                             isOnline 
-                              ? "bg-accent/20 text-accent hover:bg-accent/30"
-                              : "bg-white/10 text-white/60"
+                              ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800" 
+                              : "bg-muted/50 text-muted-foreground border-muted"
                           )}
                         >
-                          {isOnline ? 'Online' : 'Offline'}
+                          {isOnline ? "Online" : "Offline"}
                         </Badge>
                       </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {!loading && displayData.items.length === 0 && (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                {displayData.type === 'producers' ? (
-                  <Users className="w-8 h-8 text-white/30" />
-                ) : (
-                  <Building2 className="w-8 h-8 text-white/30" />
-                )}
+                    </button>
+                  );
+                })}
               </div>
-              <p className="text-white/60 text-sm mb-2">{displayData.emptyMessage}</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefresh}
-                className="text-white/50 hover:text-white hover:bg-white/10"
-              >
-                Tentar novamente
-              </Button>
-            </div>
-          )}
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex-shrink-0 p-4 border-t border-sidebar-border">
+            <p className="text-xs text-muted-foreground/60 text-center">
+              © 2024 FlowAgro. Todos os direitos reservados.
+            </p>
+          </div>
         </div>
       </div>
-      
-      {/* Footer */}
-      <div className="px-6 py-4 border-t border-white/10">
-        <div className="text-center text-white/40 text-xs">
-          FlowAgro • {new Date().getFullYear()}
-        </div>
-      </div>
-    </div>
+    </>
   );
-}
+});
+
+FlowAgroSidebar.displayName = 'FlowAgroSidebar';
