@@ -21,6 +21,9 @@ export * from './analysis';
 // Interactive elements
 export * from './interactions';
 
+// Navigation management
+export { default as NavigationPointRemover } from '../navigation/NavigationPointRemover';
+
 // Layout and responsive design
 export * from './layout';
 

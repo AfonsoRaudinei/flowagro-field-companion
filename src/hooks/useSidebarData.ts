@@ -4,8 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { performanceMonitor } from '@/lib/unifiedPerformance';
 
-console.log("useSidebarData: Hook definition starting...");
-
 export interface Producer {
   id: string;
   name: string;
@@ -109,10 +107,7 @@ const getMockData = (userContext: any): SidebarItem[] => {
 };
 
 export function useSidebarData(): SidebarData {
-  console.log("useSidebarData: Hook called");
-  
   const userContext = useUser();
-  console.log("useSidebarData: UserContext:", userContext);
   
   const [items, setItems] = useState<SidebarItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);

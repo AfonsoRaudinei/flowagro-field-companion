@@ -16,17 +16,6 @@ import { Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { performanceMonitor } from "@/lib/unifiedPerformance";
 
-// Debug logging to identify the component issue
-console.log("Dashboard imports:", {
-  FlowAgroSidebar: typeof FlowAgroSidebar,
-  ChatListView: typeof ChatListView,
-  ConversationView: typeof ConversationView,
-  TechnicalChatView: typeof TechnicalChatView,
-  DashboardQuickCards: typeof DashboardQuickCards,
-  ChatInputBar: typeof ChatInputBar,
-  LoadingBoundary: typeof LoadingBoundary
-});
-
 /**
  * Optimized Dashboard component with performance enhancements
  * - Memoized components and callbacks

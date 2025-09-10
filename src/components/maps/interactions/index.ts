@@ -25,3 +25,6 @@ export { UserLocationTracker } from '../UserLocationTracker';
 // Quick actions
 export { QuickActionsBar } from '../QuickActionsBar';
 export { MicroFABs } from '../MicroFABs';
+
+// Navigation management
+export { default as NavigationPointRemover } from '../../navigation/NavigationPointRemover';
