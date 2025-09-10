@@ -133,9 +133,9 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
 
       {/* Carousel Container */}
       <div className="overflow-hidden px-20" ref={emblaRef}>
-        <div className="flex gap-6 py-8">
-          {cards.map((card, index) => <div key={index} className={cn("flex-[0_0_300px] min-w-0 transition-all duration-500", selectedIndex === index ? "scale-105 z-20" : "scale-95 opacity-70")}>
-              <QuickAccessCard icon={card.icon} title={card.title} subtitle={card.subtitle} onClick={card.onClick} accentColor={card.accentColor} isActive={card.isActive} className={cn("h-32 transform transition-all duration-500", selectedIndex === index ? "shadow-2xl ring-2 ring-primary/20" : "shadow-lg hover:shadow-xl")} />
+        <div className="flex gap-4 py-4">
+          {cards.map((card, index) => <div key={index} className={cn("flex-[0_0_240px] min-w-0 transition-all duration-500", selectedIndex === index ? "scale-105 z-20" : "scale-95 opacity-70")}>
+              <QuickAccessCard icon={card.icon} title={card.title} subtitle={card.subtitle} onClick={card.onClick} accentColor={card.accentColor} isActive={card.isActive} className={cn("h-24 transform transition-all duration-500", selectedIndex === index ? "shadow-2xl ring-2 ring-primary/20" : "shadow-lg hover:shadow-xl")} />
             </div>)}
         </div>
       </div>

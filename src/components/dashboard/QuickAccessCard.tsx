@@ -33,7 +33,7 @@ export const QuickAccessCard = memo<QuickAccessCardProps>(({
         "border border-border/50 text-left",
         
         // Responsive padding and sizing
-        "p-3 sm:p-4 min-h-[80px] sm:min-h-[90px]",
+        "p-2.5 sm:p-3 min-h-[70px] sm:min-h-[80px]",
         
         // Enhanced transitions and spring animations
         "transition-all duration-300 ease-out",
