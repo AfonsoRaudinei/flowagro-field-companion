@@ -6,13 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 
+// Debug logging
+console.log("FlowAgroSidebar: About to define component");
+console.log("useSidebarData type:", typeof useSidebarData);
+
 interface FlowAgroSidebarProps {
   onItemSelect?: (item: any) => void;
   isOpen: boolean;
 }
 
 export const FlowAgroSidebar = memo<FlowAgroSidebarProps>(({ onItemSelect, isOpen }) => {
+  console.log("FlowAgroSidebar: Component render started");
+  
   const { items, isLoading, error, onlineCount, refresh } = useSidebarData();
+  console.log("FlowAgroSidebar: Hook data:", { items: items?.length, isLoading, error });
 
   // Event handlers
   const handleItemClick = (item: Producer | TeamMember) => {
