@@ -4,6 +4,7 @@ import { UnifiedMapContent, type MapConfig } from "@/components/maps";
 import { TechnicalMapHeader } from "@/components/maps/TechnicalMapHeader";
 import { FloatingCameraButton } from "@/components/maps/FloatingCameraButton";
 import { FloatingCloseButton } from "@/components/maps/FloatingCloseButton";
+import { cn } from "@/lib/utils";
 
 export default function TechnicalMap() {
   // Configuration for technical map
@@ -17,13 +18,24 @@ export default function TechnicalMap() {
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-background">
+    <div className={cn(
+      "relative w-full overflow-hidden bg-background",
+      // Responsive viewport height
+      "h-screen min-h-screen",
+      // iOS Safari viewport fix
+      "min-h-[100dvh] h-[100dvh] sm:h-screen sm:min-h-screen"
+    )}>
       {/* Custom Header */}
       <TechnicalMapHeader />
       
       {/* Map with Provider Context */}
       <MapProvider>
-        <div className="pt-14 h-full">
+        {/* Map Container with responsive top padding */}
+        <div className={cn(
+          "h-full w-full",
+          // Responsive top padding to account for header
+          "pt-12 sm:pt-14"
+        )}>
           <UnifiedMapContent 
             config={mapConfig}
             className="w-full h-full"
