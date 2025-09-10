@@ -95,6 +95,9 @@ const UnifiedMapContent: React.FC<UnifiedMapProps> = ({
   );
 };
 
+// Export the content component for custom provider usage
+export { UnifiedMapContent };
+
 export const UnifiedMap: React.FC<UnifiedMapProps> = (props) => {
   return (
     <MapProvider>

@@ -1,5 +1,6 @@
 import React from "react";
-import { UnifiedMap, type MapConfig } from "@/components/maps";
+import { MapProvider } from "@/components/maps/MapProvider";
+import { UnifiedMapContent, type MapConfig } from "@/components/maps";
 import { TechnicalMapHeader } from "@/components/maps/TechnicalMapHeader";
 import { FloatingCameraButton } from "@/components/maps/FloatingCameraButton";
 import { FloatingCloseButton } from "@/components/maps/FloatingCloseButton";
@@ -20,17 +21,19 @@ export default function TechnicalMap() {
       {/* Custom Header */}
       <TechnicalMapHeader />
       
-      {/* Full-screen Map */}
-      <div className="pt-14 h-full">
-        <UnifiedMap 
-          config={mapConfig}
-          className="w-full h-full"
-        />
-      </div>
+      {/* Map with Provider Context */}
+      <MapProvider>
+        <div className="pt-14 h-full">
+          <UnifiedMapContent 
+            config={mapConfig}
+            className="w-full h-full"
+          />
+        </div>
 
-      {/* Floating Action Buttons */}
-      <FloatingCameraButton className="bottom-6 right-6" />
-      <FloatingCloseButton />
+        {/* Floating Action Buttons - Inside MapProvider */}
+        <FloatingCameraButton className="bottom-6 right-6" />
+        <FloatingCloseButton />
+      </MapProvider>
     </div>
   );
 }

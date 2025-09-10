@@ -6,7 +6,7 @@
  */
 
 // Unified Map System
-export { UnifiedMap, type MapConfig } from './UnifiedMap';
+export { UnifiedMap, UnifiedMapContent, type MapConfig } from './UnifiedMap';
 export * from './overlays';
 
 // Core functionality
