@@ -46,7 +46,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 
   return (
     <div className={cn(
-      "w-full px-4 py-1 sm:py-2 bg-background/80 backdrop-blur-xl",
+      "w-full px-4 py-0 sm:py-1 bg-background/80 backdrop-blur-xl",
       "border-t border-border/30",
       "transition-all duration-300 ease-out",
       isFocused && "bg-background/95 border-border/50",
@@ -57,7 +57,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
         "transition-all duration-300 ease-out"
       )}>
         <div className={cn(
-          "relative flex items-center gap-2 p-3",
+          "relative flex items-center gap-2 p-2 sm:p-3",
           "bg-muted/30 rounded-2xl border border-border/30",
           "transition-all duration-300 ease-out",
           "hover:bg-muted/50 hover:border-border/50",

@@ -183,19 +183,19 @@ export default function Dashboard() {
           {!isChatExpanded ? (
             <>
               {/* Main Content - Ultra compact positioning */}
-              <div className="flex-1 flex flex-col justify-start pt-8 overflow-hidden">
+              <div className="flex-1 flex flex-col justify-start pt-4 overflow-hidden">
                 {/* Welcome Section - Minimal spacing */}
-                <div className="text-center px-6 mb-1">
+                <div className="text-center px-6 mb-0">
                   <h1 className={cn(
                     "font-secondary font-bold text-foreground",
-                    "text-2xl sm:text-3xl lg:text-4xl mb-2",
+                    "text-2xl sm:text-3xl lg:text-4xl mb-0",
                     "tracking-tight"
                   )}>
                     Olá! Como posso ajudar?
                   </h1>
                   <p className={cn(
                     "font-secondary text-muted-foreground",
-                    "text-sm sm:text-base lg:text-lg",
+                    "text-sm sm:text-base lg:text-lg mb-0",
                     "max-w-2xl mx-auto leading-relaxed"
                   )}>
                     Acesse suas ferramentas ou converse comigo sobre agricultura

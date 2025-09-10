@@ -32,8 +32,8 @@ export const QuickAccessCard = memo<QuickAccessCardProps>(({
         "group relative overflow-hidden rounded-2xl bg-card/95 backdrop-blur-sm",
         "border border-border/50 text-left",
         
-        // Responsive padding and sizing - More compact
-        "p-2 sm:p-2.5 min-h-[64px] sm:min-h-[76px]",
+        // Responsive padding and sizing - Ultra compact
+        "p-1.5 sm:p-2 min-h-[56px] sm:min-h-[68px]",
         
         // Enhanced transitions and spring animations
         "transition-all duration-300 ease-out",

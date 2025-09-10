@@ -24,10 +24,10 @@ export const DashboardQuickCards = memo<DashboardQuickCardsProps>(({
       "bg-gradient-to-b from-muted/20 to-transparent", 
       className
     )}>
-      {/* Header section - Grok-style */}
-      <div className="mb-1 sm:mb-2">
+      {/* Header section - Grok-style - No spacing */}
+      <div className="mb-0">
         <p className={cn(
-          "font-secondary text-muted-foreground mt-0.5", 
+          "font-secondary text-muted-foreground", 
           "text-xs sm:text-[13px] leading-tight tracking-[-0.005em]"
         )}>
           Suas ferramentas principais
