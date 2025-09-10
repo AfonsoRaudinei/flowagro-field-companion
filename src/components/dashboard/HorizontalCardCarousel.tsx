@@ -140,10 +140,6 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
         </div>
       </div>
 
-      {/* Navigation dots */}
-      <div className="flex justify-center mt-6 gap-3">
-        {cards.map((_, index) => <button key={index} className={cn("w-3 h-3 rounded-full transition-all duration-300", selectedIndex === index ? "bg-primary scale-125 shadow-lg" : "bg-muted-foreground/30 hover:bg-muted-foreground/60 hover:scale-110")} onClick={() => emblaApi?.scrollTo(index)} aria-label={`Ir para card ${index + 1}`} />)}
-      </div>
 
       {/* Side navigation hints */}
       <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-70 transition-opacity z-20">
