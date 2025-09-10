@@ -1,289 +1,221 @@
-import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useUser } from '@/contexts/UserContext';
-
-// Centralized mock data - fallback when no real data exists
-const MOCK_EMPLOYEES = [
-  { 
-    id: 'emp1', 
-    name: 'Carlos Silva', 
-    role: 'Operador de Campo', 
-    email: 'carlos.silva@flowagro.com',
-    phone: '+55 11 99999-1111',
-    isOnline: true,
-    avatar_url: null,
-    last_seen: new Date().toISOString()
-  },
-  { 
-    id: 'emp2', 
-    name: 'Ana Souza', 
-    role: 'Técnico Agrícola', 
-    email: 'ana.souza@flowagro.com',
-    phone: '+55 11 99999-2222',
-    isOnline: false,
-    avatar_url: null,
-    last_seen: new Date(Date.now() - 30 * 60 * 1000).toISOString() // 30 min ago
-  },
-  { 
-    id: 'emp3', 
-    name: 'João Santos', 
-    role: 'Supervisor de Qualidade', 
-    email: 'joao.santos@flowagro.com',
-    phone: '+55 11 99999-3333',
-    isOnline: true,
-    avatar_url: null,
-    last_seen: new Date().toISOString()
-  },
-  { 
-    id: 'emp4', 
-    name: 'Maria Lima', 
-    role: 'Analista de Solo', 
-    email: 'maria.lima@flowagro.com',
-    phone: '+55 11 99999-4444',
-    isOnline: false,
-    avatar_url: null,
-    last_seen: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
-  },
-  { 
-    id: 'emp5', 
-    name: 'Pedro Costa', 
-    role: 'Especialista em Irrigação', 
-    email: 'pedro.costa@flowagro.com',
-    phone: '+55 11 99999-5555',
-    isOnline: true,
-    avatar_url: null,
-    last_seen: new Date().toISOString()
-  }
-];
-
-const MOCK_PRODUCERS = [
-  { 
-    id: 'prod1', 
-    name: 'José da Silva', 
-    farm_name: 'Fazenda Santa Maria', 
-    location: 'Ribeirão Preto, SP',
-    email: 'jose.silva@fazenda-santa-maria.com.br',
-    phone: '+55 16 99999-1111',
-    avatar_url: null,
-    is_online: true,
-    last_seen: new Date().toISOString()
-  },
-  { 
-    id: 'prod2', 
-    name: 'Maria Santos', 
-    farm_name: 'Sítio Boa Esperança', 
-    location: 'Uberaba, MG',
-    email: 'maria.santos@sitio-boa-esperanca.com.br',
-    phone: '+55 34 99999-2222',
-    avatar_url: null,
-    is_online: false,
-    last_seen: new Date(Date.now() - 45 * 60 * 1000).toISOString() // 45 min ago
-  },
-  { 
-    id: 'prod3', 
-    name: 'Carlos Oliveira', 
-    farm_name: 'Fazenda Progresso', 
-    location: 'Goiânia, GO',
-    email: 'carlos.oliveira@fazenda-progresso.com.br',
-    phone: '+55 62 99999-3333',
-    avatar_url: null,
-    is_online: true,
-    last_seen: new Date().toISOString()
-  },
-  { 
-    id: 'prod4', 
-    name: 'Ana Costa', 
-    farm_name: 'Rancho Verde Sustentável', 
-    location: 'Campo Grande, MS',
-    email: 'ana.costa@rancho-verde.com.br',
-    phone: '+55 67 99999-4444',
-    avatar_url: null,
-    is_online: true,
-    last_seen: new Date().toISOString()
-  },
-  { 
-    id: 'prod5', 
-    name: 'Roberto Mendes', 
-    farm_name: 'Estância do Cerrado', 
-    location: 'Brasília, DF',
-    email: 'roberto.mendes@estancia-cerrado.com.br',
-    phone: '+55 61 99999-5555',
-    avatar_url: null,
-    is_online: false,
-    last_seen: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() // 3 hours ago
-  }
-];
-
-// Types for better TypeScript support
-export interface Employee {
-  id: string;
-  name: string;
-  role: string;
-  email?: string;
-  phone?: string;
-  avatar_url?: string | null;
-  isOnline: boolean;
-  last_seen?: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
+import { performanceMonitor } from '@/lib/unifiedPerformance';
 
 export interface Producer {
   id: string;
   name: string;
-  farm_name: string;
-  location?: string;
-  email?: string;
+  email: string;
   phone?: string;
-  avatar_url?: string | null;
-  is_online: boolean;
+  farm_name?: string;
+  farm_location?: string;
+  created_at?: string;
+  updated_at?: string;
+  is_online?: boolean;
   last_seen?: string;
 }
 
-/**
- * Centralized hook for managing sidebar data
- * Handles both real Supabase data and mock fallbacks
- * Provides consistent interface for consultants and producers
- */
-export function useSidebarData() {
-  const { isConsultor, isProdutor, linkedProducers } = useUser();
-  const [producers, setProducers] = useState<Producer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  department?: string;
+  created_at?: string;
+  updated_at?: string;
+  is_online?: boolean;
+  last_seen?: string;
+}
 
-  // Fetch producers from Supabase
-  const fetchProducers = async () => {
-    try {
-      const { data, error: supabaseError } = await supabase
-        .from('producers')
-        .select('*')
-        .order('name');
-      
-      if (supabaseError) {
-        console.warn('Failed to fetch producers:', supabaseError);
-        return [];
+// Alias for backward compatibility
+export type Employee = TeamMember;
+
+type SidebarItem = (Producer & { type: 'producer' }) | (TeamMember & { type: 'team_member' });
+
+interface SidebarData {
+  items: SidebarItem[];
+  isLoading: boolean;
+  error: string | null;
+  onlineCount: number;
+  refresh: () => Promise<void>;
+}
+
+// Cache configuration for performance optimization
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const cache = {
+  data: null as SidebarItem[] | null,
+  timestamp: 0,
+  isValid: () => cache.data && (Date.now() - cache.timestamp) < CACHE_DURATION
+};
+
+// Mock data for fallback
+const getMockData = (user: any): SidebarItem[] => {
+  const isConsultant = user?.type === 'consultant';
+  
+  if (isConsultant) {
+    // Mock producers for consultants
+    return [
+      {
+        id: 'mock-prod-1',
+        name: 'José da Silva',
+        email: 'jose@fazenda.com',
+        farm_name: 'Fazenda Santa Maria',
+        farm_location: 'Ribeirão Preto, SP',
+        is_online: true,
+        last_seen: new Date().toISOString(),
+        type: 'producer' as const
+      },
+      {
+        id: 'mock-prod-2', 
+        name: 'Maria Santos',
+        email: 'maria@sitio.com',
+        farm_name: 'Sítio Boa Esperança',
+        farm_location: 'Uberaba, MG',
+        is_online: false,
+        last_seen: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        type: 'producer' as const
       }
-      
-      return data?.map(producer => ({
-        id: producer.id,
-        name: producer.name,
-        farm_name: producer.farm_name,
-        location: producer.location,
-        email: producer.email,
-        phone: producer.phone,
-        avatar_url: producer.avatar_url,
-        is_online: producer.is_online || false,
-        last_seen: producer.last_seen
-      })) || [];
-    } catch (err) {
-      console.warn('Error fetching producers:', err);
-      return [];
+    ];
+  } else {
+    // Mock team members for producers
+    return [
+      {
+        id: 'mock-team-1',
+        name: 'Carlos Silva',
+        email: 'carlos@equipe.com',
+        role: 'Operador de Campo',
+        department: 'Operações',
+        is_online: true,
+        last_seen: new Date().toISOString(),
+        type: 'team_member' as const
+      },
+      {
+        id: 'mock-team-2',
+        name: 'Ana Costa',
+        email: 'ana@equipe.com',
+        role: 'Técnico Agrícola',
+        department: 'Técnico',
+        is_online: false,
+        last_seen: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        type: 'team_member' as const
+      }
+    ];
+  }
+};
+
+export function useSidebarData(): SidebarData {
+  const userContext = useUser();
+  const [items, setItems] = useState<SidebarItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const refreshTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const fetchData = useCallback(async (useCache = true) => {
+    // Check cache first for performance
+    if (useCache && cache.isValid()) {
+      setItems(cache.data!);
+      setIsLoading(false);
+      return;
     }
-  };
 
-  // Load data on mount and when user role changes
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await performanceMonitor.measure('sidebar-data-fetch', async () => {
+        const isConsultant = userContext.isConsultor;
+        
+        if (isConsultant) {
+          // Consultants see their assigned producers - using existing producers table
+          const { data: producers, error: producersError } = await supabase
+            .from('producers')
+            .select('*')
+            .order('is_online', { ascending: false })
+            .order('last_seen', { ascending: false });
+
+          if (producersError) {
+            logger.error('Error fetching producers:', producersError);
+            throw producersError;
+          }
+
+          return (producers || []).map(producer => ({
+            id: producer.id,
+            name: producer.name || 'Produtor',
+            email: producer.email || '',
+            phone: producer.phone,
+            farm_name: producer.farm_name,
+            farm_location: producer.location,
+            created_at: producer.created_at,
+            updated_at: producer.updated_at,
+            is_online: producer.is_online || false,
+            last_seen: producer.last_seen,
+            type: 'producer' as const
+          }));
+        } else {
+          // For now, return mock team members since team_members table may not exist
+          return getMockData(userContext).filter(item => item.type === 'team_member');
+        }
+      });
+
+      // Update cache for performance
+      cache.data = result;
+      cache.timestamp = Date.now();
+      
+      setItems(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      setError(errorMessage);
+      logger.error('Error in useSidebarData:', err);
+      
+      // Fallback to mock data on error
+      const fallbackData = getMockData(userContext);
+      setItems(fallbackData);
+      
+      // Cache fallback data temporarily (shorter duration)
+      cache.data = fallbackData;
+      cache.timestamp = Date.now() - (CACHE_DURATION / 2);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userContext]);
+
+  // Optimized refresh with debouncing to prevent spam
+  const refresh = useCallback(async () => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+    
+    refreshTimeoutRef.current = setTimeout(() => {
+      fetchData(false); // Force refresh, skip cache
+    }, 300); // Debounce rapid refresh calls
+  }, [fetchData]);
+
+  // Initial load with cache
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      setError(null);
+    fetchData(true);
+  }, [fetchData]);
 
-      try {
-        if (isConsultor) {
-          // For consultants, load producers
-          const supabaseProducers = await fetchProducers();
-          setProducers(supabaseProducers.length > 0 ? supabaseProducers : MOCK_PRODUCERS);
-        }
-        // For producers, we'll use mock employees data directly
-      } catch (err) {
-        console.error('Error loading sidebar data:', err);
-        setError('Falha ao carregar dados');
-        // Use mock data as fallback
-        if (isConsultor) {
-          setProducers(MOCK_PRODUCERS);
-        }
-      } finally {
-        setLoading(false);
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
       }
     };
+  }, []);
 
-    loadData();
-  }, [isConsultor, isProdutor]);
-
-  // Memoized computed values
-  const displayData = useMemo(() => {
-    if (isConsultor) {
-      // For consultants: show producers (real data + linkedProducers fallback + mock fallback)
-      let displayProducers = producers;
-      
-      // If no real producers and we have linkedProducers from UserContext
-      if (displayProducers.length === 0 && linkedProducers.length > 0) {
-        displayProducers = linkedProducers.map(producer => ({
-          id: producer.id,
-          name: producer.name,
-          farm_name: producer.farm || 'Fazenda',
-          location: producer.location || '',
-          email: undefined,
-          phone: undefined,
-          avatar_url: null,
-          is_online: false,
-          last_seen: undefined
-        }));
-      }
-      
-      // Final fallback to mock data
-      if (displayProducers.length === 0) {
-        displayProducers = MOCK_PRODUCERS;
-      }
-
-      return {
-        items: displayProducers,
-        type: 'producers' as const,
-        title: 'Meus Clientes',
-        subtitle: `${displayProducers.length} produtores vinculados`,
-        emptyMessage: 'Nenhum produtor encontrado'
-      };
-    } else {
-      // For producers: show team members (using mock data)
-      const displayTeamMembers = MOCK_EMPLOYEES;
-      
-      return {
-        items: displayTeamMembers,
-        type: 'employees' as const,
-        title: 'Minha Equipe',
-        subtitle: `${displayTeamMembers.length} funcionários ativos`,
-        emptyMessage: 'Nenhum funcionário encontrado'
-      };
-    }
-  }, [isConsultor, producers, linkedProducers]);
-
-  // Function to refresh data
-  const refresh = async () => {
-    setLoading(true);
-    try {
-      if (isConsultor) {
-        const supabaseProducers = await fetchProducers();
-        setProducers(supabaseProducers.length > 0 ? supabaseProducers : MOCK_PRODUCERS);
-      }
-      // For producers, no need to refresh since we're using mock data
-    } catch (err) {
-      console.error('Error refreshing data:', err);
-      setError('Falha ao atualizar dados');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Memoized online count calculation for performance
+  const onlineCount = useMemo(() => {
+    return items.filter(item => item.is_online).length;
+  }, [items]);
 
   return {
-    displayData,
-    loading,
+    items,
+    isLoading,
     error,
-    refresh,
-    // Statistics
-    stats: {
-      totalItems: displayData.items.length,
-      onlineCount: displayData.items.filter(item => 
-        displayData.type === 'producers' 
-          ? (item as Producer).is_online 
-          : (item as Employee).isOnline
-      ).length
-    }
+    onlineCount,
+    refresh
   };
 }

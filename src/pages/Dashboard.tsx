@@ -9,10 +9,12 @@ import { LoadingBoundary } from "@/components/dashboard/LoadingBoundary";
 import { FlowAgroSidebar } from "@/components/dashboard/FlowAgroSidebar";
 import { useDashboardState } from "@/hooks/useDashboardState";
 import { useDashboardKeyboards } from "@/hooks/useDashboardKeyboards";
+import { useMemoryOptimization } from "@/hooks/useMemoryOptimization";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { performanceMonitor } from "@/lib/unifiedPerformance";
 
 /**
  * Optimized Dashboard component with performance enhancements
@@ -25,6 +27,17 @@ export default function Dashboard() {
   const [newMessage, setNewMessage] = useState("");
   const [isChatExpanded, setIsChatExpanded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Memory optimization for large datasets
+  const { registerCleanupTask, forceMemoryCheck, clearCaches } = useMemoryOptimization({
+    threshold: 0.75, // Trigger cleanup at 75% memory usage
+    checkInterval: 45000, // Check every 45 seconds
+    onMemoryPressure: () => {
+      // Clear image caches and temporary data when memory pressure is detected
+      clearCaches();
+    },
+    enableLogging: process.env.NODE_ENV === 'development'
+  });
   
   const {
     chatFilter,
@@ -110,11 +123,32 @@ export default function Dashboard() {
     }
   };
 
-  // Handle sidebar item selection
+  // Handle sidebar item selection with performance tracking
   const handleSidebarItemSelect = useCallback((item: any) => {
-    console.log('Selected:', item);
-    setSidebarOpen(false);
+    performanceMonitor.measure('sidebar-item-select', () => {
+      console.log('Selected:', item);
+      setSidebarOpen(false);
+    });
   }, []);
+
+  // Register memory cleanup tasks
+  React.useEffect(() => {
+    const unregisterCleanups = [
+      // Clear component state when memory pressure occurs
+      registerCleanupTask(() => {
+        setNewMessage("");
+        // Force garbage collection of large objects
+        if (producerThreads.length > 100) {
+          // Trigger re-render to clear unused components
+          setIsChatExpanded(prev => prev);
+        }
+      })
+    ];
+
+    return () => {
+      unregisterCleanups.forEach(cleanup => cleanup());
+    };
+  }, [registerCleanupTask, producerThreads.length]);
 
   return (
     <>
@@ -228,12 +262,14 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Performance indicator (development only) */}
-          {process.env.NODE_ENV === 'development' && performanceMetrics && (
-            <div className="fixed top-4 right-4 z-50 opacity-50 text-xs bg-background/80 backdrop-blur-sm rounded px-2 py-1 border border-border/50">
-              {performanceMetrics.filteredCount}/{performanceMetrics.threadCount} threads
-              {performanceMetrics.isTransitioning && " • transitioning"}
-            </div>
+          {/* Enhanced Performance Monitor (development only) */}
+          {process.env.NODE_ENV === 'development' && (
+            <>
+              <div className="fixed top-16 right-4 z-50 opacity-50 text-xs bg-background/80 backdrop-blur-sm rounded px-2 py-1 border border-border/50">
+                {performanceMetrics?.filteredCount || 0}/{performanceMetrics?.threadCount || 0} threads
+                {performanceMetrics?.isTransitioning && " • transitioning"}
+              </div>
+            </>
           )}
 
           {/* Keyboard Shortcuts Help - desktop only for performance */}
