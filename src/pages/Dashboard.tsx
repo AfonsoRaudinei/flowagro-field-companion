@@ -75,10 +75,11 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="h-screen bg-background relative flex flex-col">
-      {/* Quick Access Cards - sempre visíveis no topo */}
+    <div className="h-screen bg-background relative flex flex-col overflow-hidden">
+      {/* Quick Access Cards - sempre visíveis no topo com scroll seguro */}
       <div className={cn(
         "flex-shrink-0 transition-all duration-300 ease-out",
+        "border-b border-border/30",
         isTransitioning && "opacity-75"
       )}>
         <DashboardQuickCards 
@@ -87,9 +88,10 @@ export default function Dashboard() {
         />
       </div>
       
-      {/* Chat Content - ocupa o resto da tela com transições suaves */}
+      {/* Chat Content - scrollable com safe area para mobile */}
       <div className={cn(
         "flex-1 overflow-hidden transition-all duration-300 ease-out transform-gpu",
+        "pb-safe", // iOS safe area bottom
         isTransitioning && "scale-[0.99] opacity-90"
       )}>
         {viewMode === "list" ? (
@@ -119,9 +121,9 @@ export default function Dashboard() {
         ) : null}
       </div>
 
-      {/* Keyboard Shortcuts Help - subtle indicator */}
+      {/* Keyboard Shortcuts Help - mobile-optimized */}
       {navigationHistory.length > 0 && (
-        <div className="absolute bottom-4 right-4 opacity-30 hover:opacity-80 transition-opacity">
+        <div className="hidden sm:block absolute bottom-4 right-4 opacity-30 hover:opacity-80 transition-opacity">
           <div className="text-xs text-muted-foreground bg-background/80 backdrop-blur-sm rounded-md px-2 py-1 border border-border/50">
             {shortcuts[0].key} {shortcuts[0].description}
           </div>

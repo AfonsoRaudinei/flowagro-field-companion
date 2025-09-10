@@ -27,7 +27,10 @@ const QuickCard: React.FC<QuickCardProps> = ({
       className={cn(
         // Base styling - Grok-inspired with FlowAgro silver/prata
         "group relative overflow-hidden rounded-2xl bg-card/95 backdrop-blur-sm",
-        "border border-border/50 p-4 text-left",
+        "border border-border/50 text-left",
+        
+        // Responsive padding and sizing
+        "p-3 sm:p-4 min-h-[80px] sm:min-h-[90px]",
         
         // Enhanced transitions and spring animations
         "transition-all duration-300 ease-out",
@@ -37,9 +40,13 @@ const QuickCard: React.FC<QuickCardProps> = ({
         "shadow-[0_2px_8px_rgba(214,211,209,0.15),0_1px_3px_rgba(214,211,209,0.1)]",
         "hover:shadow-[0_8px_30px_rgba(214,211,209,0.25),0_4px_15px_rgba(214,211,209,0.15)]",
         
-        // Premium hover effects - Grok-style lift
-        "hover:scale-[1.02] hover:-translate-y-1",
+        // Premium hover effects - Grok-style lift (reduced on mobile)
+        "sm:hover:scale-[1.02] sm:hover:-translate-y-1",
         "active:scale-[0.98] active:translate-y-0",
+        
+        // Touch-friendly states for mobile
+        "touch-manipulation select-none",
+        "active:bg-card/80 active:shadow-inner",
         
         // Focus states with FlowAgro primary color
         "focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2",
@@ -85,14 +92,15 @@ const QuickCard: React.FC<QuickCardProps> = ({
       </div>
       
       {/* Content container */}
-      <div className="relative z-10 flex items-start space-x-4">
+      <div className="relative z-10 flex items-start space-x-3 sm:space-x-4">
         {/* Icon container with enhanced styling */}
         <div 
           className={cn(
-            "flex-shrink-0 p-3 rounded-xl",
+            "flex-shrink-0 rounded-xl",
+            "p-2 sm:p-3",
             "bg-gradient-to-br from-muted/40 to-muted/20",
             "border border-border/30",
-            "group-hover:scale-110 group-hover:rotate-3",
+            "sm:group-hover:scale-110 sm:group-hover:rotate-3",
             "transition-all duration-300 ease-out transform-gpu"
           )}
           style={{
@@ -101,17 +109,17 @@ const QuickCard: React.FC<QuickCardProps> = ({
             color: accentColor
           }}
         >
-          <div className="transform group-hover:scale-110 transition-transform duration-300">
-            {icon}
+          <div className="transform sm:group-hover:scale-110 transition-transform duration-300">
+            <div className="w-5 h-5 sm:w-6 sm:h-6">{icon}</div>
           </div>
         </div>
         
         {/* Text content with Grok typography */}
-        <div className="flex-1 min-w-0 pt-1">
+        <div className="flex-1 min-w-0 pt-0.5 sm:pt-1">
           {/* Title with FlowAgro secondary font */}
           <h3 className={cn(
             "font-secondary font-semibold text-card-foreground",
-            "text-[15px] leading-tight tracking-[-0.01em]",  // Grok-style tight tracking
+            "text-sm sm:text-[15px] leading-tight tracking-[-0.01em]",  // Responsive text size
             "group-hover:text-foreground transition-colors duration-200"
           )}>
             {title}
@@ -119,9 +127,10 @@ const QuickCard: React.FC<QuickCardProps> = ({
           
           {/* Subtitle with muted styling */}
           <p className={cn(
-            "font-secondary text-muted-foreground mt-1",
-            "text-[13px] leading-tight tracking-[-0.005em]",  // Slightly tighter tracking
-            "group-hover:text-muted-foreground/80 transition-colors duration-200"
+            "font-secondary text-muted-foreground mt-0.5 sm:mt-1",
+            "text-xs sm:text-[13px] leading-tight tracking-[-0.005em]",  // Responsive text size
+            "group-hover:text-muted-foreground/80 transition-colors duration-200",
+            "line-clamp-1"  // Prevent text overflow on small screens
           )}>
             {subtitle}
           </p>
@@ -248,75 +257,75 @@ export const DashboardQuickCards: React.FC<DashboardQuickCardsProps> = ({
 
   return (
     <div className={cn(
-      "w-full px-4 py-4",
+      "w-full px-3 sm:px-4 py-3 sm:py-4",
       // Subtle background with silver undertones
       "bg-gradient-to-b from-muted/20 to-transparent",
       className
     )}>
       {/* Header section - Grok-style */}
-      <div className="mb-4">
+      <div className="mb-3 sm:mb-4">
         <h2 className={cn(
           "font-secondary font-semibold text-foreground",
-          "text-[17px] leading-tight tracking-[-0.01em]",
+          "text-base sm:text-[17px] leading-tight tracking-[-0.01em]",
           "opacity-90"
         )}>
           Acesso Rápido
         </h2>
         <p className={cn(
           "font-secondary text-muted-foreground mt-0.5",
-          "text-[13px] leading-tight tracking-[-0.005em]"
+          "text-xs sm:text-[13px] leading-tight tracking-[-0.005em]"
         )}>
           Suas ferramentas principais
         </p>
       </div>
 
-      {/* Enhanced grid with better spacing and active states */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Enhanced responsive grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
         {/* Card de Produtores - Verde FlowAgro */}
         <QuickCard
-          icon={<Users size={22} strokeWidth={1.8} />}
+          icon={<Users size={20} strokeWidth={1.8} />}
           title="Produtores"
           subtitle="Conversas ativas"
           onClick={handleProducerCard}
           accentColor="#16A34A"
           className={cn(
-            "hover:shadow-[0_8px_30px_rgba(22,163,74,0.15)]",
+            "sm:hover:shadow-[0_8px_30px_rgba(22,163,74,0.15)]",
             currentFilter === "Produtor" && "ring-2 ring-primary/40 bg-primary/5"
           )}
         />
 
         {/* Card de Mapa - Verde FlowAgro */}
         <QuickCard
-          icon={<MapPin size={22} strokeWidth={1.8} />}
+          icon={<MapPin size={20} strokeWidth={1.8} />}
           title="Mapa Técnico"
           subtitle="Suas propriedades"
           onClick={handleMapCard}
           accentColor="#16A34A"
-          className="hover:shadow-[0_8px_30px_rgba(22,163,74,0.15)]"
+          className="sm:hover:shadow-[0_8px_30px_rgba(22,163,74,0.15)]"
         />
 
         {/* Card de Agenda - Verde Água */}
         <QuickCard
-          icon={<Calendar size={22} strokeWidth={1.8} />}
+          icon={<Calendar size={20} strokeWidth={1.8} />}
           title="Agenda"
           subtitle="Atividades"
           onClick={handleAgendaCard}
           accentColor="#00C4B4"
           className={cn(
-            "hover:shadow-[0_8px_30px_rgba(0,196,180,0.15)]",
+            "sm:hover:shadow-[0_8px_30px_rgba(0,196,180,0.15)]",
             currentFilter === "Agenda" && "ring-2 ring-primary/40 bg-primary/5"
           )}
         />
 
         {/* Card de IA - Azul Samsung */}
         <QuickCard
-          icon={<Bot size={22} strokeWidth={1.8} />}
+          icon={<Bot size={20} strokeWidth={1.8} />}
           title="Assistente IA"
           subtitle="Chat inteligente"
           onClick={handleIACard}
           accentColor="#0057FF"
           className={cn(
-            "hover:shadow-[0_8px_30px_rgba(0,87,255,0.15)]",
+            "sm:hover:shadow-[0_8px_30px_rgba(0,87,255,0.15)]",
             currentFilter === "IA" && "ring-2 ring-primary/40 bg-primary/5"
           )}
         />
