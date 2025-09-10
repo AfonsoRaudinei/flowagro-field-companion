@@ -31,7 +31,7 @@ export default function TechnicalMap() {
         </div>
 
         {/* Floating Action Buttons - Inside MapProvider */}
-        <FloatingCameraButton className="bottom-6 right-6" />
+        <FloatingCameraButton />
         <FloatingCloseButton />
       </MapProvider>
     </div>
