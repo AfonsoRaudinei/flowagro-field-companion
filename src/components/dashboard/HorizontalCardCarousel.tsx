@@ -132,17 +132,17 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
       </div>
 
       {/* Carousel Container */}
-      <div className="overflow-hidden px-20" ref={emblaRef}>
-        <div className="flex gap-4 py-4">
-          {cards.map((card, index) => <div key={index} className={cn("flex-[0_0_240px] min-w-0 transition-all duration-500", selectedIndex === index ? "scale-105 z-20" : "scale-95 opacity-70")}>
-              <QuickAccessCard icon={card.icon} title={card.title} subtitle={card.subtitle} onClick={card.onClick} accentColor={card.accentColor} isActive={card.isActive} className={cn("h-24 transform transition-all duration-500", selectedIndex === index ? "shadow-2xl ring-2 ring-primary/20" : "shadow-lg hover:shadow-xl")} />
+      <div className="overflow-hidden px-12 sm:px-16 md:px-20" ref={emblaRef}>
+        <div className="flex gap-3 sm:gap-4 py-3 sm:py-4">
+          {cards.map((card, index) => <div key={index} className={cn("flex-[0_0_200px] sm:flex-[0_0_240px] min-w-0 transition-all duration-500", selectedIndex === index ? "scale-105 z-20" : "scale-95 opacity-70")}>
+              <QuickAccessCard icon={card.icon} title={card.title} subtitle={card.subtitle} onClick={card.onClick} accentColor={card.accentColor} isActive={card.isActive} className={cn("h-20 sm:h-24 transform transition-all duration-500", selectedIndex === index ? "shadow-2xl ring-2 ring-primary/20" : "shadow-lg hover:shadow-xl")} />
             </div>)}
         </div>
       </div>
 
 
       {/* Side navigation hints */}
-      <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-70 transition-opacity z-20">
+      <div className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-70 transition-opacity z-20">
         <button onClick={() => emblaApi?.scrollPrev()} className="p-2 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-background/90" aria-label="Card anterior">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -150,7 +150,7 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
         </button>
       </div>
       
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-70 transition-opacity z-20">
+      <div className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-70 transition-opacity z-20">
         <button onClick={() => emblaApi?.scrollNext()} className="p-2 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-background/90" aria-label="Próximo card">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
