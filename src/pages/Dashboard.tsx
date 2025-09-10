@@ -195,10 +195,7 @@ export default function Dashboard() {
 
           {/* Enhanced Performance Monitor (development only) */}
           {process.env.NODE_ENV === 'development' && <>
-              <div className="fixed top-16 right-4 z-50 opacity-50 text-xs bg-background/80 backdrop-blur-sm rounded px-2 py-1 border border-border/50">
-                {performanceMetrics?.filteredCount || 0}/{performanceMetrics?.threadCount || 0} threads
-                {performanceMetrics?.isTransitioning && " • transitioning"}
-              </div>
+              
             </>}
 
           {/* Keyboard Shortcuts Help - desktop only for performance */}
