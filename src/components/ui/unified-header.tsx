@@ -57,7 +57,7 @@ export const UnifiedHeader: React.FC<UnifiedHeaderProps> = props => {
     return <header className={cn("flex items-center justify-between p-4 bg-card border-b border-border", className)}>
         <div className="flex items-center space-x-3">
           {showBackButton && <BackButton variant="ghost" size="sm" />}
-          <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+          
         </div>
         {rightActions && <div className="flex items-center space-x-2">
             {rightActions}
