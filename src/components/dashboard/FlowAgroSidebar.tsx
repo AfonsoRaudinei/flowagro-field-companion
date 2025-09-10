@@ -49,7 +49,7 @@ export function FlowAgroSidebar({ onItemSelect }: FlowAgroSidebarProps) {
 
   return (
     <Sidebar 
-      className="w-80 border-0 bg-[#2D2D30] z-50" 
+      className="fixed left-0 top-0 h-screen w-80 border-0 bg-[#2D2D30] z-[9998] transform transition-transform duration-300 ease-out data-[state=closed]:-translate-x-full" 
       side="left"
     >
       <SidebarHeader className="px-6 py-4 border-b border-white/10">

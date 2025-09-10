@@ -117,27 +117,34 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-      <div className="h-screen bg-background relative flex overflow-hidden w-full">
+    <>
+      {/* Fixed Sidebar Trigger - Always visible at top left */}
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className={cn(
+          "fixed top-4 left-4 z-[9999] w-11 h-11 rounded-xl border-0 shadow-lg backdrop-blur-md",
+          "bg-white/90 hover:bg-white text-[#2D2D30] hover:text-[#2D2D30]",
+          "transition-all duration-200 hover:scale-105 active:scale-95",
+          "focus:ring-2 focus:ring-primary/50 focus:ring-offset-0"
+        )}
+      >
+        <Users className="w-5 h-5" />
+      </Button>
+
+      <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        {/* Backdrop overlay when sidebar is open */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-[9997] backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        
         <FlowAgroSidebar onItemSelect={handleSidebarItemSelect} />
         
-        <div className="flex-1 flex flex-col overflow-hidden relative">
-          {/* Top Header with Sidebar Trigger */}
-          <div className="absolute top-4 left-4 z-50">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className={cn(
-                "w-11 h-11 rounded-xl border-0 shadow-lg backdrop-blur-md",
-                "bg-white/10 hover:bg-white/20 text-foreground",
-                "transition-all duration-200 hover:scale-105 active:scale-95",
-                "focus:ring-2 focus:ring-primary/50 focus:ring-offset-0"
-              )}
-            >
-              <Users className="w-5 h-5" />
-            </Button>
-          </div>
+        <div className="h-screen bg-background flex flex-col overflow-hidden w-full">
           {/* Grok-style Dashboard View */}
           {!isChatExpanded ? (
             <>
@@ -238,7 +245,7 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </>
   );
 }
