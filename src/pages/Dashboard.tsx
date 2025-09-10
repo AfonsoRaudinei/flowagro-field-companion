@@ -3,7 +3,7 @@ import React, { useState, useCallback, memo, Suspense } from "react";
 import { ChatListView } from "@/components/dashboard/ChatListView";
 import { ConversationView } from "@/components/dashboard/ConversationView";
 import TechnicalChatView from "@/components/dashboard/TechnicalChatView";
-import { DashboardQuickCards } from "@/components/dashboard/DashboardQuickCards";
+import { BottomQuickCards } from "@/components/dashboard/BottomQuickCards";
 import { ChatInputBar } from "@/components/dashboard/ChatInputBar";
 import { LoadingBoundary } from "@/components/dashboard/LoadingBoundary";
 import { FlowAgroSidebar } from "@/components/dashboard/FlowAgroSidebar";
@@ -202,16 +202,16 @@ export default function Dashboard() {
                   </p>
                 </div>
 
-                {/* Carousel Cards - No bottom spacing */}
-                <div className="flex-shrink-0 px-3 sm:px-4">
-                  <LoadingBoundary>
-                    <DashboardQuickCards 
-                      onChatFilterChange={setChatFilter}
-                      currentFilter={chatFilter}
-                    />
-                  </LoadingBoundary>
-                </div>
+                {/* Spacer to push content up */}
+                <div className="flex-1" />
               </div>
+
+              {/* Bottom Quick Cards - Grok-style positioning */}
+              <BottomQuickCards 
+                onChatFilterChange={setChatFilter}
+                currentFilter={chatFilter}
+                isVisible={!isChatExpanded}
+              />
 
               {/* Fixed Chat Input Bar */}
               <ChatInputBar
