@@ -44,12 +44,13 @@ export function useDashboardState() {
     searchQuery: filters.searchQuery,
     setSearchQuery: filters.setSearchQuery,
     
-    // State from navigation
+    // State from navigation (enhanced)
     viewMode: navigation.viewMode,
     selectedChat: navigation.selectedChat,
     isAIMode: navigation.isAIMode,
     showTechnicalChat: navigation.showTechnicalChat,
     selectedConversationId: navigation.selectedConversationId,
+    isTransitioning: navigation.isTransitioning,
     
     // Data
     producerThreads: filteredAndSortedThreads,
@@ -58,14 +59,18 @@ export function useDashboardState() {
     loadingConversations: data.loadingConversations,
     sendingMessage: data.sendingMessage,
     
-    // Actions
+    // Enhanced Navigation Actions
     handleChatSelect: navigation.handleChatSelect,
     handleBackToList: navigation.handleBackToList,
     handleShowTechnicalChat: navigation.handleShowTechnicalChat,
     handleBackFromTechnicalChat,
+    handleSmartBack: navigation.handleSmartBack,
     handleTogglePin,
     sendMessage: data.sendMessage,
     sendAIMessage: data.sendAIMessage,
-    markConversationAsSeen: navigation.markConversationAsSeen
+    markConversationAsSeen: navigation.markConversationAsSeen,
+    
+    // Navigation utilities
+    navigationHistory: navigation.navigationHistory
   };
 }
