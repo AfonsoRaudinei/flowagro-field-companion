@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CloudSun, MapPin, Calendar, Bot } from 'lucide-react';
+import { CloudSun, MapPin, Calendar, Bot, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -169,17 +169,19 @@ const QuickCard: React.FC<QuickCardProps> = ({
 
 interface DashboardQuickCardsProps {
   onChatFilterChange?: (filter: "Produtor" | "Agenda" | "IA" | "Campo") => void;
+  currentFilter?: "Produtor" | "Agenda" | "IA" | "Campo";
   className?: string;
 }
 
 export const DashboardQuickCards: React.FC<DashboardQuickCardsProps> = ({
   onChatFilterChange,
+  currentFilter = "Produtor",
   className
 }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Card actions with enhanced UX
+  // Enhanced card actions with filter integration
   const handleClimateCard = () => {
     toast({
       title: "🌤️ Clima",
@@ -200,11 +202,20 @@ export const DashboardQuickCards: React.FC<DashboardQuickCardsProps> = ({
   };
 
   const handleAgendaCard = () => {
-    toast({
-      title: "📅 Agenda",
-      description: "Sistema de agenda em desenvolvimento. Gerencie suas atividades em breve.",
-      duration: 4000,
-    });
+    if (onChatFilterChange) {
+      onChatFilterChange("Agenda");
+      toast({
+        title: "📅 Filtro Agenda Ativado",
+        description: "Visualizando conversas relacionadas à agenda",
+        duration: 3000,
+      });
+    } else {
+      toast({
+        title: "📅 Agenda",
+        description: "Sistema de agenda em desenvolvimento. Gerencie suas atividades em breve.",
+        duration: 4000,
+      });
+    }
   };
 
   const handleIACard = () => {
@@ -220,6 +231,17 @@ export const DashboardQuickCards: React.FC<DashboardQuickCardsProps> = ({
         title: "🤖 Assistente IA",
         description: "Modo inteligente ativado",
         duration: 2000,
+      });
+    }
+  };
+
+  const handleProducerCard = () => {
+    if (onChatFilterChange) {
+      onChatFilterChange("Produtor");
+      toast({
+        title: "👥 Filtro Produtores Ativado",
+        description: "Visualizando conversas com produtores",
+        duration: 3000,
       });
     }
   };
@@ -248,16 +270,19 @@ export const DashboardQuickCards: React.FC<DashboardQuickCardsProps> = ({
         </p>
       </div>
 
-      {/* Enhanced grid with better spacing */}
+      {/* Enhanced grid with better spacing and active states */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card de Clima - Azul Samsung com gradiente */}
+        {/* Card de Produtores - Verde FlowAgro */}
         <QuickCard
-          icon={<CloudSun size={22} strokeWidth={1.8} />}
-          title="Clima"
-          subtitle="Previsão local"
-          onClick={handleClimateCard}
-          accentColor="#0057FF"
-          className="hover:shadow-[0_8px_30px_rgba(0,87,255,0.15)]"
+          icon={<Users size={22} strokeWidth={1.8} />}
+          title="Produtores"
+          subtitle="Conversas ativas"
+          onClick={handleProducerCard}
+          accentColor="#16A34A"
+          className={cn(
+            "hover:shadow-[0_8px_30px_rgba(22,163,74,0.15)]",
+            currentFilter === "Produtor" && "ring-2 ring-primary/40 bg-primary/5"
+          )}
         />
 
         {/* Card de Mapa - Verde FlowAgro */}
@@ -277,7 +302,10 @@ export const DashboardQuickCards: React.FC<DashboardQuickCardsProps> = ({
           subtitle="Atividades"
           onClick={handleAgendaCard}
           accentColor="#00C4B4"
-          className="hover:shadow-[0_8px_30px_rgba(0,196,180,0.15)]"
+          className={cn(
+            "hover:shadow-[0_8px_30px_rgba(0,196,180,0.15)]",
+            currentFilter === "Agenda" && "ring-2 ring-primary/40 bg-primary/5"
+          )}
         />
 
         {/* Card de IA - Azul Samsung */}
@@ -287,7 +315,10 @@ export const DashboardQuickCards: React.FC<DashboardQuickCardsProps> = ({
           subtitle="Chat inteligente"
           onClick={handleIACard}
           accentColor="#0057FF"
-          className="hover:shadow-[0_8px_30px_rgba(0,87,255,0.15)]"
+          className={cn(
+            "hover:shadow-[0_8px_30px_rgba(0,87,255,0.15)]",
+            currentFilter === "IA" && "ring-2 ring-primary/40 bg-primary/5"
+          )}
         />
       </div>
       

@@ -52,6 +52,7 @@ export default function Dashboard() {
       <div className="flex-shrink-0">
         <DashboardQuickCards 
           onChatFilterChange={setChatFilter}
+          currentFilter={chatFilter}
         />
       </div>
       
