@@ -43,27 +43,36 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
     };
   }, [emblaApi]);
 
-  // Memoized handlers
+  // Memoized handlers with enhanced functionality
   const handleClimaCard = useCallback(() => {
     toast({
-      title: "🌤️ Clima",
-      description: "Sistema meteorológico em desenvolvimento. Informações climáticas em breve.",
+      title: "🌤️ Centro Meteorológico",
+      description: "Previsão do tempo, alertas climáticos e dados meteorológicos para sua região",
       duration: 4000
     });
+    
+    // Future: Navigate to weather dashboard
+    setTimeout(() => {
+      toast({
+        title: "⚡ Em desenvolvimento",
+        description: "Sistema meteorológico avançado chegará em breve com dados em tempo real",
+        duration: 3000
+      });
+    }, 500);
   }, [toast]);
 
   const handleAgendaCard = useCallback(() => {
     if (onChatFilterChange) {
       onChatFilterChange("Agenda");
       toast({
-        title: "📅 Filtro Agenda Ativado",
-        description: "Visualizando conversas relacionadas à agenda",
+        title: "📅 Agenda Ativada",
+        description: "Visualizando compromissos, eventos e atividades programadas",
         duration: 3000
       });
     } else {
       toast({
-        title: "📅 Agenda",
-        description: "Sistema de agenda em desenvolvimento. Gerencie suas atividades em breve.",
+        title: "📅 Central de Agenda",
+        description: "Gerencie plantios, pulverizações, colheitas e reuniões em um só lugar",
         duration: 4000
       });
     }
@@ -71,9 +80,9 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
 
   const handleMapCard = useCallback(() => {
     toast({
-      title: "🗺️ Abrindo Mapa",
-      description: "Carregando visualização avançada...",
-      duration: 2000
+      title: "🗺️ Abrindo Mapa Técnico",
+      description: "Carregando visualização de propriedades, campos e análises geoespaciais...",
+      duration: 2500
     });
     setTimeout(() => navigate("/technical-map"), 400);
   }, [navigate, toast]);
@@ -82,25 +91,34 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
     if (onChatFilterChange) {
       onChatFilterChange("IA");
       toast({
-        title: "🤖 IA Ativado",
-        description: "Converse com nosso assistente inteligente!",
+        title: "🤖 Assistente IA Ativo",
+        description: "Converse sobre agricultura, obtenha insights e tire dúvidas técnicas",
         duration: 3000
       });
     } else {
       toast({
-        title: "🤖 IA",
-        description: "Modo inteligente ativado",
-        duration: 2000
+        title: "🤖 Inteligência Artificial",
+        description: "Assistente especializado em agricultura e agronegócio",
+        duration: 2500
       });
     }
   }, [onChatFilterChange, toast]);
 
   const handleRelatorioCard = useCallback(() => {
     toast({
-      title: "📊 Relatórios",
-      description: "Sistema de relatórios em desenvolvimento. Análises detalhadas em breve.",
+      title: "📊 Central de Relatórios",
+      description: "Análises de produtividade, custos, safras e indicadores de performance",
       duration: 4000
     });
+    
+    // Future: Navigate to reports dashboard  
+    setTimeout(() => {
+      toast({
+        title: "⚡ Novidade chegando",
+        description: "Dashboard completo de relatórios e analytics será lançado em breve",
+        duration: 3000
+      });
+    }, 500);
   }, [toast]);
   const cards = [{
     icon: <Cloud size={20} strokeWidth={1.8} />,
@@ -110,30 +128,30 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
     accentColor: "#0EA5E9"
   }, {
     icon: <Calendar size={20} strokeWidth={1.8} />,
-    title: "Agenda",
+    title: "Agenda", 
     subtitle: "Atividades",
     onClick: handleAgendaCard,
-    accentColor: "#00C4B4",
+    accentColor: "#F59E0B",
     isActive: currentFilter === "Agenda"
   }, {
     icon: <MapPin size={20} strokeWidth={1.8} />,
     title: "Mapa",
-    subtitle: "Suas propriedades",
+    subtitle: "Propriedades",
     onClick: handleMapCard,
     accentColor: "#16A34A"
   }, {
     icon: <Bot size={20} strokeWidth={1.8} />,
     title: "IA",
-    subtitle: "Chat inteligente",
+    subtitle: "Assistente",
     onClick: handleIACard,
-    accentColor: "#0057FF",
+    accentColor: "#8B5CF6",
     isActive: currentFilter === "IA"
   }, {
     icon: <FileText size={20} strokeWidth={1.8} />,
     title: "Relatórios",
-    subtitle: "Análises",
+    subtitle: "Analytics",
     onClick: handleRelatorioCard,
-    accentColor: "#7C3AED"
+    accentColor: "#EF4444"
   }];
   return <div className={cn("relative w-full max-w-6xl mx-auto", className)}>
       {/* Grok-style background gradient */}
