@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import IOSNavigation from '@/components/ui/ios-navigation';
 import { ArrowLeft, Image as ImageIcon, RefreshCw, Moon, Sun, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -481,9 +480,6 @@ const Settings: React.FC = () => {
           )}
         </div>
       </main>
-
-      {/* iOS Navigation */}
-      <IOSNavigation />
     </div>
   );
 };

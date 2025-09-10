@@ -3,79 +3,65 @@ import { IOSHeader } from '@/components/ui/unified-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calculator as CalculatorIcon, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import IOSNavigation from '@/components/ui/ios-navigation';
 
 const Calculator: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <>
-      <div className="h-screen bg-background">
-        <IOSHeader
-          title="Calculadora"
-          onBack={() => navigate('/dashboard')}
-          showBackButton={true}
-          showSettingsButton={false}
-        />
-        
-        <main className="flex-1 p-base pb-20 space-y-lg">
-          <Card className="shadow-ios-md border-0 bg-gradient-to-br from-primary/5 to-accent/5">
-            <CardHeader className="text-center pb-md">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center mb-md">
-                <CalculatorIcon className="h-8 w-8 text-white" />
-              </div>
-              <CardTitle className="text-title">Calculadora FlowAgro</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center space-y-lg">
-              <div className="bg-muted/50 rounded-lg p-lg">
-                <Wrench className="mx-auto h-12 w-12 text-muted-foreground mb-md" />
-                <h3 className="text-subtitle mb-sm">Em Desenvolvimento</h3>
-                <p className="text-body">
-                  Estamos trabalhando em uma calculadora especializada para agricultura com funcionalidades como:
-                </p>
-              </div>
-              
-              <div className="grid gap-md text-left">
-                <div className="flex items-start gap-md p-md bg-card rounded-lg border">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-foreground">Cálculo de Área</h4>
-                    <p className="text-sm text-muted-foreground">Área de plantio, hectares e conversões</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-md p-md bg-card rounded-lg border">
-                  <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-foreground">Dosagem de Insumos</h4>
-                    <p className="text-sm text-muted-foreground">Fertilizantes, defensivos e sementes</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-md p-md bg-card rounded-lg border">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-foreground">Produtividade</h4>
-                    <p className="text-sm text-muted-foreground">Estimativas de colheita e rendimento</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-md p-md bg-card rounded-lg border">
-                  <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-foreground">Custos Operacionais</h4>
-                    <p className="text-sm text-muted-foreground">Análise financeira e ROI</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
+    <div className="h-screen bg-background">
+      <IOSHeader
+        title="Calculadora"
+        onBack={() => navigate('/dashboard')}
+      />
 
-      {/* iOS-style Bottom Navigation */}
-      <IOSNavigation />
-    </>
+      <main className="flex-1 overflow-auto px-4 py-6">
+        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-foreground">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/20 text-purple-600">
+                <CalculatorIcon size={18} strokeWidth={2} />
+              </div>
+              Calculadora FlowAgro
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="rounded-lg border border-amber-200/50 bg-gradient-to-br from-amber-50/50 to-orange-50/50 p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400/20 to-orange-500/20 text-amber-600">
+                  <Wrench size={16} strokeWidth={2} />
+                </div>
+                <h3 className="font-semibold text-amber-800">Em Desenvolvimento</h3>
+              </div>
+              <p className="text-sm text-amber-700 leading-relaxed">
+                Estamos desenvolvendo uma calculadora completa para auxiliar você nas operações agrícolas do dia a dia.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-semibold text-foreground">Funcionalidades Planejadas:</h4>
+              <div className="grid gap-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/30">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <span className="text-sm font-medium text-foreground">Cálculo de Área</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/30">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <span className="text-sm font-medium text-foreground">Dosagem de Insumos</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/30">
+                  <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                  <span className="text-sm font-medium text-foreground">Produtividade</span>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/30">
+                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                  <span className="text-sm font-medium text-foreground">Custos Operacionais</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
   );
 };
 
