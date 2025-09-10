@@ -40,10 +40,11 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 // Mock data for linked producers (consultants)
 const mockLinkedProducers: Producer[] = [
-  { id: '1', name: 'João Silva', farm: 'Fazenda Boa Vista', location: 'Goiás, GO' },
-  { id: '2', name: 'Maria Santos', farm: 'Fazenda São José', location: 'Mato Grosso, MT' },
-  { id: '3', name: 'Carlos Oliveira', farm: 'Fazenda Esperança', location: 'Bahia, BA' },
-  { id: '4', name: 'Ana Costa', farm: 'Fazenda Nova Era', location: 'Minas Gerais, MG' }
+  { id: '1', name: 'José da Silva', farm: 'Fazenda Santa Maria', location: 'Ribeirão Preto, SP' },
+  { id: '2', name: 'Maria Santos', farm: 'Sítio Boa Esperança', location: 'Uberaba, MG' },
+  { id: '3', name: 'Carlos Oliveira', farm: 'Fazenda Progresso', location: 'Goiânia, GO' },
+  { id: '4', name: 'Ana Costa', farm: 'Rancho Verde Sustentável', location: 'Campo Grande, MS' },
+  { id: '5', name: 'Roberto Mendes', farm: 'Estância do Cerrado', location: 'Brasília, DF' }
 ];
 
 // Mock data for producer's own farm
@@ -55,7 +56,12 @@ const mockOwnFarm: Producer = {
 };
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [userData, setUserData] = useState<UserData | null>(null);
+  // Initialize with mock consultant user for testing
+  const [userData, setUserData] = useState<UserData | null>({
+    fullName: 'Dr. João Consultor',
+    profile: 'consultor',
+    zipCode: '14801-000'
+  });
   const [selectedProducer, setSelectedProducer] = useState<Producer | null>(null);
   const [linkedProducers, setLinkedProducers] = useState<Producer[]>(mockLinkedProducers);
   const [ownFarm, setOwnFarm] = useState<Producer | null>(mockOwnFarm);
