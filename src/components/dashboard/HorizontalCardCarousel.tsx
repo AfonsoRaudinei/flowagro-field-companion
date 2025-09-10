@@ -128,11 +128,7 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
       
       {/* Central FlowAgro Logo - Fixed Position */}
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30">
-        <div className={cn("relative bg-background/98 backdrop-blur-md rounded-2xl", "p-4 shadow-2xl border border-primary/20", "hover:shadow-[0_20px_40px_rgba(22,163,74,0.15)]", "transition-all duration-500 hover:scale-105", "animate-pulse")}>
-          {/* Logo glow effect */}
-          
-          <FlowAgroLogo variant="icon" size="lg" className="relative z-10" />
-        </div>
+        
       </div>
 
       {/* Carousel Container */}
