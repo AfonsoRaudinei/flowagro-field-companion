@@ -182,10 +182,10 @@ export default function Dashboard() {
           {/* Grok-style Dashboard View */}
           {!isChatExpanded ? (
             <>
-              {/* Main Content - Carousel centered */}
-              <div className="flex-1 flex flex-col justify-center overflow-hidden">
-                {/* Welcome Section */}
-                <div className="text-center px-6 mb-8">
+              {/* Main Content - Carousel positioned higher */}
+              <div className="flex-1 flex flex-col justify-start pt-16 overflow-hidden">
+                {/* Welcome Section - Reduced spacing */}
+                <div className="text-center px-6 mb-4">
                   <h1 className={cn(
                     "font-secondary font-bold text-foreground",
                     "text-2xl sm:text-3xl lg:text-4xl mb-2",
@@ -202,8 +202,8 @@ export default function Dashboard() {
                   </p>
                 </div>
 
-                {/* Carousel Cards */}
-                <div className="flex-shrink-0 px-3 sm:px-4">
+                {/* Carousel Cards - Reduced bottom spacing */}
+                <div className="flex-shrink-0 px-3 sm:px-4 mb-2">
                   <LoadingBoundary>
                     <DashboardQuickCards 
                       onChatFilterChange={setChatFilter}

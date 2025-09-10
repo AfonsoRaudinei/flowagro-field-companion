@@ -131,11 +131,11 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
         
       </div>
 
-      {/* Carousel Container */}
-      <div className="overflow-hidden px-12 sm:px-16 md:px-20" ref={emblaRef}>
-        <div className="flex gap-3 sm:gap-4 py-3 sm:py-4">
-          {cards.map((card, index) => <div key={index} className={cn("flex-[0_0_200px] sm:flex-[0_0_240px] min-w-0 transition-all duration-500", selectedIndex === index ? "scale-105 z-20" : "scale-95 opacity-70")}>
-              <QuickAccessCard icon={card.icon} title={card.title} subtitle={card.subtitle} onClick={card.onClick} accentColor={card.accentColor} isActive={card.isActive} className={cn("h-20 sm:h-24 transform transition-all duration-500", selectedIndex === index ? "shadow-2xl ring-2 ring-primary/20" : "shadow-lg hover:shadow-xl")} />
+      {/* Carousel Container - Tighter spacing */}
+      <div className="overflow-hidden px-8 sm:px-12 md:px-16" ref={emblaRef}>
+        <div className="flex gap-2 sm:gap-3 py-2 sm:py-3">
+          {cards.map((card, index) => <div key={index} className={cn("flex-[0_0_180px] sm:flex-[0_0_220px] min-w-0 transition-all duration-500", selectedIndex === index ? "scale-105 z-20" : "scale-95 opacity-70")}>
+              <QuickAccessCard icon={card.icon} title={card.title} subtitle={card.subtitle} onClick={card.onClick} accentColor={card.accentColor} isActive={card.isActive} className={cn("h-18 sm:h-22 transform transition-all duration-500", selectedIndex === index ? "shadow-2xl ring-2 ring-primary/20" : "shadow-lg hover:shadow-xl")} />
             </div>)}
         </div>
       </div>
