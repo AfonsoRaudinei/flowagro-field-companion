@@ -16,11 +16,11 @@ export const DashboardQuickCards = memo<DashboardQuickCardsProps>(({
   currentFilter = "Produtor",
   className
 }) => {
-  return <div className={cn("w-full px-3 sm:px-4 py-3 sm:py-4",
+  return <div className={cn("w-full px-3 sm:px-4 py-2 sm:py-3",
   // Subtle background with silver undertones
   "bg-gradient-to-b from-muted/20 to-transparent", className)}>
       {/* Header section - Grok-style */}
-      <div className="mb-3 sm:mb-4">
+      <div className="mb-2 sm:mb-3">
         
         <p className={cn("font-secondary text-muted-foreground mt-0.5", "text-xs sm:text-[13px] leading-tight tracking-[-0.005em]")}>
           Suas ferramentas principais
@@ -31,7 +31,7 @@ export const DashboardQuickCards = memo<DashboardQuickCardsProps>(({
       <HorizontalCardCarousel onChatFilterChange={onChatFilterChange} currentFilter={currentFilter} />
       
       {/* Subtle bottom separator */}
-      <div className="mt-6 border-b border-border/30" />
+      <div className="mt-2 border-b border-border/30" />
     </div>;
 });
 DashboardQuickCards.displayName = 'DashboardQuickCards';
