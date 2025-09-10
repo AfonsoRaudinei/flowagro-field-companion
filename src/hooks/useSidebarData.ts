@@ -148,7 +148,13 @@ export function useSidebarData(): SidebarData {
             throw producersError;
           }
 
-          return (producers || []).map(producer => ({
+          // If no producers found (empty array), use mock data as fallback
+          if (!producers || producers.length === 0) {
+            logger.info('No producers found in database, using mock data');
+            return getMockData(userContext).filter(item => item.type === 'producer');
+          }
+
+          return producers.map(producer => ({
             id: producer.id,
             name: producer.name || 'Produtor',
             email: producer.email || '',
