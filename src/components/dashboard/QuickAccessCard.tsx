@@ -32,8 +32,8 @@ export const QuickAccessCard = memo<QuickAccessCardProps>(({
         "group relative overflow-hidden rounded-2xl bg-card/95 backdrop-blur-sm",
         "border border-border/50 text-left",
         
-        // Responsive padding and sizing
-        "p-2.5 sm:p-3 min-h-[70px] sm:min-h-[80px]",
+        // Responsive padding and sizing - More compact
+        "p-2 sm:p-2.5 min-h-[64px] sm:min-h-[76px]",
         
         // Enhanced transitions and spring animations
         "transition-all duration-300 ease-out",
@@ -97,13 +97,13 @@ export const QuickAccessCard = memo<QuickAccessCardProps>(({
         />
       </div>
       
-      {/* Content container */}
-      <div className="relative z-10 flex items-start space-x-2.5 sm:space-x-3">
-        {/* Icon container with enhanced styling */}
+      {/* Content container - Tighter spacing */}
+      <div className="relative z-10 flex items-start space-x-2 sm:space-x-2.5">
+        {/* Icon container with enhanced styling - More compact */}
         <div 
           className={cn(
             "flex-shrink-0 rounded-xl",
-            "p-1.5 sm:p-2",
+            "p-1 sm:p-1.5",
             "bg-gradient-to-br from-muted/40 to-muted/20",
             "border border-border/30",
             "sm:group-hover:scale-110 sm:group-hover:rotate-3",
@@ -116,7 +116,7 @@ export const QuickAccessCard = memo<QuickAccessCardProps>(({
           }}
         >
           <div className="transform sm:group-hover:scale-110 transition-transform duration-300">
-            <div className="w-4 h-4 sm:w-5 sm:h-5">{icon}</div>
+            <div className="w-3.5 h-3.5 sm:w-4 sm:h-4">{icon}</div>
           </div>
         </div>
         
