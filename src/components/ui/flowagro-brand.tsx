@@ -89,8 +89,48 @@ export const FlowAgroLogo: React.FC<FlowAgroLogoProps> = ({
       sizeClasses[size],
       className
     )}>
-      <FlowAgroLogo variant="icon" size={size} color={color} />
-      <FlowAgroLogo variant="wordmark" size={size} color={color} />
+      {/* Icon part */}
+      <div className={cn(
+        "inline-flex items-center justify-center rounded-lg",
+        sizeClasses[size]
+      )}>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          className="w-full h-full"
+          style={{ color: colorValue }}
+        >
+          <path
+            d="M12 2L8 6v4l4-2 4 2V6l-4-4z"
+            fill="currentColor"
+            opacity="0.9"
+          />
+          <path
+            d="M8 10v6c0 2.2 1.8 4 4 4s4-1.8 4-4v-6l-4 2-4-2z"
+            fill="currentColor"
+          />
+          <circle
+            cx="12"
+            cy="16"
+            r="1.5"
+            fill="white"
+            opacity="0.8"
+          />
+        </svg>
+      </div>
+      
+      {/* Wordmark part */}
+      <div className={cn(
+        "inline-flex items-center font-primary font-bold",
+        sizeClasses[size]
+      )}>
+        <span 
+          className="text-current tracking-tight"
+          style={{ color: colorValue }}
+        >
+          {FLOWAGRO_BRAND.name}
+        </span>
+      </div>
     </div>
   );
 };
