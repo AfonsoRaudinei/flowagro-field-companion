@@ -171,9 +171,7 @@ export default function Dashboard() {
               <div className="flex-1 flex flex-col justify-start pt-4 overflow-hidden">
                 {/* Welcome Section - Minimal spacing */}
                 <div className="text-center px-6 mb-0">
-                  <h1 className={cn("font-secondary font-bold text-foreground", "text-2xl sm:text-3xl lg:text-4xl mb-0", "tracking-tight")}>
-                    Olá! Como posso ajudar?
-                  </h1>
+                  
                   
                 </div>
 
