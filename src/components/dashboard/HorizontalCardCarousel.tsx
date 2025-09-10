@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Bot, Users } from 'lucide-react';
+import { Cloud, MapPin, Calendar, Bot, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { FlowAgroLogo } from '@/components/ui/flowagro-brand';
@@ -44,14 +44,14 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
   }, [emblaApi]);
 
   // Memoized handlers
-  const handleMapCard = useCallback(() => {
+  const handleClimaCard = useCallback(() => {
     toast({
-      title: "🗺️ Abrindo Mapa Técnico",
-      description: "Carregando visualização avançada...",
-      duration: 2000
+      title: "🌤️ Clima",
+      description: "Sistema meteorológico em desenvolvimento. Informações climáticas em breve.",
+      duration: 4000
     });
-    setTimeout(() => navigate("/technical-map"), 400);
-  }, [navigate, toast]);
+  }, [toast]);
+
   const handleAgendaCard = useCallback(() => {
     if (onChatFilterChange) {
       onChatFilterChange("Agenda");
@@ -68,45 +68,46 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
       });
     }
   }, [onChatFilterChange, toast]);
+
+  const handleMapCard = useCallback(() => {
+    toast({
+      title: "🗺️ Abrindo Mapa",
+      description: "Carregando visualização avançada...",
+      duration: 2000
+    });
+    setTimeout(() => navigate("/technical-map"), 400);
+  }, [navigate, toast]);
+
   const handleIACard = useCallback(() => {
     if (onChatFilterChange) {
       onChatFilterChange("IA");
       toast({
-        title: "🤖 Assistente IA Ativado",
+        title: "🤖 IA Ativado",
         description: "Converse com nosso assistente inteligente!",
         duration: 3000
       });
     } else {
       toast({
-        title: "🤖 Assistente IA",
+        title: "🤖 IA",
         description: "Modo inteligente ativado",
         duration: 2000
       });
     }
   }, [onChatFilterChange, toast]);
-  const handleProducerCard = useCallback(() => {
-    if (onChatFilterChange) {
-      onChatFilterChange("Produtor");
-      toast({
-        title: "👥 Filtro Produtores Ativado",
-        description: "Visualizando conversas com produtores",
-        duration: 3000
-      });
-    }
-  }, [onChatFilterChange, toast]);
+
+  const handleRelatorioCard = useCallback(() => {
+    toast({
+      title: "📊 Relatórios",
+      description: "Sistema de relatórios em desenvolvimento. Análises detalhadas em breve.",
+      duration: 4000
+    });
+  }, [toast]);
   const cards = [{
-    icon: <Users size={20} strokeWidth={1.8} />,
-    title: "Produtores",
-    subtitle: "Conversas ativas",
-    onClick: handleProducerCard,
-    accentColor: "#16A34A",
-    isActive: currentFilter === "Produtor"
-  }, {
-    icon: <MapPin size={20} strokeWidth={1.8} />,
-    title: "Mapa Técnico",
-    subtitle: "Suas propriedades",
-    onClick: handleMapCard,
-    accentColor: "#16A34A"
+    icon: <Cloud size={20} strokeWidth={1.8} />,
+    title: "Clima",
+    subtitle: "Meteorologia",
+    onClick: handleClimaCard,
+    accentColor: "#0EA5E9"
   }, {
     icon: <Calendar size={20} strokeWidth={1.8} />,
     title: "Agenda",
@@ -115,12 +116,24 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
     accentColor: "#00C4B4",
     isActive: currentFilter === "Agenda"
   }, {
+    icon: <MapPin size={20} strokeWidth={1.8} />,
+    title: "Mapa",
+    subtitle: "Suas propriedades",
+    onClick: handleMapCard,
+    accentColor: "#16A34A"
+  }, {
     icon: <Bot size={20} strokeWidth={1.8} />,
-    title: "Assistente IA",
+    title: "IA",
     subtitle: "Chat inteligente",
     onClick: handleIACard,
     accentColor: "#0057FF",
     isActive: currentFilter === "IA"
+  }, {
+    icon: <FileText size={20} strokeWidth={1.8} />,
+    title: "Relatórios",
+    subtitle: "Análises",
+    onClick: handleRelatorioCard,
+    accentColor: "#7C3AED"
   }];
   return <div className={cn("relative w-full max-w-6xl mx-auto", className)}>
       {/* Grok-style background gradient */}
