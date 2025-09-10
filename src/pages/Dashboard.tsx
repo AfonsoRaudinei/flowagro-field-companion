@@ -29,16 +29,21 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Memory optimization for large datasets
-  const { registerCleanupTask, forceMemoryCheck, clearCaches } = useMemoryOptimization({
-    threshold: 0.75, // Trigger cleanup at 75% memory usage
-    checkInterval: 45000, // Check every 45 seconds
+  const {
+    registerCleanupTask,
+    forceMemoryCheck,
+    clearCaches
+  } = useMemoryOptimization({
+    threshold: 0.75,
+    // Trigger cleanup at 75% memory usage
+    checkInterval: 45000,
+    // Check every 45 seconds
     onMemoryPressure: () => {
       // Clear image caches and temporary data when memory pressure is detected
       clearCaches();
     },
     enableLogging: process.env.NODE_ENV === 'development'
   });
-  
   const {
     chatFilter,
     setChatFilter,
@@ -91,7 +96,9 @@ export default function Dashboard() {
   }, [chatFilter, setChatFilter]);
 
   // Setup keyboard shortcuts
-  const { shortcuts } = useDashboardKeyboards({
+  const {
+    shortcuts
+  } = useDashboardKeyboards({
     onBackToList: handleCollapseChat,
     onSmartBack: handleSmartBack,
     onSearch: handleSearchFocus,
@@ -112,10 +119,8 @@ export default function Dashboard() {
   // Send message function for conversation view
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
-
     const messageToSend = newMessage;
     setNewMessage("");
-
     if (isAIMode) {
       await sendAIMessage(messageToSend);
     } else {
@@ -134,72 +139,42 @@ export default function Dashboard() {
   // Register memory cleanup tasks
   React.useEffect(() => {
     const unregisterCleanups = [
-      // Clear component state when memory pressure occurs
-      registerCleanupTask(() => {
-        setNewMessage("");
-        // Force garbage collection of large objects
-        if (producerThreads.length > 100) {
-          // Trigger re-render to clear unused components
-          setIsChatExpanded(prev => prev);
-        }
-      })
-    ];
-
+    // Clear component state when memory pressure occurs
+    registerCleanupTask(() => {
+      setNewMessage("");
+      // Force garbage collection of large objects
+      if (producerThreads.length > 100) {
+        // Trigger re-render to clear unused components
+        setIsChatExpanded(prev => prev);
+      }
+    })];
     return () => {
       unregisterCleanups.forEach(cleanup => cleanup());
     };
   }, [registerCleanupTask, producerThreads.length]);
-
-  return (
-    <>
+  return <>
       {/* Fixed Sidebar Trigger - Always visible at top left */}
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className={cn(
-          "fixed top-4 left-4 z-[9999] w-11 h-11 rounded-xl border-0 shadow-lg backdrop-blur-md",
-          "bg-white/90 hover:bg-white text-[#2D2D30] hover:text-[#2D2D30]",
-          "transition-all duration-200 hover:scale-105 active:scale-95",
-          "focus:ring-2 focus:ring-primary/50 focus:ring-offset-0"
-        )}
-      >
+      <Button variant="outline" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className={cn("fixed top-4 left-4 z-[9999] w-11 h-11 rounded-xl border-0 shadow-lg backdrop-blur-md", "bg-white/90 hover:bg-white text-[#2D2D30] hover:text-[#2D2D30]", "transition-all duration-200 hover:scale-105 active:scale-95", "focus:ring-2 focus:ring-primary/50 focus:ring-offset-0")}>
         <Users className="w-5 h-5" />
       </Button>
 
       <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
         {/* Backdrop overlay when sidebar is open */}
-        {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-[9997] backdrop-blur-sm transition-opacity duration-300"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+        {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-[9997] backdrop-blur-sm transition-opacity duration-300" onClick={() => setSidebarOpen(false)} />}
         
         <FlowAgroSidebar onItemSelect={handleSidebarItemSelect} isOpen={sidebarOpen} />
         
         <div className="h-screen bg-background flex flex-col overflow-hidden w-full">
           {/* Grok-style Dashboard View */}
-          {!isChatExpanded ? (
-            <>
+          {!isChatExpanded ? <>
               {/* Main Content - Ultra compact positioning */}
               <div className="flex-1 flex flex-col justify-start pt-4 overflow-hidden">
                 {/* Welcome Section - Minimal spacing */}
                 <div className="text-center px-6 mb-0">
-                  <h1 className={cn(
-                    "font-secondary font-bold text-foreground",
-                    "text-2xl sm:text-3xl lg:text-4xl mb-0",
-                    "tracking-tight"
-                  )}>
+                  <h1 className={cn("font-secondary font-bold text-foreground", "text-2xl sm:text-3xl lg:text-4xl mb-0", "tracking-tight")}>
                     Olá! Como posso ajudar?
                   </h1>
-                  <p className={cn(
-                    "font-secondary text-muted-foreground",
-                    "text-sm sm:text-base lg:text-lg mb-0",
-                    "max-w-2xl mx-auto leading-relaxed"
-                  )}>
-                    Acesse suas ferramentas ou converse comigo sobre agricultura
-                  </p>
+                  
                 </div>
 
                 {/* Spacer to push content up */}
@@ -207,81 +182,34 @@ export default function Dashboard() {
               </div>
 
               {/* Bottom Quick Cards - Grok-style positioning */}
-              <BottomQuickCards 
-                onChatFilterChange={setChatFilter}
-                currentFilter={chatFilter}
-                isVisible={!isChatExpanded}
-              />
+              <BottomQuickCards onChatFilterChange={setChatFilter} currentFilter={chatFilter} isVisible={!isChatExpanded} />
 
               {/* Fixed Chat Input Bar */}
-              <ChatInputBar
-                onSendMessage={handleSendMessageFromInput}
-                onExpandChat={handleExpandChat}
-                placeholder="Pergunte qualquer coisa sobre agricultura..."
-                disabled={sendingMessage}
-              />
-            </>
-          ) : (
-            /* Expanded Chat View */
-            <div className={cn(
-              "flex-1 overflow-hidden transition-all duration-300 ease-out",
-              "pb-safe transform-gpu will-change-transform",
-              isTransitioning && "scale-[0.99] opacity-90"
-            )}>
-              <Suspense fallback={
-                <div className="flex items-center justify-center h-full">
+              <ChatInputBar onSendMessage={handleSendMessageFromInput} onExpandChat={handleExpandChat} placeholder="Pergunte qualquer coisa sobre agricultura..." disabled={sendingMessage} />
+            </> : (/* Expanded Chat View */
+        <div className={cn("flex-1 overflow-hidden transition-all duration-300 ease-out", "pb-safe transform-gpu will-change-transform", isTransitioning && "scale-[0.99] opacity-90")}>
+              <Suspense fallback={<div className="flex items-center justify-center h-full">
                   <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
-                </div>
-              }>
-                {viewMode === "list" ? (
-                  <ChatListView 
-                    chatFilter={chatFilter}
-                    onChatFilterChange={setChatFilter}
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    threads={producerThreads}
-                    loading={isLoading}
-                    onChatSelect={handleChatSelect}
-                    onTogglePin={handleTogglePin}
-                    onShowTechnicalChat={handleShowTechnicalChat}
-                    onBackFromTechnicalChat={handleBackFromTechnicalChat}
-                  />
-                ) : selectedChat ? (
-                  <ConversationView
-                    selectedChat={selectedChat}
-                    isAIMode={isAIMode}
-                    chatMessages={chatMessages}
-                    newMessage={newMessage}
-                    onNewMessageChange={setNewMessage}
-                    onSendMessage={handleSendMessage}
-                    onBackToList={handleCollapseChat}
-                    sendingMessage={sendingMessage}
-                  />
-                ) : null}
+                </div>}>
+                {viewMode === "list" ? <ChatListView chatFilter={chatFilter} onChatFilterChange={setChatFilter} searchQuery={searchQuery} onSearchChange={setSearchQuery} threads={producerThreads} loading={isLoading} onChatSelect={handleChatSelect} onTogglePin={handleTogglePin} onShowTechnicalChat={handleShowTechnicalChat} onBackFromTechnicalChat={handleBackFromTechnicalChat} /> : selectedChat ? <ConversationView selectedChat={selectedChat} isAIMode={isAIMode} chatMessages={chatMessages} newMessage={newMessage} onNewMessageChange={setNewMessage} onSendMessage={handleSendMessage} onBackToList={handleCollapseChat} sendingMessage={sendingMessage} /> : null}
               </Suspense>
-            </div>
-          )}
+            </div>)}
 
           {/* Enhanced Performance Monitor (development only) */}
-          {process.env.NODE_ENV === 'development' && (
-            <>
+          {process.env.NODE_ENV === 'development' && <>
               <div className="fixed top-16 right-4 z-50 opacity-50 text-xs bg-background/80 backdrop-blur-sm rounded px-2 py-1 border border-border/50">
                 {performanceMetrics?.filteredCount || 0}/{performanceMetrics?.threadCount || 0} threads
                 {performanceMetrics?.isTransitioning && " • transitioning"}
               </div>
-            </>
-          )}
+            </>}
 
           {/* Keyboard Shortcuts Help - desktop only for performance */}
-          {navigationHistory.length > 0 && isChatExpanded && (
-            <div className="hidden lg:block absolute bottom-4 right-4 opacity-30 hover:opacity-80 transition-opacity">
+          {navigationHistory.length > 0 && isChatExpanded && <div className="hidden lg:block absolute bottom-4 right-4 opacity-30 hover:opacity-80 transition-opacity">
               <div className="text-xs text-muted-foreground bg-background/80 backdrop-blur-sm rounded-md px-2 py-1 border border-border/50">
                 {shortcuts[0].key} {shortcuts[0].description}
               </div>
-            </div>
-          )}
+            </div>}
         </div>
       </SidebarProvider>
-    </>
-  );
+    </>;
 }
