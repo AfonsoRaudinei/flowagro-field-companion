@@ -32,8 +32,8 @@ export const QuickAccessCard = memo<QuickAccessCardProps>(({
         "group relative overflow-hidden rounded-2xl bg-card/95 backdrop-blur-sm",
         "border border-border/50 text-left",
         
-        // Responsive padding and sizing - Ultra compact
-        "p-1.5 sm:p-2 min-h-[56px] sm:min-h-[68px]",
+        // Responsive padding and sizing - Ultra compact with mobile optimization
+        "p-1 xs:p-1.5 sm:p-2 md:p-2.5 min-h-[48px] xs:min-h-[56px] sm:min-h-[64px] md:min-h-[68px]",
         
         // Enhanced transitions and spring animations
         "transition-all duration-300 ease-out",
@@ -97,13 +97,13 @@ export const QuickAccessCard = memo<QuickAccessCardProps>(({
         />
       </div>
       
-      {/* Content container - Tighter spacing */}
-      <div className="relative z-10 flex items-start space-x-2 sm:space-x-2.5">
-        {/* Icon container with enhanced styling - More compact */}
+      {/* Content container - Responsive spacing */}
+      <div className="relative z-10 flex items-start space-x-1 xs:space-x-1.5 sm:space-x-2 md:space-x-2.5">
+        {/* Icon container - Mobile optimized */}
         <div 
           className={cn(
-            "flex-shrink-0 rounded-xl",
-            "p-1 sm:p-1.5",
+            "flex-shrink-0 rounded-lg sm:rounded-xl",
+            "p-0.5 xs:p-1 sm:p-1.5",
             "bg-gradient-to-br from-muted/40 to-muted/20",
             "border border-border/30",
             "sm:group-hover:scale-110 sm:group-hover:rotate-3",
@@ -116,27 +116,27 @@ export const QuickAccessCard = memo<QuickAccessCardProps>(({
           }}
         >
           <div className="transform sm:group-hover:scale-110 transition-transform duration-300">
-            <div className="w-3.5 h-3.5 sm:w-4 sm:h-4">{icon}</div>
+            <div className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4">{icon}</div>
           </div>
         </div>
         
-        {/* Text content with Grok typography */}
+        {/* Text content with responsive typography */}
         <div className="flex-1 min-w-0 pt-0.5">
-          {/* Title with FlowAgro secondary font */}
+          {/* Title with responsive sizing */}
           <h3 className={cn(
             "font-secondary font-semibold text-card-foreground",
-            "text-sm sm:text-[15px] leading-tight tracking-[-0.01em]",  // Responsive text size
+            "text-xs xs:text-sm sm:text-[15px] leading-tight tracking-[-0.01em]",
             "group-hover:text-foreground transition-colors duration-200"
           )}>
             {title}
           </h3>
           
-          {/* Subtitle with muted styling */}
+          {/* Subtitle with mobile optimization */}
           <p className={cn(
             "font-secondary text-muted-foreground mt-0.5",
-            "text-xs sm:text-[12px] leading-tight tracking-[-0.005em]",  // Responsive text size
+            "text-[10px] xs:text-xs sm:text-[12px] leading-tight tracking-[-0.005em]",
             "group-hover:text-muted-foreground/80 transition-colors duration-200",
-            "line-clamp-1"  // Prevent text overflow on small screens
+            "line-clamp-1"
           )}>
             {subtitle}
           </p>

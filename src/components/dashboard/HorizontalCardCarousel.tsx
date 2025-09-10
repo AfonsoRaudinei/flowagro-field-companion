@@ -162,28 +162,60 @@ export const HorizontalCardCarousel = memo<HorizontalCardCarouselProps>(({
         
       </div>
 
-      {/* Carousel Container - Ultra compact, no padding */}
-      <div className="overflow-hidden px-4 sm:px-8 md:px-12" ref={emblaRef}>
-        <div className="flex gap-1.5 sm:gap-2 py-1 sm:py-1.5">
-          {cards.map((card, index) => <div key={index} className={cn("flex-[0_0_170px] sm:flex-[0_0_210px] min-w-0 transition-all duration-500", selectedIndex === index ? "scale-105 z-20" : "scale-95 opacity-70")}>
-              <QuickAccessCard icon={card.icon} title={card.title} subtitle={card.subtitle} onClick={card.onClick} accentColor={card.accentColor} isActive={card.isActive} className={cn("h-14 sm:h-18 transform transition-all duration-500", selectedIndex === index ? "shadow-2xl ring-2 ring-primary/20" : "shadow-lg hover:shadow-xl")} />
+      {/* Carousel Container - Responsive optimized for 5 cards */}
+      <div className="overflow-hidden px-2 sm:px-6 md:px-8 lg:px-12" ref={emblaRef}>
+        <div className="flex gap-1 sm:gap-1.5 md:gap-2 py-1 sm:py-1.5">
+          {cards.map((card, index) => <div key={index} className={cn(
+            // Responsive card sizing optimized for 5 cards
+            "flex-[0_0_calc(90vw/3)] xs:flex-[0_0_calc(85vw/3)] sm:flex-[0_0_150px] md:flex-[0_0_170px] lg:flex-[0_0_190px] xl:flex-[0_0_210px]",
+            "min-w-0 transition-all duration-500",
+            selectedIndex === index ? "scale-105 z-20" : "scale-95 opacity-70"
+          )}>
+              <QuickAccessCard 
+                icon={card.icon} 
+                title={card.title} 
+                subtitle={card.subtitle} 
+                onClick={card.onClick} 
+                accentColor={card.accentColor} 
+                isActive={card.isActive} 
+                className={cn(
+                  "h-12 xs:h-14 sm:h-16 md:h-18 lg:h-20 transform transition-all duration-500", 
+                  selectedIndex === index ? "shadow-2xl ring-2 ring-primary/20" : "shadow-lg hover:shadow-xl"
+                )} 
+              />
             </div>)}
         </div>
       </div>
 
 
-      {/* Side navigation hints */}
-      <div className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-70 transition-opacity z-20">
-        <button onClick={() => emblaApi?.scrollPrev()} className="p-2 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-background/90" aria-label="Card anterior">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      {/* Enhanced navigation buttons - Mobile optimized */}
+      <div className="absolute left-1 sm:left-2 md:left-4 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-80 transition-all z-20">
+        <button 
+          onClick={() => emblaApi?.scrollPrev()} 
+          className={cn(
+            "p-1.5 sm:p-2 rounded-full bg-background/90 backdrop-blur-sm", 
+            "border border-border/50 hover:bg-background/95 hover:scale-110",
+            "transition-all duration-200 shadow-lg"
+          )} 
+          aria-label="Card anterior"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="sm:w-4 sm:h-4">
             <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
       </div>
       
-      <div className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-70 transition-opacity z-20">
-        <button onClick={() => emblaApi?.scrollNext()} className="p-2 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-background/90" aria-label="Próximo card">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <div className="absolute right-1 sm:right-2 md:right-4 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-80 transition-all z-20">
+        <button 
+          onClick={() => emblaApi?.scrollNext()} 
+          className={cn(
+            "p-1.5 sm:p-2 rounded-full bg-background/90 backdrop-blur-sm",
+            "border border-border/50 hover:bg-background/95 hover:scale-110", 
+            "transition-all duration-200 shadow-lg"
+          )} 
+          aria-label="Próximo card"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="sm:w-4 sm:h-4">
             <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
