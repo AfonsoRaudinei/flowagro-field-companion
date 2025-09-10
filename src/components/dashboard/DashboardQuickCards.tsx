@@ -19,13 +19,13 @@ export const DashboardQuickCards = memo<DashboardQuickCardsProps>(({
 }) => {
   return (
     <div className={cn(
-      "w-full px-3 sm:px-4 py-3 sm:py-4",
+      "w-full px-3 sm:px-4 py-2 sm:py-3",
       // Subtle background with silver undertones
       "bg-gradient-to-b from-muted/20 to-transparent",
       className
     )}>
       {/* Header section - Grok-style */}
-      <div className="mb-3 sm:mb-4">
+      <div className="mb-2 sm:mb-3">
         <h2 className={cn(
           "font-secondary font-semibold text-foreground",
           "text-base sm:text-[17px] leading-tight tracking-[-0.01em]",
@@ -48,7 +48,7 @@ export const DashboardQuickCards = memo<DashboardQuickCardsProps>(({
       />
       
       {/* Subtle bottom separator */}
-      <div className="mt-6 border-b border-border/30" />
+      <div className="mt-4 border-b border-border/30" />
     </div>
   );
 });
