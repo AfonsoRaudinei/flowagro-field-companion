@@ -142,7 +142,7 @@ export default function Dashboard() {
           />
         )}
         
-        <FlowAgroSidebar onItemSelect={handleSidebarItemSelect} />
+        <FlowAgroSidebar onItemSelect={handleSidebarItemSelect} isOpen={sidebarOpen} />
         
         <div className="h-screen bg-background flex flex-col overflow-hidden w-full">
           {/* Grok-style Dashboard View */}
