@@ -1,0 +1,39 @@
+# FlowAgro Security Configuration
+
+# Content Security Policy (CSP)
+# This file documents the security policies implemented in FlowAgro
+
+## CSP Directives Applied:
+- default-src 'self'
+- script-src 'self' 'unsafe-inline' *.supabase.co *.lovableproject.com
+- style-src 'self' 'unsafe-inline' fonts.googleapis.com
+- img-src 'self' data: blob: *.supabase.co *.agromonitoring.com *.planet.com
+- font-src 'self' fonts.gstatic.com
+- connect-src 'self' *.supabase.co *.agromonitoring.com api.planet.com
+- frame-ancestors 'none'
+- base-uri 'self'
+- form-action 'self'
+- upgrade-insecure-requests
+
+## Security Headers:
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: DENY
+- X-XSS-Protection: 1; mode=block
+- Referrer-Policy: strict-origin-when-cross-origin
+- Permissions-Policy: camera=(), microphone=(), geolocation=(self)
+
+## Data Protection:
+- Client-side encryption for sensitive data
+- Secure session management with timeout
+- Multi-factor authentication support
+- Rate limiting on authentication attempts
+- Input sanitization and validation
+
+## Monitoring:
+- Real-time security event logging
+- CSP violation reporting
+- Failed login attempt tracking
+- Suspicious activity detection
+
+Last Updated: 2025-01-11
+Contact: security@flowagro.com

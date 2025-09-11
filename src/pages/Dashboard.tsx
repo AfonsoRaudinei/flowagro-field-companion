@@ -12,6 +12,7 @@ import { useDashboardMemory } from '@/hooks/useDashboardMemory';
 import { useDashboardKeyboards } from '@/hooks/useDashboardKeyboards';
 import { performanceMonitor } from '@/lib/unifiedPerformance';
 import { PerformanceOptimizer } from '@/components/optimization/PerformanceOptimizer';
+import { SecurityHardening } from '@/components/security/SecurityHardening';
 
 /**
  * Enhanced Dashboard with refactored architecture
@@ -179,6 +180,9 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Security Hardening (development only) */}
+      {process.env.NODE_ENV === 'development' && <SecurityHardening />}
+      
       {/* Performance Optimizer (development only) */}
       {process.env.NODE_ENV === 'development' && <PerformanceOptimizer />}
     </div>
