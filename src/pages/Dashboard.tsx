@@ -1,49 +1,26 @@
-import React, { useState, useCallback, memo, Suspense } from "react";
-// TechnicalMapPanel moved to standalone route
-import { ChatListView } from "@/components/dashboard/ChatListView";
-import { ConversationView } from "@/components/dashboard/ConversationView";
-import TechnicalChatView from "@/components/dashboard/TechnicalChatView";
-import { BottomQuickCards } from "@/components/dashboard/BottomQuickCards";
-import { ChatInputBar } from "@/components/dashboard/ChatInputBar";
-import { LoadingBoundary } from "@/components/dashboard/LoadingBoundary";
-import { FlowAgroSidebar } from "@/components/dashboard/FlowAgroSidebar";
-import { useDashboardState } from "@/hooks/useDashboardState";
-import { useDashboardKeyboards } from "@/hooks/useDashboardKeyboards";
-import { useMemoryOptimization } from "@/hooks/useMemoryOptimization";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { Users } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { performanceMonitor } from "@/lib/unifiedPerformance";
+import React, { useState, useCallback } from 'react';
+import { cn } from '@/lib/utils';
+import { FlowAgroSidebar } from '@/components/dashboard/FlowAgroSidebar';
+import { DashboardCompactView } from '@/components/dashboard/DashboardCompactView';
+import { DashboardExpandedView } from '@/components/dashboard/DashboardExpandedView';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { Menu } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useDashboardState } from '@/hooks/useDashboardState';
+import { useDashboardLayout } from '@/hooks/useDashboardLayout';
+import { useDashboardMemory } from '@/hooks/useDashboardMemory';
+import { useDashboardKeyboards } from '@/hooks/useDashboardKeyboards';
+import { performanceMonitor } from '@/lib/unifiedPerformance';
 
 /**
- * Optimized Dashboard component with performance enhancements
- * - Memoized components and callbacks
- * - Suspense boundaries for better loading UX
- * - GPU-accelerated animations
+ * Enhanced Dashboard with refactored architecture
+ * Separated concerns for better maintainability and performance
  */
-
 export default function Dashboard() {
-  const [newMessage, setNewMessage] = useState("");
-  const [isChatExpanded, setIsChatExpanded] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Local state for message input
+  const [newMessage, setNewMessage] = useState('');
 
-  // Memory optimization for large datasets
-  const {
-    registerCleanupTask,
-    forceMemoryCheck,
-    clearCaches
-  } = useMemoryOptimization({
-    threshold: 0.75,
-    // Trigger cleanup at 75% memory usage
-    checkInterval: 45000,
-    // Check every 45 seconds
-    onMemoryPressure: () => {
-      // Clear image caches and temporary data when memory pressure is detected
-      clearCaches();
-    },
-    enableLogging: process.env.NODE_ENV === 'development'
-  });
+  // Enhanced dashboard state with performance optimizations
   const {
     chatFilter,
     setChatFilter,
@@ -52,11 +29,15 @@ export default function Dashboard() {
     viewMode,
     selectedChat,
     isAIMode,
+    showTechnicalChat,
+    selectedConversationId,
     isTransitioning,
     producerThreads,
     chatMessages,
-    isLoading,
+    loadingProducers,
+    loadingConversations,
     sendingMessage,
+    isLoading,
     handleChatSelect,
     handleBackToList,
     handleShowTechnicalChat,
@@ -65,146 +46,149 @@ export default function Dashboard() {
     handleTogglePin,
     sendMessage,
     sendAIMessage,
+    markConversationAsSeen,
     navigationHistory,
     performanceMetrics
   } = useDashboardState();
 
-  // Handle expanding chat view
-  const handleExpandChat = useCallback(() => {
-    setIsChatExpanded(true);
-  }, []);
-
-  // Handle collapsing chat view
-  const handleCollapseChat = useCallback(() => {
-    setIsChatExpanded(false);
-    handleBackToList();
-  }, [handleBackToList]);
-
-  // Enhanced search focus handler - can be enhanced later with ref forwarding
-  const handleSearchFocus = useCallback(() => {
-    // Focus search input - can be implemented with ref forwarding if needed
-    const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
-    searchInput?.focus();
-  }, []);
-
-  // Cycle through filters
-  const handleToggleFilter = useCallback(() => {
-    const filters: Array<"Produtor" | "Agenda" | "IA" | "Campo"> = ["Produtor", "Agenda", "IA", "Campo"];
-    const currentIndex = filters.indexOf(chatFilter);
-    const nextIndex = (currentIndex + 1) % filters.length;
-    setChatFilter(filters[nextIndex]);
-  }, [chatFilter, setChatFilter]);
-
-  // Setup keyboard shortcuts
+  // Layout management with memory optimization
   const {
-    shortcuts
-  } = useDashboardKeyboards({
-    onBackToList: handleCollapseChat,
+    isChatExpanded,
+    sidebarVisible,
+    layoutConfig,
+    expandChat,
+    collapseChat,
+    toggleSidebar,
+    closeSidebar,
+    isMobile
+  } = useDashboardLayout();
+
+  // Memory optimization for heavy dashboard operations
+  const { optimizeForChatExpansion } = useDashboardMemory();
+
+  // Enhanced keyboard shortcuts
+  const { shortcuts } = useDashboardKeyboards({
+    onBackToList: handleBackToList,
     onSmartBack: handleSmartBack,
-    onSearch: handleSearchFocus,
-    onToggleFilter: handleToggleFilter
+    onSearch: () => {
+      const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement;
+      if (searchInput) {
+        searchInput.focus();
+      }
+    },
+    onToggleFilter: () => {
+      const filters = ["Produtor", "Agenda", "IA", "Campo"] as const;
+      const currentIndex = filters.indexOf(chatFilter);
+      const nextIndex = (currentIndex + 1) % filters.length;
+      setChatFilter(filters[nextIndex]);
+    }
   });
 
-  // Send message function from chat input bar
+  // Optimized message handlers
   const handleSendMessageFromInput = useCallback(async (message: string) => {
-    if (isAIMode) {
-      await sendAIMessage(message);
-    } else {
-      await sendMessage(message);
-    }
-    // Auto-expand chat after sending message
-    setIsChatExpanded(true);
-  }, [isAIMode, sendMessage, sendAIMessage]);
-
-  // Send message function for conversation view
-  const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
-    const messageToSend = newMessage;
-    setNewMessage("");
-    if (isAIMode) {
-      await sendAIMessage(messageToSend);
-    } else {
-      await sendMessage(messageToSend);
-    }
-  };
-
-  // Handle sidebar item selection with performance tracking
-  const handleSidebarItemSelect = useCallback((item: any) => {
-    performanceMonitor.measure('sidebar-item-select', () => {
-      console.log('Selected:', item);
-      setSidebarOpen(false);
-    });
-  }, []);
-
-  // Register memory cleanup tasks
-  React.useEffect(() => {
-    const unregisterCleanups = [
-    // Clear component state when memory pressure occurs
-    registerCleanupTask(() => {
-      setNewMessage("");
-      // Force garbage collection of large objects
-      if (producerThreads.length > 100) {
-        // Trigger re-render to clear unused components
-        setIsChatExpanded(prev => prev);
+    if (!message.trim()) return;
+    
+    try {
+      setNewMessage('');
+      if (isAIMode || showTechnicalChat) {
+        await sendAIMessage(message);
+      } else {
+        await sendMessage(message);
       }
-    })];
-    return () => {
-      unregisterCleanups.forEach(cleanup => cleanup());
-    };
-  }, [registerCleanupTask, producerThreads.length]);
-  return <>
-      {/* Fixed Sidebar Trigger - Always visible at top left */}
-      <Button variant="outline" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className={cn("fixed top-4 left-4 z-[9999] w-11 h-11 rounded-xl border-0 shadow-lg backdrop-blur-md", "bg-white/90 hover:bg-white text-[#2D2D30] hover:text-[#2D2D30]", "transition-all duration-200 hover:scale-105 active:scale-95", "focus:ring-2 focus:ring-primary/50 focus:ring-offset-0")}>
-        <Users className="w-5 h-5" />
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  }, [isAIMode, showTechnicalChat, sendMessage, sendAIMessage]);
+
+  const handleSendMessage = useCallback(async (message: string) => {
+    if (!message.trim()) return;
+    
+    try {
+      if (isAIMode || showTechnicalChat) {
+        await sendAIMessage(message);
+      } else {
+        await sendMessage(message);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  }, [isAIMode, showTechnicalChat, sendMessage, sendAIMessage]);
+
+  // Chat expansion handlers with memory optimization
+  const handleExpandChat = useCallback(() => {
+    expandChat();
+    optimizeForChatExpansion();
+  }, [expandChat, optimizeForChatExpansion]);
+
+  return (
+    <div className="h-screen bg-background overflow-hidden">
+      {/* Fixed sidebar trigger */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleSidebar}
+        className="fixed top-4 left-4 z-50 bg-background/80 backdrop-blur-sm border shadow-sm"
+      >
+        <Menu className="h-4 w-4" />
       </Button>
 
-      <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        {/* Backdrop overlay when sidebar is open */}
-        {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-[9997] backdrop-blur-sm transition-opacity duration-300" onClick={() => setSidebarOpen(false)} />}
+      <SidebarProvider open={sidebarVisible} onOpenChange={closeSidebar}>
+        <FlowAgroSidebar 
+          onItemSelect={() => {}}
+          isOpen={sidebarVisible} 
+        />
         
-        <FlowAgroSidebar onItemSelect={handleSidebarItemSelect} isOpen={sidebarOpen} />
-        
-        <div className="h-screen bg-background flex flex-col overflow-hidden w-full">
-          {/* Grok-style Dashboard View */}
-          {!isChatExpanded ? <>
-              {/* Main Content - Ultra compact positioning */}
-              <div className="flex-1 flex flex-col justify-start pt-4 overflow-hidden">
-                {/* Welcome Section - Minimal spacing */}
-                <div className="text-center px-6 mb-0">
-                  
-                  
-                </div>
-
-                {/* Spacer to push content up */}
-                <div className="flex-1" />
-              </div>
-
-              {/* Bottom Quick Cards - Grok-style positioning */}
-              <BottomQuickCards onChatFilterChange={setChatFilter} currentFilter={chatFilter} isVisible={!isChatExpanded} />
-
-              {/* Fixed Chat Input Bar */}
-              <ChatInputBar onSendMessage={handleSendMessageFromInput} onExpandChat={handleExpandChat} placeholder="Pergunte qualquer coisa sobre agricultura..." disabled={sendingMessage} />
-            </> : (/* Expanded Chat View */
-        <div className={cn("flex-1 overflow-hidden transition-all duration-300 ease-out", "pb-safe transform-gpu will-change-transform", isTransitioning && "scale-[0.99] opacity-90")}>
-              <Suspense fallback={<div className="flex items-center justify-center h-full">
-                  <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
-                </div>}>
-                {viewMode === "list" ? <ChatListView chatFilter={chatFilter} onChatFilterChange={setChatFilter} searchQuery={searchQuery} onSearchChange={setSearchQuery} threads={producerThreads} loading={isLoading} onChatSelect={handleChatSelect} onTogglePin={handleTogglePin} onShowTechnicalChat={handleShowTechnicalChat} onBackFromTechnicalChat={handleBackFromTechnicalChat} /> : selectedChat ? <ConversationView selectedChat={selectedChat} isAIMode={isAIMode} chatMessages={chatMessages} newMessage={newMessage} onNewMessageChange={setNewMessage} onSendMessage={handleSendMessage} onBackToList={handleCollapseChat} sendingMessage={sendingMessage} /> : null}
-              </Suspense>
-            </div>)}
-
-          {/* Enhanced Performance Monitor (development only) */}
-          {process.env.NODE_ENV === 'development' && <>
-              
-            </>}
-
-          {/* Keyboard Shortcuts Help - desktop only for performance */}
-          {navigationHistory.length > 0 && isChatExpanded && <div className="hidden lg:block absolute bottom-4 right-4 opacity-30 hover:opacity-80 transition-opacity">
-              <div className="text-xs text-muted-foreground bg-background/80 backdrop-blur-sm rounded-md px-2 py-1 border border-border/50">
-                {shortcuts[0].key} {shortcuts[0].description}
-              </div>
-            </div>}
-        </div>
+        <main className="flex-1 flex flex-col min-h-0 transition-all duration-300">
+          {layoutConfig.showCompactView ? (
+            <DashboardCompactView
+              onChatExpand={handleExpandChat}
+              onSendMessage={handleSendMessageFromInput}
+              onChatFilterChange={setChatFilter}
+              currentFilter={chatFilter}
+              sendingMessage={sendingMessage}
+            />
+          ) : (
+            <DashboardExpandedView
+              viewMode={viewMode}
+              showTechnicalChat={showTechnicalChat}
+              producerThreads={producerThreads}
+              chatMessages={chatMessages}
+              selectedChat={selectedChat}
+              loadingProducers={loadingProducers}
+              loadingConversations={loadingConversations}
+              sendingMessage={sendingMessage}
+              onChatSelect={handleChatSelect}
+              onBackToList={collapseChat}
+              onSendMessage={handleSendMessage}
+              onSendAIMessage={sendAIMessage}
+              onTogglePin={handleTogglePin}
+              onShowTechnicalChat={handleShowTechnicalChat}
+              onBackFromTechnicalChat={handleBackFromTechnicalChat}
+            />
+          )}
+        </main>
       </SidebarProvider>
-    </>;
+
+      {/* Performance monitoring (development only) */}
+      {process.env.NODE_ENV === 'development' && performanceMetrics && (
+        <div className="fixed bottom-4 right-4 bg-muted/90 backdrop-blur-sm p-2 rounded text-xs font-mono text-muted-foreground border">
+          <div>Threads: {performanceMetrics.threadCount}</div>
+          <div>Filtered: {performanceMetrics.filteredCount}</div>
+          <div>Transitioning: {performanceMetrics.isTransitioning ? 'Yes' : 'No'}</div>
+        </div>
+      )}
+
+      {/* Keyboard shortcuts hint (development only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-4 right-4 bg-muted/90 backdrop-blur-sm p-2 rounded text-xs text-muted-foreground border">
+          <div className="font-semibold mb-1">Atalhos:</div>
+          {shortcuts.map((shortcut, index) => (
+            <div key={index}>
+              <span className="font-mono">{shortcut.key}</span>: {shortcut.description}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
