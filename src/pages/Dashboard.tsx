@@ -11,6 +11,7 @@ import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import { useDashboardMemory } from '@/hooks/useDashboardMemory';
 import { useDashboardKeyboards } from '@/hooks/useDashboardKeyboards';
 import { performanceMonitor } from '@/lib/unifiedPerformance';
+import { PerformanceOptimizer } from '@/components/optimization/PerformanceOptimizer';
 
 /**
  * Enhanced Dashboard with refactored architecture
@@ -178,17 +179,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Keyboard shortcuts hint (development only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed top-4 right-4 bg-muted/90 backdrop-blur-sm p-2 rounded text-xs text-muted-foreground border">
-          <div className="font-semibold mb-1">Atalhos:</div>
-          {shortcuts.map((shortcut, index) => (
-            <div key={index}>
-              <span className="font-mono">{shortcut.key}</span>: {shortcut.description}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Performance Optimizer (development only) */}
+      {process.env.NODE_ENV === 'development' && <PerformanceOptimizer />}
     </div>
   );
 }
