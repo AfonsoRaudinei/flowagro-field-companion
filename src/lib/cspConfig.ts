@@ -188,8 +188,16 @@ function preventClickjacking(): void {
   if (window.top !== window.self) {
     console.warn('[Security] Potential clickjacking attempt detected');
     
-    // Break out of iframe
-    window.top!.location = window.location;
+    // In development/iframe environments, don't attempt navigation
+    try {
+      // Only attempt to break out if we have permission
+      if (window.top && window.top.location && window.top.location.href) {
+        window.top.location = window.location;
+      }
+    } catch (error) {
+      // Silently handle permission errors in iframe environments
+      console.log('[Security] Clickjacking protection skipped in iframe environment');
+    }
   }
 }
 
